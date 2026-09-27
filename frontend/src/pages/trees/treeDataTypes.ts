@@ -18,3 +18,13 @@ export interface CreateTreeRequest {
   speciesLatin?: string;
   notes?: string;
 }
+
+/**
+ * UpdateTreeRequest - formularz edycji zawsze wysyla KOMPLET edytowalnych pol.
+ * Pusty gatunek / notatka (pominiete) oznaczaja wyczyszczenie wartosci na backendzie.
+ */
+export interface UpdateTreeRequest {
+  inventoryNumber: string;
+  speciesLatin?: string;
+  notes?: string;
+}

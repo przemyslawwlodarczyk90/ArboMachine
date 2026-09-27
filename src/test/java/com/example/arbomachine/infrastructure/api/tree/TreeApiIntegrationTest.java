@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -271,6 +272,142 @@ class TreeApiIntegrationTest {
                         .header("Authorization", bearerTokenOf(userAccountA)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$").value("Tree not found"));
+    }
+
+    // --- edycja (ETAP 7) ---
+
+    private ResultActions patchTreeAs(UserAccount userAccount, long projectId, long treeId, String requestJson) throws Exception {
+        return mockMvc.perform(patch("/api/projects/{projectId}/trees/{treeId}", projectId, treeId)
+                .header("Authorization", bearerTokenOf(userAccount))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson));
+    }
+
+    private long createFullTreeAs(UserAccount userAccount, long projectId) throws Exception {
+        return readId(postTreeAs(userAccount, projectId,
+                "{\"inventoryNumber\":\"1\",\"speciesLatin\":\"Quercus robur\",\"notes\":\"Old note\"}")
+                .andExpect(status().isCreated()));
+    }
+
+    @Test
+    void updateOwnTreeChangesAllEditableFields() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                "{\"inventoryNumber\":\" A-7 \",\"speciesLatin\":\"Tilia cordata\",\"notes\":\"New note\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(treeId))
+                .andExpect(jsonPath("$.projectId").value(projectIdA1))
+                .andExpect(jsonPath("$.inventoryNumber").value("A-7"))
+                .andExpect(jsonPath("$.speciesLatin").value("Tilia cordata"))
+                .andExpect(jsonPath("$.notes").value("New note"));
+
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getInventoryNumber()).isEqualTo("A-7");
+        assertThat(storedTree.getSpeciesLatin()).isEqualTo("Tilia cordata");
+        assertThat(storedTree.getNotes()).isEqualTo("New note");
+    }
+
+    @Test
+    void optionalFieldsCanBeCleared() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"speciesLatin\":\"\",\"notes\":\"   \"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speciesLatin").doesNotExist())
+                .andExpect(jsonPath("$.notes").doesNotExist());
+
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getSpeciesLatin()).isNull();
+        assertThat(storedTree.getNotes()).isNull();
+    }
+
+    @Test
+    void blankOrMissingInventoryNumberIsRejectedAndTreeStaysIntact() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"   \",\"speciesLatin\":\"X\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.inventoryNumber").value("Inventory number is mandatory"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"\"}")
+                .andExpect(status().isBadRequest());
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"speciesLatin\":\"X\"}")
+                .andExpect(status().isBadRequest());
+
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getInventoryNumber()).isEqualTo("1");
+        assertThat(storedTree.getSpeciesLatin()).isEqualTo("Quercus robur");
+    }
+
+    @Test
+    void updatedAtMovesOnlyOnRealChange() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+        Tree treeBefore = treeRepository.findById(treeId).orElseThrow();
+
+        // identyczne dane -> brak zmiany
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                "{\"inventoryNumber\":\"1\",\"speciesLatin\":\"Quercus robur\",\"notes\":\"Old note\"}")
+                .andExpect(status().isOk());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getUpdatedAt()).isEqualTo(treeBefore.getUpdatedAt());
+
+        Thread.sleep(5);
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                "{\"inventoryNumber\":\"1\",\"speciesLatin\":\"Quercus robur\",\"notes\":\"Changed\"}")
+                .andExpect(status().isOk());
+        Tree treeAfter = treeRepository.findById(treeId).orElseThrow();
+        assertThat(treeAfter.getUpdatedAt()).isAfter(treeBefore.getUpdatedAt());
+        assertThat(treeAfter.getCreatedAt()).isEqualTo(treeBefore.getCreatedAt());
+    }
+
+    @Test
+    void updateCannotMoveTreeToAnotherProject() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                "{\"inventoryNumber\":\"1\",\"projectId\":" + projectIdA2 + ",\"ownerId\":" + userAccountB.getId() + "}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(projectIdA1));
+        assertThat(treeRepository.findByIdAndProjectId(treeId, projectIdA1)).isPresent();
+    }
+
+    @Test
+    void treeOfAnotherOwnProjectCannotBeUpdatedThroughWrongProjectId() throws Exception {
+        long treeIdInA2 = createFullTreeAs(userAccountA, projectIdA2);
+
+        patchTreeAs(userAccountA, projectIdA1, treeIdInA2, "{\"inventoryNumber\":\"hijacked\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Tree not found"));
+        assertThat(treeRepository.findById(treeIdInA2).orElseThrow().getInventoryNumber()).isEqualTo("1");
+    }
+
+    @Test
+    void treeInAnotherUsersProjectCannotBeUpdated() throws Exception {
+        long foreignTreeId = createFullTreeAs(userAccountB, projectIdB1);
+
+        patchTreeAs(userAccountA, projectIdB1, foreignTreeId, "{\"inventoryNumber\":\"hijacked\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+        assertThat(treeRepository.findById(foreignTreeId).orElseThrow().getInventoryNumber()).isEqualTo("1");
+    }
+
+    @Test
+    void updateOfNonExistentTreeOrProjectIsNotFound() throws Exception {
+        patchTreeAs(userAccountA, projectIdA1, NON_EXISTENT_ID, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Tree not found"));
+        patchTreeAs(userAccountA, NON_EXISTENT_ID, NON_EXISTENT_ID, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+    }
+
+    @Test
+    void anonymousUserCannotUpdateTree() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        mockMvc.perform(patch("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"2\"}"))
+                .andExpect(status().isUnauthorized());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getInventoryNumber()).isEqualTo("1");
     }
 
     // --- brak zalogowania ---

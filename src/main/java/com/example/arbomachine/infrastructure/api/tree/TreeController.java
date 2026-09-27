@@ -2,6 +2,7 @@ package com.example.arbomachine.infrastructure.api.tree;
 
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
+import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
 import com.example.arbomachine.domain.tree.facade.TreeFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,5 +57,16 @@ public class TreeController {
                                                          @PathVariable Long treeId) {
         return ResponseEntity.ok(treeFacade.getTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, treeId));
+    }
+
+    @Operation(summary = "Edycja drzewa wlasnego projektu - request zawiera komplet edytowalnych pol; "
+            + "drzewo z innego projektu albo cudzy projekt daje 404")
+    @PatchMapping("/{treeId}")
+    public ResponseEntity<TreeResponse> updateTreeOfProject(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                            @PathVariable Long projectId,
+                                                            @PathVariable Long treeId,
+                                                            @Valid @RequestBody UpdateTreeRequest updateTreeRequest) {
+        return ResponseEntity.ok(treeFacade.updateTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId, updateTreeRequest));
     }
 }

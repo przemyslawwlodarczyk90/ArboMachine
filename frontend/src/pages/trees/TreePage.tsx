@@ -4,6 +4,8 @@ import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
+import { TreeDetailsView } from './TreeDetailsView';
+import { TreeEditForm } from './TreeEditForm';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
 
@@ -15,14 +17,15 @@ type TreeLoadingState =
   | { status: 'failed'; errorMessage: string };
 
 /**
- * Minimalny podglad drzewa (/projects/:projectId/trees/:treeId) - dowod dzialajacego pionu
- * Project -> Tree -> szczegoly, jeszcze NIE docelowa karta drzewa. Wlasnosci nie sprawdzamy w React.
+ * Karta drzewa (/projects/:projectId/trees/:treeId). Strona tylko orkiestruje: laduje drzewo
+ * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm). Wlasnosci nie sprawdzamy w React.
  */
 export function TreePage() {
   const routeParams = useParams();
   const projectId = parsePositiveIdRouteParam(routeParams.projectId);
   const treeId = parsePositiveIdRouteParam(routeParams.treeId);
   const [treeLoadingState, setTreeLoadingState] = useState<TreeLoadingState>({ status: 'loading' });
+  const [isEditingTree, setIsEditingTree] = useState(false);
 
   useEffect(() => {
     if (projectId === null || treeId === null) {
@@ -73,16 +76,19 @@ export function TreePage() {
   }
 
   const { tree } = treeLoadingState;
+  // Po zapisie podmieniamy drzewo odpowiedzia PATCH (bez dodatkowego GET) i wracamy do podgladu.
+  const replaceTreeWithSavedOne = (savedTree: Tree) => {
+    setTreeLoadingState({ status: 'loaded', tree: savedTree });
+    setIsEditingTree(false);
+  };
+
   return (
     <div className="stack">
       {backToTreesLink}
-      <h2>Tree {tree.inventoryNumber}</h2>
-      <dl className="tree-details">
-        <dt>Latin species</dt>
-        <dd>{tree.speciesLatin || <span className="muted">Not specified</span>}</dd>
-        <dt>Notes</dt>
-        <dd className="tree-details-notes">{tree.notes || <span className="muted">No notes</span>}</dd>
-      </dl>
+      {isEditingTree && projectId !== null
+        ? <TreeEditForm projectId={projectId} savedTree={tree} onTreeSaved={replaceTreeWithSavedOne}
+                        cancelEditing={() => setIsEditingTree(false)} />
+        : <TreeDetailsView tree={tree} startEditing={() => setIsEditingTree(true)} />}
     </div>
   );
 }

@@ -2,9 +2,11 @@ package com.example.arbomachine.domain.tree.facade;
 
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
+import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
 import com.example.arbomachine.domain.tree.service.treefacade.CreateTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreesOfProjectHandler;
+import com.example.arbomachine.domain.tree.service.treefacade.UpdateTreeHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,13 +20,16 @@ public class TreeFacade {
     private final CreateTreeHandler createTreeHandler;
     private final GetTreesOfProjectHandler getTreesOfProjectHandler;
     private final GetTreeHandler getTreeHandler;
+    private final UpdateTreeHandler updateTreeHandler;
 
     public TreeFacade(CreateTreeHandler createTreeHandler,
                       GetTreesOfProjectHandler getTreesOfProjectHandler,
-                      GetTreeHandler getTreeHandler) {
+                      GetTreeHandler getTreeHandler,
+                      UpdateTreeHandler updateTreeHandler) {
         this.createTreeHandler = createTreeHandler;
         this.getTreesOfProjectHandler = getTreesOfProjectHandler;
         this.getTreeHandler = getTreeHandler;
+        this.updateTreeHandler = updateTreeHandler;
     }
 
     public TreeResponse createTreeInProjectOfCurrentUser(String currentUserEmail, Long projectId,
@@ -38,5 +43,10 @@ public class TreeFacade {
 
     public TreeResponse getTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {
         return getTreeHandler.handle(currentUserEmail, projectId, treeId);
+    }
+
+    public TreeResponse updateTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
+                                                        UpdateTreeRequest updateTreeRequest) {
+        return updateTreeHandler.handle(currentUserEmail, projectId, treeId, updateTreeRequest);
     }
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { formatProjectTimestamp } from './formatProjectTimestamp';
+import { formatTimestampForDisplay } from '../../formatting/formatTimestampForDisplay';
 import { NewProjectDialog } from './NewProjectDialog';
 import type { Project } from './projectDataTypes';
 import { projectsApi } from './projectsApi';
@@ -67,8 +67,8 @@ export function ProjectsPage() {
                 <span className="project-list-item-name">{project.name}</span>
                 {project.description && <span className="project-list-item-description">{project.description}</span>}
                 <span className="muted small">
-                  Created {formatProjectTimestamp(project.createdAt)}
-                  {project.updatedAt !== project.createdAt && <> · Updated {formatProjectTimestamp(project.updatedAt)}</>}
+                  Created {formatTimestampForDisplay(project.createdAt)}
+                  {project.updatedAt !== project.createdAt && <> · Updated {formatTimestampForDisplay(project.updatedAt)}</>}
                 </span>
               </Link>
             </li>

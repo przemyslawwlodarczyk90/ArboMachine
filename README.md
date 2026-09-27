@@ -1,11 +1,11 @@
 # 🌳 ArboMachine
 
-Backend Spring Boot 3.2.5 (Java 17) z pełną obsługą kont użytkowników oraz frontend React (Vite, TypeScript)
-w katalogu [`frontend/`](frontend).
+Backend Spring Boot 3.5 (**Java 25**) z pełną obsługą kont użytkowników, projektów i drzew oraz frontend React
+(Vite, TypeScript) w katalogu [`frontend/`](frontend).
 
 Konwencja w kodzie: **nazwy klas, encji, metod i zmiennych po angielsku** i możliwie samoopisujące się
-(np. `UserAccount`, `AdminUserAccountManagementService.confirmEmailOnUsersBehalf`), **komentarze
-i dokumentacja po polsku**. Interfejs użytkownika i komunikaty API są po angielsku.
+(np. `UserAccount`, `ConfirmEmailOnUsersBehalfHandler`), **komentarze i dokumentacja po polsku**.
+Interfejs użytkownika i komunikaty API są po angielsku.
 
 ---
 
@@ -46,6 +46,9 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 🧭 **Trzy panele ról** z osobnym prefiksem ścieżek backendu dla każdej roli
 - 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie projektu i workspace projektu
   (`/projects/:projectId`) z miejscem na moduły Drzewa / Mapa / Zdjęcia i dokumentacja
+- 🌳 **Drzewa projektu** - lista i dodawanie drzew oraz edytowalna karta drzewa (podgląd / edycja z Save i Cancel).
+  Kolejne pola drzewa dodajemy wyłącznie po discovery z arborystą - patrz
+  [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
 
@@ -53,30 +56,48 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 
 ## 🗂️ Struktura backendu
 
+Architektura: **kontroler → fasada → handlery**.
+
+- Każdy moduł ma folder `facade/` z fasadami (`XxxFacade`). Kontrolery wstrzykują **wyłącznie fasady**.
+- Folder `service/` zawiera podfoldery nazwane **dokładnie jak fasada, małymi literami**
+  (`TreeFacade` → `service/treefacade/`). W środku leżą handlery, z których składa się dana fasada.
+- Handler = jedna operacja = **jedna publiczna metoda `handle(...)`**. Brak wielometodowych serwisów.
+- Reguły pilnuje test `FacadeHandlerArchitectureTest` (build nie przejdzie, jeśli ktoś je złamie).
+
 ```
 com.example.arbomachine
 ├── domain.user
 │   ├── entity      UserAccount, EmailConfirmationToken, PasswordResetToken
 │   ├── enums       UserRole, AssignableUserRole (role do wyboru - bez ADMIN)
 │   ├── dto         UserProfileDto, UserAccountDto, LoginRequestDto, ...
-│   ├── service     UserRegistrationService, UserLoginService, EmailConfirmationService,
-│   │               PasswordResetService, UserProfileUpdateService, UserAccountDeletionService,
-│   │               UserAccountQueryService, AdminUserAccountManagementService, RolePanelWelcomeService,
-│   │               UserAccountDeletionGuard (punkt rozszerzenia dla innych modułów)
-│   ├── facade      UserAccountFacade - operacje użytkownika na WŁASNYM koncie
+│   ├── facade      UserAccountFacade (własne konto), UserAuthenticationFacade (rejestracja, e-mail, logowanie),
+│   │               PasswordResetFacade, AdminUserAccountFacade, RolePanelWelcomeFacade
+│   ├── service
+│   │   ├── useraccountfacade        GetCurrentUserAccountHandler, UpdateCurrentUserProfileHandler,
+│   │   │                            DeleteCurrentUserAccountHandler, FindUserAccountByEmailHandler, ...,
+│   │   │                            UserAccountDeletionGuard (punkt rozszerzenia dla innych modułów)
+│   │   ├── userauthenticationfacade RegisterNewUserAccountHandler, ConfirmEmailUsingTokenHandler,
+│   │   │                            LoginAndIssueAccessTokenHandler
+│   │   ├── passwordresetfacade      SendPasswordResetLinkIfAccountExistsHandler, ResetPasswordUsingTokenHandler, ...
+│   │   ├── adminuseraccountfacade   ListUserAccountsHandler, ChangeUserRoleHandler, SetAccountLockedByAdminHandler, ...
+│   │   └── rolepanelwelcomefacade   BuildRolePanelWelcomeHandler
 │   ├── mapper      UserAccountMapper
 │   └── exception   wyjątki domenowe (każdy opisuje swój status HTTP)
 ├── domain.project
 │   ├── entity      Project (owner -> UserAccount)
 │   ├── dto         CreateProjectRequest, UpdateProjectRequest, ProjectResponse
-│   ├── service     ProjectService (punkt wejścia modułu), ProjectCreationService, ProjectQueryService,
-│   │               ProjectUpdateService, ProjectOwnerAccountDeletionGuard
+│   ├── facade      ProjectFacade
+│   ├── service.projectfacade  CreateProjectHandler, GetProjectsOfCurrentUserHandler, GetProjectOfCurrentUserHandler,
+│   │                          UpdateProjectHandler, FindProjectOwnedByCurrentUserHandler (jedyne miejsce
+│   │                          sprawdzania własności), ProjectOwnerAccountDeletionGuard
 │   ├── mapper      ProjectMapper
 │   └── exception   ProjectNotFoundException
 ├── domain.tree       (zależy od domain.project; własność drzewa = własność projektu)
 │   ├── entity      Tree (project -> Project; bez własnego ownera)
-│   ├── dto         CreateTreeRequest, TreeResponse
-│   ├── service     TreeService (punkt wejścia modułu), TreeCreationService, TreeQueryService
+│   ├── dto         CreateTreeRequest, UpdateTreeRequest, TreeResponse
+│   ├── facade      TreeFacade
+│   ├── service.treefacade  CreateTreeHandler, GetTreesOfProjectHandler, GetTreeHandler, UpdateTreeHandler,
+│   │                       FindTreeInProjectOwnedByCurrentUserHandler, TreeTextNormalizer
 │   ├── mapper      TreeMapper
 │   └── exception   TreeNotFoundException
 └── infrastructure
@@ -92,8 +113,9 @@ com.example.arbomachine
     └── service     EmailSenderService (maile z szablonów Thymeleaf)
 ```
 
-Każdy moduł ma własne pliki i nie sięga do wnętrza innych modułów. Moduł projektów korzysta z modułu
-użytkowników tylko przez `UserAccountQueryService`, a blokadę usuwania kont dostarcza przez interfejs
+Każdy moduł ma własne pliki. Moduły projektów i drzew korzystają z modułu użytkowników tylko przez
+`FindUserAccountByEmailHandler`, a moduł drzew sprawdza własność projektu wyłącznie przez
+`FindProjectOwnedByCurrentUserHandler`. Blokadę usuwania kont moduł projektów dostarcza przez interfejs
 `UserAccountDeletionGuard` - moduł użytkowników nie wie nic o projektach.
 
 ## 🗂️ Struktura frontendu
@@ -108,7 +130,8 @@ frontend/src
     ├── arborist   ArboristDashboardPage + arboristPanelApi
     ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
     │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
-    ├── trees      ProjectTreesSection, NewTreeDialog, TreePage + treesApi, treeDataTypes
+    ├── trees      ProjectTreesSection, NewTreeDialog, TreePage (orkiestracja), TreeDetailsView (podgląd),
+    │              TreeEditForm (edycja) + treesApi, treeDataTypes
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -138,6 +161,8 @@ Wzór: `arbomachine-secrets.properties.example`. Jeśli SMTP nie działa, dopisz
 `app.registration.email-confirmation-required=false` - konta będą aktywowane od razu, bez maila.
 
 ### 3. Backend
+
+Wymaga **JDK 25** (w IntelliJ: Project SDK = 25).
 
 ```bash
 ./mvnw spring-boot:run
@@ -194,6 +219,7 @@ Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu
 | POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, notes? }` → 201; cudzy/nieistniejący projekt → 404 |
 | GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
+| PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja `{ inventoryNumber, speciesLatin?, notes? }` → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięty/pusty gatunek lub notatka = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
 że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
@@ -216,6 +242,9 @@ polityka do czasu ustalenia archiwizacji / przenoszenia własności).
 - `ProjectApiIntegrationTest` i `ProjectOwnerAccountDeletionIntegrationTest` przechodzą pełną ścieżkę
   API projektów na prawdziwym `SecurityConfig` i prawdziwych tokenach JWT (użytkownicy A i B: własność,
   walidacja, brak dostępu dla niezalogowanych, blokada usuwania konta z projektami).
+- `TreeApiIntegrationTest` - to samo dla drzew, w tym edycja (błędny `projectId`, cudzy projekt,
+  czyszczenie pól opcjonalnych, `updatedAt` tylko przy realnej zmianie).
+- `FacadeHandlerArchitectureTest` - reguły architektury kontroler → fasada → handler.
 
 ## 🗄️ Schemat bazy
 
@@ -234,7 +263,7 @@ nie są jeszcze ustalone.
 |---|---|---|
 | `/projects` | ARBORIST | Lista własnych projektów, przycisk „New project” (okno tworzenia) |
 | `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Trees”: lista drzew i „Add tree” |
-| `/projects/:projectId/trees/:treeId` | ARBORIST | Podgląd drzewa (numer, gatunek, notatka) |
+| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd (numer, gatunek, notatka, daty) i edycja (Save / Cancel) |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Map” (placeholder, bez biblioteki mapowej) |
 | `/projects/:projectId/documentation` | ARBORIST | Sekcja „Photos & documentation” (placeholder) |
 
