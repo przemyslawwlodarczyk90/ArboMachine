@@ -4,6 +4,7 @@ import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
 import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
+import { ModalDialog } from '../../components/ModalDialog';
 import { projectsApi } from './projectsApi';
 
 /**
@@ -53,33 +54,25 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
     }
   };
 
-  const closeUnlessSaving = () => {
-    if (!isCreatingProject) closeDialog();
-  };
-
   return (
-    <div className="modal-backdrop" onClick={closeUnlessSaving}>
-      <div className="card modal" role="dialog" aria-modal="true" aria-labelledby="new-project-dialog-title"
-           onClick={(clickEvent) => clickEvent.stopPropagation()}>
-        <h2 id="new-project-dialog-title">New project</h2>
-        <form onSubmit={submitNewProject} className="form" noValidate>
-          {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
-          <LabeledInputField label="Project name *" autoFocus value={projectName} maxLength={255}
-                             onChange={(changeEvent) => setProjectName(changeEvent.target.value)}
-                             errorMessage={errorMessageByFieldName.name} />
-          <LabeledTextAreaField label="Description" value={projectDescription}
-                                onChange={(changeEvent) => setProjectDescription(changeEvent.target.value)}
-                                errorMessage={errorMessageByFieldName.description} />
-          <div className="form-actions">
-            <button type="button" className="btn btn-ghost" onClick={closeUnlessSaving} disabled={isCreatingProject}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={isCreatingProject}>
-              {isCreatingProject ? 'Creating…' : 'Create project'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <ModalDialog title="New project" closeDialog={closeDialog} isClosingBlocked={isCreatingProject}>
+      <form onSubmit={submitNewProject} className="form" noValidate>
+        {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
+        <LabeledInputField label="Project name *" autoFocus value={projectName} maxLength={255}
+                           onChange={(changeEvent) => setProjectName(changeEvent.target.value)}
+                           errorMessage={errorMessageByFieldName.name} />
+        <LabeledTextAreaField label="Description" value={projectDescription}
+                              onChange={(changeEvent) => setProjectDescription(changeEvent.target.value)}
+                              errorMessage={errorMessageByFieldName.description} />
+        <div className="form-actions">
+          <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isCreatingProject}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={isCreatingProject}>
+            {isCreatingProject ? 'Creating…' : 'Create project'}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
   );
 }

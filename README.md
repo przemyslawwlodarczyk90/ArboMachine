@@ -73,13 +73,20 @@ com.example.arbomachine
 │   │               ProjectUpdateService, ProjectOwnerAccountDeletionGuard
 │   ├── mapper      ProjectMapper
 │   └── exception   ProjectNotFoundException
+├── domain.tree       (zależy od domain.project; własność drzewa = własność projektu)
+│   ├── entity      Tree (project -> Project; bez własnego ownera)
+│   ├── dto         CreateTreeRequest, TreeResponse
+│   ├── service     TreeService (punkt wejścia modułu), TreeCreationService, TreeQueryService
+│   ├── mapper      TreeMapper
+│   └── exception   TreeNotFoundException
 └── infrastructure
     ├── api         ApiExceptionHandler (wspólny) + podpakiety modułów:
     │   ├── user      UserAccountController
     │   ├── admin     AdminUserAccountController, AdminPanelController
     │   ├── arborist  ArboristPanelController
     │   ├── official  OfficialPanelController
-    │   └── project   ProjectController, ProjectApiExceptionHandler
+    │   ├── project   ProjectController, ProjectApiExceptionHandler
+    │   └── tree      TreeController, TreeApiExceptionHandler
     ├── security    SecurityConfig (reguły dostępu), JwtTokenService, JwtAuthenticationFilter, ...
     ├── repository  repozytoria Spring Data
     └── service     EmailSenderService (maile z szablonów Thymeleaf)
@@ -101,6 +108,7 @@ frontend/src
     ├── arborist   ArboristDashboardPage + arboristPanelApi
     ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
     │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
+    ├── trees      ProjectTreesSection, NewTreeDialog, TreePage + treesApi, treeDataTypes
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -183,6 +191,9 @@ Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu
 | GET | `/api/projects` | każdy zalogowany | Tylko własne projekty (najnowsze pierwsze) |
 | GET | `/api/projects/{projectId}` | każdy zalogowany | Własny projekt; cudzy albo nieistniejący → 404 |
 | PATCH | `/api/projects/{projectId}` | każdy zalogowany | Zmiana `name` i/lub `description` własnego projektu; cudzy → 404 |
+| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, notes? }` → 201; cudzy/nieistniejący projekt → 404 |
+| GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
+| GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
 że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
@@ -212,16 +223,21 @@ Brak Flyway/Liquibase - schemat tworzy i aktualizuje Hibernate (`spring.jpa.hibe
 w schemacie `arbomachine`. Nowa tabela pojawia się przy pierwszym starcie aplikacji po dodaniu encji.
 Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(id)` (indeks),
 `name varchar(255) NOT NULL`, `description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (indeks),
+`inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `notes text NULL`,
+`created_at` / `updated_at timestamptz NOT NULL`. Bez `owner_id` i bez unikalności numeru - zasady numeracji
+nie są jeszcze ustalone.
 
 ## 🧭 Trasy frontendu projektów
 
 | Trasa | Dostęp | Zawartość |
 |---|---|---|
 | `/projects` | ARBORIST | Lista własnych projektów, przycisk „New project” (okno tworzenia) |
-| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Trees” (placeholder) |
+| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Trees”: lista drzew i „Add tree” |
+| `/projects/:projectId/trees/:treeId` | ARBORIST | Podgląd drzewa (numer, gatunek, notatka) |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Map” (placeholder, bez biblioteki mapowej) |
 | `/projects/:projectId/documentation` | ARBORIST | Sekcja „Photos & documentation” (placeholder) |
 
 Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
-Nowy moduł projektu (np. drzewa) dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
+Kolejny moduł projektu (np. mapa) dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
 bez zmian w `ProjectPage`.

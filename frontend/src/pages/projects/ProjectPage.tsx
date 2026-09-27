@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useMatch, useParams } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
 import type { Project } from './projectDataTypes';
 import { projectsApi } from './projectsApi';
 
@@ -15,17 +16,11 @@ type ProjectLoadingState =
 
 /** Sekcje workspace - kazda to osobna trasa zagniezdzona, pod ktora pozniej wejdzie jej modul. */
 const WORKSPACE_SECTION_LINKS = [
-  { relativePath: '', label: 'Trees', matchExactPathOnly: true },
+  // Lista drzew to strona glowna projektu, ale zakladka ma byc aktywna takze na stronie drzewa (trees/:treeId).
+  { relativePath: '', label: 'Trees', matchExactPathOnly: true, alsoActiveOnTreeDetailRoute: true },
   { relativePath: 'map', label: 'Map', matchExactPathOnly: false },
   { relativePath: 'documentation', label: 'Photos & documentation', matchExactPathOnly: false },
 ];
-
-/** Id projektu z adresu; cokolwiek innego niz dodatnia liczba calkowita traktujemy jak nieistniejacy projekt. */
-function parseProjectIdFromRoute(projectIdRouteParam: string | undefined): number | null {
-  if (!projectIdRouteParam || !/^\d+$/.test(projectIdRouteParam)) return null;
-  const parsedProjectId = Number(projectIdRouteParam);
-  return Number.isSafeInteger(parsedProjectId) && parsedProjectId > 0 ? parsedProjectId : null;
-}
 
 /**
  * Workspace projektu (/projects/:projectId): naglowek projektu + nawigacja sekcji + <Outlet/> na tresc sekcji.
@@ -33,7 +28,9 @@ function parseProjectIdFromRoute(projectIdRouteParam: string | undefined): numbe
  */
 export function ProjectPage() {
   const { projectId: projectIdRouteParam } = useParams();
-  const projectId = parseProjectIdFromRoute(projectIdRouteParam);
+  const projectId = parsePositiveIdRouteParam(projectIdRouteParam);
+  // Hook wywolywany przed wczesnymi returnami ponizej (zasady hookow Reacta).
+  const isTreeDetailRoute = useMatch('/projects/:projectId/trees/*') !== null;
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
 
   useEffect(() => {
@@ -97,7 +94,9 @@ export function ProjectPage() {
 
       <nav className="workspace-tabs" aria-label="Project sections">
         {WORKSPACE_SECTION_LINKS.map((sectionLink) => (
-          <NavLink key={sectionLink.label} to={sectionLink.relativePath} end={sectionLink.matchExactPathOnly}>
+          <NavLink key={sectionLink.label} to={sectionLink.relativePath} end={sectionLink.matchExactPathOnly}
+                   className={({ isActive }) =>
+                     isActive || (sectionLink.alsoActiveOnTreeDetailRoute && isTreeDetailRoute) ? 'active' : undefined}>
             {sectionLink.label}
           </NavLink>
         ))}

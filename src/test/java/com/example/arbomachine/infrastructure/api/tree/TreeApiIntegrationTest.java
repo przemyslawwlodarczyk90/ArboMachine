@@ -1,0 +1,289 @@
+package com.example.arbomachine.infrastructure.api.tree;
+
+import com.example.arbomachine.domain.tree.entity.Tree;
+import com.example.arbomachine.domain.user.entity.UserAccount;
+import com.example.arbomachine.domain.user.enums.UserRole;
+import com.example.arbomachine.infrastructure.repository.ProjectRepository;
+import com.example.arbomachine.infrastructure.repository.TreeRepository;
+import com.example.arbomachine.infrastructure.repository.UserAccountRepository;
+import com.example.arbomachine.infrastructure.security.JwtTokenService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Pelna sciezka API drzew: prawdziwy SecurityConfig, filtr JWT i tokeny z JwtTokenService, baza H2.
+ * Uzytkownik A ma dwa projekty (A1, A2), uzytkownik B ma projekt B1. Wlasnosc drzewa wynika z projektu.
+ */
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:treeapitest",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "auth.jwt.secret=tree-api-test-secret"
+})
+@AutoConfigureMockMvc
+class TreeApiIntegrationTest {
+
+    private static final long NON_EXISTENT_ID = 999_999L;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserAccountRepository userAccountRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private TreeRepository treeRepository;
+
+    @Autowired
+    private JwtTokenService jwtTokenService;
+
+    private UserAccount userAccountA;
+    private UserAccount userAccountB;
+    private long projectIdA1;
+    private long projectIdA2;
+    private long projectIdB1;
+
+    @BeforeEach
+    void createUsersAndProjects() throws Exception {
+        userAccountA = saveConfirmedArborist("tree.user.a@example.com");
+        userAccountB = saveConfirmedArborist("tree.user.b@example.com");
+        projectIdA1 = createProjectAs(userAccountA, "Projekt A1");
+        projectIdA2 = createProjectAs(userAccountA, "Projekt A2");
+        projectIdB1 = createProjectAs(userAccountB, "Projekt B1");
+    }
+
+    @AfterEach
+    void deleteAllTreesProjectsAndAccounts() {
+        // Kolejnosc wynika z kluczy obcych: tree -> project -> user_account.
+        treeRepository.deleteAll();
+        projectRepository.deleteAll();
+        userAccountRepository.deleteAll();
+    }
+
+    private UserAccount saveConfirmedArborist(String email) {
+        return userAccountRepository.save(UserAccount.builder()
+                .firstName("Test").lastName("User").email(email).passwordHash("unused")
+                .role(UserRole.ARBORIST).emailConfirmed(true)
+                .build());
+    }
+
+    private String bearerTokenOf(UserAccount userAccount) {
+        return "Bearer " + jwtTokenService.createAccessTokenForEmail(userAccount.getEmail());
+    }
+
+    private long readId(ResultActions resultActions) throws Exception {
+        return objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    private long createProjectAs(UserAccount owner, String projectName) throws Exception {
+        return readId(mockMvc.perform(post("/api/projects").header("Authorization", bearerTokenOf(owner))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"" + projectName + "\"}"))
+                .andExpect(status().isCreated()));
+    }
+
+    private ResultActions postTreeAs(UserAccount userAccount, long projectId, String requestJson) throws Exception {
+        return mockMvc.perform(post("/api/projects/{projectId}/trees", projectId)
+                .header("Authorization", bearerTokenOf(userAccount))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson));
+    }
+
+    private long createTreeAs(UserAccount userAccount, long projectId, String inventoryNumber) throws Exception {
+        return readId(postTreeAs(userAccount, projectId, "{\"inventoryNumber\":\"" + inventoryNumber + "\"}")
+                .andExpect(status().isCreated()));
+    }
+
+    // --- tworzenie ---
+
+    @Test
+    void createTreeInOwnProjectSucceeds() throws Exception {
+        postTreeAs(userAccountA, projectIdA1,
+                "{\"inventoryNumber\":\"A-12\",\"speciesLatin\":\"Quercus robur\",\"notes\":\"Example field note.\"}")
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", startsWith("/api/projects/" + projectIdA1 + "/trees/")))
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.projectId").value(projectIdA1))
+                .andExpect(jsonPath("$.inventoryNumber").value("A-12"))
+                .andExpect(jsonPath("$.speciesLatin").value("Quercus robur"))
+                .andExpect(jsonPath("$.notes").value("Example field note."))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty())
+                .andExpect(jsonPath("$.project").doesNotExist())
+                .andExpect(jsonPath("$.ownerId").doesNotExist());
+    }
+
+    @Test
+    void speciesAndNotesAreOptionalAndTextIsNormalized() throws Exception {
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"  7  \",\"speciesLatin\":\"   \",\"notes\":\"\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.inventoryNumber").value("7"))
+                .andExpect(jsonPath("$.speciesLatin").doesNotExist())
+                .andExpect(jsonPath("$.notes").doesNotExist());
+    }
+
+    @Test
+    void projectIdFromUrlWinsOverProjectIdOrOwnerInBody() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1,
+                "{\"inventoryNumber\":\"1\",\"projectId\":" + projectIdB1 + ",\"ownerId\":" + userAccountB.getId() + "}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.projectId").value(projectIdA1)));
+
+        assertThat(treeRepository.findByIdAndProjectId(treeId, projectIdA1)).isPresent();
+        assertThat(treeRepository.findByIdAndProjectId(treeId, projectIdB1)).isEmpty();
+    }
+
+    @Test
+    void createTreeInAnotherUsersProjectIsRejectedAsNotFound() throws Exception {
+        postTreeAs(userAccountA, projectIdB1, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+        assertThat(treeRepository.count()).isZero();
+    }
+
+    @Test
+    void createTreeInNonExistentProjectIsNotFound() throws Exception {
+        postTreeAs(userAccountA, NON_EXISTENT_ID, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+    }
+
+    @Test
+    void blankInventoryNumberIsRejected() throws Exception {
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"   \"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.inventoryNumber").value("Inventory number is mandatory"));
+        postTreeAs(userAccountA, projectIdA1, "{\"speciesLatin\":\"Quercus robur\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.inventoryNumber").value("Inventory number is mandatory"));
+        assertThat(treeRepository.count()).isZero();
+    }
+
+    @Test
+    void textsLongerThanColumnsAreRejected() throws Exception {
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"" + "9".repeat(Tree.MAXIMUM_INVENTORY_NUMBER_LENGTH + 1) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.inventoryNumber").value("Inventory number must have at most 100 characters"));
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"speciesLatin\":\""
+                + "q".repeat(Tree.MAXIMUM_SPECIES_LATIN_LENGTH + 1) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.speciesLatin").value("Latin species name must have at most 255 characters"));
+    }
+
+    // --- lista ---
+
+    @Test
+    void listReturnsOnlyTreesOfSelectedProjectInCreationOrder() throws Exception {
+        createTreeAs(userAccountA, projectIdA1, "1");
+        createTreeAs(userAccountA, projectIdA1, "2");
+        createTreeAs(userAccountA, projectIdA2, "other-project-tree");
+        createTreeAs(userAccountB, projectIdB1, "foreign-tree");
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdA1).header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].inventoryNumber", contains("1", "2")));
+    }
+
+    @Test
+    void listOfEmptyOwnProjectIsEmpty() throws Exception {
+        mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdA2).header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void listOfAnotherUsersProjectIsRejectedAsNotFound() throws Exception {
+        createTreeAs(userAccountB, projectIdB1, "foreign-tree");
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdB1).header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+    }
+
+    // --- pojedyncze drzewo ---
+
+    @Test
+    void getOwnTreeSucceeds() throws Exception {
+        long treeId = createTreeAs(userAccountA, projectIdA1, "15");
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(treeId))
+                .andExpect(jsonPath("$.projectId").value(projectIdA1))
+                .andExpect(jsonPath("$.inventoryNumber").value("15"));
+    }
+
+    @Test
+    void treeOfAnotherOwnProjectIsNotReachableThroughWrongProjectId() throws Exception {
+        long treeIdInA2 = createTreeAs(userAccountA, projectIdA2, "in-A2");
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeIdInA2)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Tree not found"));
+    }
+
+    @Test
+    void treeOfAnotherUserIsNotReachable() throws Exception {
+        long foreignTreeId = createTreeAs(userAccountB, projectIdB1, "foreign-tree");
+
+        // przez cudzy projekt
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdB1, foreignTreeId)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Project not found"));
+        // przez wlasny projekt z podstawionym cudzym treeId
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, foreignTreeId)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Tree not found"));
+    }
+
+    @Test
+    void nonExistentTreeIsNotFound() throws Exception {
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, NON_EXISTENT_ID)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$").value("Tree not found"));
+    }
+
+    // --- brak zalogowania ---
+
+    @Test
+    void anonymousUserHasNoAccessToTreeApi() throws Exception {
+        long treeId = createTreeAs(userAccountA, projectIdA1, "1");
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdA1)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/projects/{projectId}/trees", projectIdA1)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"2\"}"))
+                .andExpect(status().isUnauthorized());
+        assertThat(treeRepository.count()).isEqualTo(1);
+    }
+}

@@ -29,6 +29,10 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Project name must not be blank': 'Project name is required.',
   'Project name must have at most 255 characters': 'Project name can have at most 255 characters.',
   'Project not found': 'This project does not exist or you do not have access to it.',
+  'Tree not found': 'This tree does not exist or you do not have access to it.',
+  'Inventory number is mandatory': 'Inventory number is required.',
+  'Inventory number must have at most 100 characters': 'Inventory number can have at most 100 characters.',
+  'Latin species name must have at most 255 characters': 'Latin species name can have at most 255 characters.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

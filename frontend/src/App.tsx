@@ -13,6 +13,8 @@ import { OfficialDashboardPage } from './pages/official/OfficialDashboardPage';
 import { ProjectPage } from './pages/projects/ProjectPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { ProjectWorkspaceSectionPlaceholder } from './pages/projects/ProjectWorkspaceSectionPlaceholder';
+import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
+import { TreePage } from './pages/trees/TreePage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SignInPage } from './pages/SignInPage';
@@ -47,8 +49,8 @@ export default function App() {
             <Route element={<RolePanelLayout panelRole="ARBORIST" />}>
               <Route index element={<ProjectsPage />} />
               <Route path=":projectId" element={<ProjectPage />}>
-                <Route index element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Trees"
-                  plannedModuleMessage="The trees module will be added in the next stage." />} />
+                <Route index element={<ProjectTreesSection />} />
+                <Route path="trees/:treeId" element={<TreePage />} />
                 <Route path="map" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Map"
                   plannedModuleMessage="The project map will be added in a later stage." />} />
                 <Route path="documentation" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Photos & documentation"

@@ -448,3 +448,38 @@ th.right, td.right { text-align: right; }
   border-color: var(--focus);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
 }
+
+/* ---------- Drzewa: lista w workspace i podglad drzewa ---------- */
+.section-header-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.section-header-row h2 { margin: 0; }
+.tree-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.tree-list li + li { border-top: 1px solid var(--border); }
+.tree-list-item {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: 0.15rem 1.25rem;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.tree-list-item:hover { background: var(--surface-muted); color: var(--text); }
+.tree-list-item:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus) 50%, transparent); outline-offset: -3px; }
+.tree-list-item-number { font-weight: 600; grid-row: span 2; }
+.tree-list-item-species { font-style: italic; }
+.tree-list-item-notes {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-details { display: grid; grid-template-columns: max-content 1fr; gap: 0.6rem 1.5rem; margin: 0; }
+.tree-details dt { color: var(--text-muted); }
+.tree-details dd { margin: 0; }
+.tree-details-notes { white-space: pre-line; }
+@media (max-width: 560px) {
+  .tree-list-item, .tree-details { grid-template-columns: 1fr; }
+  .tree-list-item-number { grid-row: auto; }
+  .tree-list-item-notes { grid-column: 1; }
+}
