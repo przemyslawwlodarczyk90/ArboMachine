@@ -15,6 +15,7 @@ public class TreeMapper {
                 tree.getInventoryNumber(),
                 tree.getSpeciesLatin(),
                 tree.getSpeciesPolish(),
+                tree.getTrunkCircumferenceCm(),
                 tree.getNotes(),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()

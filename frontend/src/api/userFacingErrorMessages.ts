@@ -34,6 +34,9 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Inventory number must have at most 100 characters': 'Inventory number can have at most 100 characters.',
   'Latin species name must have at most 255 characters': 'Latin species name can have at most 255 characters.',
   'Polish species name must have at most 255 characters': 'Polish species name can have at most 255 characters.',
+  'Trunk circumference must be a whole number of centimeters': 'Trunk circumference must be a whole number of centimeters.',
+  'Trunk circumference must be at least 1 cm': 'Trunk circumference must be between 1 and 5000 cm.',
+  'Trunk circumference must be at most 5000 cm': 'Trunk circumference must be between 1 and 5000 cm.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

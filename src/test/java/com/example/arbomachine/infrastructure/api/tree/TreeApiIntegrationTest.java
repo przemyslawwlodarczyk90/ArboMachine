@@ -451,6 +451,45 @@ class TreeApiIntegrationTest {
                 .andExpect(jsonPath("$.speciesPolish").value("Polish species name must have at most 255 characters"));
     }
 
+    @Test
+    void trunkCircumferenceIsStoredAsWholeCentimetersAndCanBeChangedAndCleared() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":314}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value(314)));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":5000}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value(5000));
+        assertThat(treeRepository.findById(treeId).orElseThrow().getTrunkCircumferenceCm()).isEqualTo(5000);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").doesNotExist());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getTrunkCircumferenceCm()).isNull();
+    }
+
+    @Test
+    void invalidTrunkCircumferenceIsRejectedAndTreeStaysIntact() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":120}")
+                .andExpect(status().isCreated()));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":123.7}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value("Trunk circumference must be a whole number of centimeters"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":0}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value("Trunk circumference must be at least 1 cm"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":-5}")
+                .andExpect(status().isBadRequest());
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":5001}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value("Trunk circumference must be at most 5000 cm"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"trunkCircumferenceCm\":\"abc\"}")
+                .andExpect(status().isBadRequest());
+
+        assertThat(treeRepository.findById(treeId).orElseThrow().getTrunkCircumferenceCm()).isEqualTo(120);
+    }
+
     // --- brak zalogowania ---
 
     @Test

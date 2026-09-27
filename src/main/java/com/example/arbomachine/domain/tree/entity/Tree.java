@@ -28,6 +28,10 @@ public class Tree {
     /** Techniczny limit nazwy polskiej = dlugosc kolumny species_polish. */
     public static final int MAXIMUM_SPECIES_POLISH_LENGTH = 255;
 
+    /** Zakres obwodu pnia w cm - ochrona przed literowkami (najwieksze drzewa swiata maja ok. 3000 cm). */
+    public static final int MINIMUM_TRUNK_CIRCUMFERENCE_CM = 1;
+    public static final int MAXIMUM_TRUNK_CIRCUMFERENCE_CM = 5000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -54,6 +58,13 @@ public class Tree {
     @Column(name = "species_polish", length = MAXIMUM_SPECIES_POLISH_LENGTH)
     private String speciesPolish;
 
+    /**
+     * Obwod pnia w centymetrach, liczba calkowita (model V1 - jeden pomiar, jeden pien, bez wysokosci pomiaru).
+     * Jednostka jest w nazwie pola i kolumny. Wiele pni / historia pomiarow = przyszly TreeTrunk / Measurement.
+     */
+    @Column(name = "trunk_circumference_cm")
+    private Integer trunkCircumferenceCm;
+
     /** Ogolna notatka pierwszego pionu - NIE docelowe miejsce na stan zdrowotny, zagrozenia czy zalecenia. */
     @Column(columnDefinition = "text")
     private String notes;
@@ -75,7 +86,7 @@ public class Tree {
 
     /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
     public TreeEditableAttributes editableAttributes() {
-        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, notes);
+        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, notes);
     }
 
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
@@ -88,6 +99,7 @@ public class Tree {
         this.inventoryNumber = attributes.inventoryNumber();
         this.speciesLatin = attributes.speciesLatin();
         this.speciesPolish = attributes.speciesPolish();
+        this.trunkCircumferenceCm = attributes.trunkCircumferenceCm();
         this.notes = attributes.notes();
     }
 }

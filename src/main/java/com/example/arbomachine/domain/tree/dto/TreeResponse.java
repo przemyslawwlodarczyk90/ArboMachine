@@ -9,6 +9,7 @@ public record TreeResponse(
         String inventoryNumber,
         String speciesLatin,
         String speciesPolish,
+        Integer trunkCircumferenceCm,
         String notes,
         Instant createdAt,
         Instant updatedAt

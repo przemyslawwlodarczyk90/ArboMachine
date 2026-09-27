@@ -25,6 +25,11 @@ export function TreeFormFields({ treeFormValues, errorMessageByFieldName, change
                          value={treeFormValues.speciesPolish}
                          onChange={(changeEvent) => changeFormField('speciesPolish', changeEvent.target.value)}
                          errorMessage={errorMessageByFieldName.speciesPolish} />
+      {/* Tekst z klawiatura numeryczna zamiast type="number" - ten zle obsluguje przecinek i pozwala na "e". */}
+      <LabeledInputField label="Trunk circumference (cm)" inputMode="numeric" placeholder="e.g. 314"
+                         value={treeFormValues.trunkCircumferenceCm}
+                         onChange={(changeEvent) => changeFormField('trunkCircumferenceCm', changeEvent.target.value)}
+                         errorMessage={errorMessageByFieldName.trunkCircumferenceCm} />
       <LabeledTextAreaField label="Notes" value={treeFormValues.notes}
                             onChange={(changeEvent) => changeFormField('notes', changeEvent.target.value)}
                             errorMessage={errorMessageByFieldName.notes} />

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,24 +43,26 @@ class CreateTreeHandlerTest {
 
     @Test
     void treeBelongsToOwnedProjectAndHasEqualCreationAndUpdateTime() {
-        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("1", "Quercus robur", "Dąb szypułkowy", "Example field note."));
+        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("1", "Quercus robur", "Dąb szypułkowy", new BigDecimal("314"), "Example field note."));
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getProject()).isSameAs(ownedProject);
         assertThat(createdTree.getSpeciesLatin()).isEqualTo("Quercus robur");
         assertThat(createdTree.getSpeciesPolish()).isEqualTo("Dąb szypułkowy");
+        assertThat(createdTree.getTrunkCircumferenceCm()).isEqualTo(314);
         assertThat(createdTree.getNotes()).isEqualTo("Example field note.");
         assertThat(createdTree.getCreatedAt()).isNotNull().isEqualTo(createdTree.getUpdatedAt());
     }
 
     @Test
     void trimsInventoryNumberAndStoresBlankOptionalFieldsAsNull() {
-        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", ""));
+        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", null, ""));
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getInventoryNumber()).isEqualTo("A-12");
         assertThat(createdTree.getSpeciesLatin()).isNull();
         assertThat(createdTree.getSpeciesPolish()).isNull();
+        assertThat(createdTree.getTrunkCircumferenceCm()).isNull();
         assertThat(createdTree.getNotes()).isNull();
     }
 }

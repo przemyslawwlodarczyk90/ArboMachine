@@ -8,6 +8,8 @@ export interface Tree {
   inventoryNumber: string;
   speciesLatin?: string | null;
   speciesPolish?: string | null;
+  /** obwod pnia w cm - liczba calkowita */
+  trunkCircumferenceCm?: number | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +23,7 @@ export interface TreeEditableFieldsRequest {
   inventoryNumber: string;
   speciesLatin?: string;
   speciesPolish?: string;
+  trunkCircumferenceCm?: number;
   notes?: string;
 }
 

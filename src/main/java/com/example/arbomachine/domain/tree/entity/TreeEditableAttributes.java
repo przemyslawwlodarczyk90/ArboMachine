@@ -9,5 +9,6 @@ public record TreeEditableAttributes(
         String inventoryNumber,
         String speciesLatin,
         String speciesPolish,
+        Integer trunkCircumferenceCm,
         String notes
 ) {}
