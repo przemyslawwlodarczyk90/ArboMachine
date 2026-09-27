@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 
@@ -17,7 +16,6 @@ import java.time.Instant;
 @Entity
 @Table(name = "tree", indexes = @Index(name = "idx_tree_project_id", columnList = "project_id"))
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Tree {
 
@@ -56,15 +54,29 @@ public class Tree {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public static Tree createInProject(Project project, String inventoryNumber, String speciesLatin, String notes,
-                                       Instant creationTime) {
+    public static Tree createInProject(Project project, TreeEditableAttributes initialAttributes, Instant creationTime) {
         Tree tree = new Tree();
         tree.project = project;
-        tree.inventoryNumber = inventoryNumber;
-        tree.speciesLatin = speciesLatin;
-        tree.notes = notes;
+        tree.applyEditableAttributes(initialAttributes);
         tree.createdAt = creationTime;
         tree.updatedAt = creationTime;
         return tree;
+    }
+
+    /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
+    public TreeEditableAttributes editableAttributes() {
+        return new TreeEditableAttributes(inventoryNumber, speciesLatin, notes);
+    }
+
+    /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
+    public void replaceEditableAttributes(TreeEditableAttributes newAttributes, Instant updateTime) {
+        applyEditableAttributes(newAttributes);
+        this.updatedAt = updateTime;
+    }
+
+    private void applyEditableAttributes(TreeEditableAttributes attributes) {
+        this.inventoryNumber = attributes.inventoryNumber();
+        this.speciesLatin = attributes.speciesLatin();
+        this.notes = attributes.notes();
     }
 }

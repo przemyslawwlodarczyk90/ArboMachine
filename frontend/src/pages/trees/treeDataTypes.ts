@@ -12,19 +12,18 @@ export interface Tree {
   updatedAt: string;
 }
 
-/** CreateTreeRequest - bez projectId (idzie w URL) i bez danych wlasciciela. */
-export interface CreateTreeRequest {
+/**
+ * Pola drzewa ustawiane przez uzytkownika (TreeEditableFieldsRequest w backendzie) - bez projectId (idzie w URL)
+ * i bez danych wlasciciela. Formularze zawsze wysylaja komplet pol; pominiete pole opcjonalne oznacza brak wartosci.
+ */
+export interface TreeEditableFieldsRequest {
   inventoryNumber: string;
   speciesLatin?: string;
   notes?: string;
 }
 
-/**
- * UpdateTreeRequest - formularz edycji zawsze wysyla KOMPLET edytowalnych pol.
- * Pusty gatunek / notatka (pominiete) oznaczaja wyczyszczenie wartosci na backendzie.
- */
-export interface UpdateTreeRequest {
-  inventoryNumber: string;
-  speciesLatin?: string;
-  notes?: string;
-}
+/** Body POST /api/projects/{projectId}/trees. */
+export type CreateTreeRequest = TreeEditableFieldsRequest;
+
+/** Body PATCH /api/projects/{projectId}/trees/{treeId} - pominiete pole opcjonalne czysci wartosc na backendzie. */
+export type UpdateTreeRequest = TreeEditableFieldsRequest;

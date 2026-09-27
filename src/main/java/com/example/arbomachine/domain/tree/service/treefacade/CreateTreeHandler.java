@@ -33,10 +33,7 @@ public class CreateTreeHandler {
         // Precyzja do mikrosekund = precyzja kolumny timestamp w PostgreSQL (jak przy projektach).
         Instant creationTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
         Tree newTree = Tree.createInProject(ownedProject,
-                TreeTextNormalizer.trimmedInventoryNumber(createTreeRequest.inventoryNumber()),
-                TreeTextNormalizer.trimmedOrNullWhenBlank(createTreeRequest.speciesLatin()),
-                TreeTextNormalizer.trimmedOrNullWhenBlank(createTreeRequest.notes()),
-                creationTime);
+                TreeEditableAttributesNormalizer.normalizedAttributesOf(createTreeRequest), creationTime);
         return treeMapper.toTreeResponse(treeRepository.save(newTree));
     }
 }

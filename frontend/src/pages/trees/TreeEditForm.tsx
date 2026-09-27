@@ -1,30 +1,13 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
-import { LabeledInputField } from '../../components/LabeledInputField';
-import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
 import type { Tree } from './treeDataTypes';
+import { TreeFormFields } from './TreeFormFields';
+import {
+  areTreeFormValuesEquivalent, toTreeEditableFieldsRequest, toTreeFormValues, validateTreeFormValues,
+  type TreeFormValues,
+} from './treeFormValues';
 import { treesApi } from './treesApi';
-
-interface TreeFormValues {
-  inventoryNumber: string;
-  speciesLatin: string;
-  notes: string;
-}
-
-/** Wartosci formularza z zapisanego drzewa - brakujace pola jako puste napisy (kontrolowane inputy). */
-const toTreeFormValues = (tree: Tree): TreeFormValues => ({
-  inventoryNumber: tree.inventoryNumber,
-  speciesLatin: tree.speciesLatin ?? '',
-  notes: tree.notes ?? '',
-});
-
-/** Porownanie po tych samych zasadach, co normalizacja na backendzie (trim), zeby Save nie aktywowal sie po spacji. */
-const normalizedFormValues = (formValues: TreeFormValues): TreeFormValues => ({
-  inventoryNumber: formValues.inventoryNumber.trim(),
-  speciesLatin: formValues.speciesLatin.trim(),
-  notes: formValues.notes.trim(),
-});
 
 /**
  * Tryb edycji karty drzewa. Po udanym PATCH oddaje zapisane drzewo (onTreeSaved) - bez dodatkowego GET.
@@ -43,10 +26,9 @@ export function TreeEditForm({ projectId, savedTree, onTreeSaved, cancelEditing 
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isSubmissionInProgress = useRef(false);
 
-  const hasUnsavedChanges = JSON.stringify(normalizedFormValues(treeFormValues))
-    !== JSON.stringify(normalizedFormValues(toTreeFormValues(savedTree)));
+  const hasUnsavedChanges = !areTreeFormValuesEquivalent(treeFormValues, toTreeFormValues(savedTree));
 
-  const updateFormField = (fieldName: keyof TreeFormValues) => (newValue: string) =>
+  const changeFormField = (fieldName: keyof TreeFormValues, newValue: string) =>
     setTreeFormValues((previousValues) => ({ ...previousValues, [fieldName]: newValue }));
 
   const submitTreeChanges = async (submitEvent: FormEvent) => {
@@ -54,21 +36,15 @@ export function TreeEditForm({ projectId, savedTree, onTreeSaved, cancelEditing 
     if (isSubmissionInProgress.current) return;
     setFormErrorMessage(null);
 
-    if (!treeFormValues.inventoryNumber.trim()) {
-      setErrorMessageByFieldName({ inventoryNumber: 'Inventory number is required.' });
-      return;
-    }
-    setErrorMessageByFieldName({});
+    const clientSideErrors = validateTreeFormValues(treeFormValues);
+    setErrorMessageByFieldName(clientSideErrors);
+    if (Object.keys(clientSideErrors).length) return;
 
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     try {
-      const normalizedValues = normalizedFormValues(treeFormValues);
-      const updatedTree = await treesApi.updateTreeOfProject(projectId, savedTree.id, {
-        inventoryNumber: normalizedValues.inventoryNumber,
-        speciesLatin: normalizedValues.speciesLatin || undefined,
-        notes: normalizedValues.notes || undefined,
-      });
+      const updatedTree = await treesApi.updateTreeOfProject(projectId, savedTree.id,
+        toTreeEditableFieldsRequest(treeFormValues));
       onTreeSaved(updatedTree);
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
@@ -86,16 +62,8 @@ export function TreeEditForm({ projectId, savedTree, onTreeSaved, cancelEditing 
     <form onSubmit={submitTreeChanges} className="form" noValidate>
       <h2>Edit tree {savedTree.inventoryNumber}</h2>
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
-      <LabeledInputField label="Inventory number *" autoFocus maxLength={100} value={treeFormValues.inventoryNumber}
-                         onChange={(changeEvent) => updateFormField('inventoryNumber')(changeEvent.target.value)}
-                         errorMessage={errorMessageByFieldName.inventoryNumber} />
-      <LabeledInputField label="Latin species" maxLength={255} placeholder="e.g. Quercus robur"
-                         value={treeFormValues.speciesLatin}
-                         onChange={(changeEvent) => updateFormField('speciesLatin')(changeEvent.target.value)}
-                         errorMessage={errorMessageByFieldName.speciesLatin} />
-      <LabeledTextAreaField label="Notes" value={treeFormValues.notes}
-                            onChange={(changeEvent) => updateFormField('notes')(changeEvent.target.value)}
-                            errorMessage={errorMessageByFieldName.notes} />
+      <TreeFormFields treeFormValues={treeFormValues} errorMessageByFieldName={errorMessageByFieldName}
+                      changeFormField={changeFormField} />
       <div className="form-actions">
         {/* Cancel zablokowany w trakcie zapisu - inaczej odpowiedz PATCH moglaby nadpisac porzucona edycje. */}
         <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Cancel</button>

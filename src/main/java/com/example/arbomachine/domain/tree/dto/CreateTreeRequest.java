@@ -18,4 +18,4 @@ public record CreateTreeRequest(
         String speciesLatin,
 
         String notes
-) {}
+) implements TreeEditableFieldsRequest {}

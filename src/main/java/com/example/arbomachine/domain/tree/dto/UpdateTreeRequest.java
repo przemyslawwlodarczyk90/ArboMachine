@@ -21,4 +21,4 @@ public record UpdateTreeRequest(
         String speciesLatin,
 
         String notes
-) {}
+) implements TreeEditableFieldsRequest {}
