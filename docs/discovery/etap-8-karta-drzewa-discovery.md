@@ -1,12 +1,33 @@
 # Etap 8 — discovery pól karty drzewa
 
-> **Status: DISCOVERY NIEWYKONANE.** Checkpoint z arborystą jeszcze się nie odbył.
-> Do czasu jego przeprowadzenia **żadne nowe pole nie jest implementowane**.
-> Ten dokument jest narzędziem do przeprowadzenia rozmowy i zapisania jej wyników,
-> a nie listą wymagań.
+> **Status: DISCOVERY Z ARBORYSTĄ NADAL NIEWYKONANE.**
+> Decyzja architektoniczna: nie wstrzymujemy prac - wdrożono roboczy **model Tree V1** (sekcja 0).
+> Rozmowa z arborystą (sekcje 1–7) służy teraz do **weryfikacji i korekty** V1, a nie do odblokowania implementacji.
 
-Model `Tree` po etapie 7 zawiera wyłącznie: `inventoryNumber` (wymagany), `speciesLatin` (opcjonalny), `notes` (opcjonalny),
-`createdAt`, `updatedAt`. Karta drzewa ma tryb podglądu i edycji (Save / Cancel).
+## 0. Model Tree V1 (wdrożony)
+
+Zasady: sensowny, prosty model relacyjny; pola niepewne są opcjonalne (nullable); bez JSON/EAV/dynamicznych pól;
+kolejne wymagania = kolejne małe zmiany schematu. Jedynym wymaganym identyfikatorem użytkowym jest `inventoryNumber`.
+
+| Pole | Kolumna | Typ | Jednostka | Zakres / limit | Wymagane |
+|------|---------|-----|-----------|----------------|----------|
+| inventoryNumber | `inventory_number` | text | — | 1–100 znaków | tak |
+| speciesLatin | `species_latin` | text | — | do 255 znaków | nie |
+| speciesPolish | `species_polish` | text | — | do 255 znaków | nie |
+| trunkCircumferenceCm | `trunk_circumference_cm` | integer | cm | 1–5000 | nie |
+| heightM | `height_m` | decimal (5,2) | m | >0 do 150 | nie |
+| crownDiameterM | `crown_diameter_m` | decimal (5,2) | m | >0 do 200 | nie |
+| notes | `notes` | text | — | bez limitu | nie |
+
+Decyzje V1 łatwe do zmiany później (do potwierdzenia z arborystą):
+- obwód jako liczba całkowita cm - bez wysokości pomiaru (np. 130 cm), bez pierśnicy;
+- jeden pień, jeden pomiar, bez historii i dokładności - wiele pni / historia → przyszły `TreeTrunk` / `Measurement`;
+- korona jako jeden wymiar - dwie osie (N-S, E-W) → osobna zmiana;
+- gatunek LAT i PL jako niezależne teksty - bez słownika `Species` i bez automatycznego wiązania;
+- zakresy pomiarów to ochrona przed literówkami, nie reguły biznesowe.
+
+Formularz ma kolejność: numer → gatunek LAT → gatunek PL → obwód → wysokość → korona → notatka (hipoteza V1,
+do sprawdzenia z arborystą w terenie).
 
 Proces (KAIZEN): **discovery → jedno potwierdzone pole → DB → backend → API → frontend → test → arborysta sprawdza → następne pole.**
 
@@ -113,19 +134,20 @@ Nie tworzymy enumów typu `GOOD/AVERAGE/BAD` ani `LOW/MEDIUM/HIGH`. Ustalić:
 - czy formularz zależy od rodzaju zlecenia,
 - czy lista wartości jest zamknięta i stabilna (warunek użycia enuma w Javie, 8.14).
 
-## 5. Klasyfikacja kandydatów (stan na dziś — bez rozmowy z arborystą)
+## 5. Klasyfikacja pól (stan na dziś — bez rozmowy z arborystą)
 
-Wszystkie poniższe pozycje to **hipotezy do omówienia**, nie wymagania. Żadna nie ma statusu CONFIRMED.
+„V1” = wdrożone jako rozsądne założenie robocze (decyzja architektoniczna), jeszcze **niepotwierdzone przez arborystę**.
+Żadne pole nie ma statusu CONFIRMED.
 
-| Pole (kandydat) | Status | Typ | Jednostka | Wymagane | Zaimplementowane |
-|-----------------|--------|-----|-----------|----------|------------------|
-| inventoryNumber | istniejące (etap 5) — reguły numeracji: NEEDS CLARIFICATION | text | — | tak | tak |
-| speciesLatin | istniejące (etap 5) — słownik / nazwa polska: NEEDS CLARIFICATION | text | — | nie | tak |
-| notes | istniejące (etap 5) | text | — | nie | tak |
-| nazwa polska gatunku | NEEDS CLARIFICATION | ? | — | ? | nie |
-| obwód / pierśnica pnia | NEEDS CLARIFICATION | ? (liczbowy?) | ? | ? | nie |
-| wysokość drzewa | NEEDS CLARIFICATION | ? (liczbowy?) | ? | ? | nie |
-| wymiar korony | NEEDS CLARIFICATION | ? | ? | ? | nie |
+| Pole | Status | Typ | Jednostka | Wymagane | Zaimplementowane |
+|------|--------|-----|-----------|----------|------------------|
+| inventoryNumber | V1 — reguły numeracji: NEEDS CLARIFICATION | text | — | tak | tak |
+| speciesLatin | V1 — słownik: NEEDS CLARIFICATION | text | — | nie | tak |
+| speciesPolish | V1 — słownik / wiązanie PL↔LAT: NEEDS CLARIFICATION | text | — | nie | tak |
+| trunkCircumferenceCm | V1 — wysokość pomiaru, pierśnica: NEEDS CLARIFICATION | integer | cm | nie | tak |
+| heightM | V1 — metoda i dokładność: NEEDS CLARIFICATION | decimal | m | nie | tak |
+| crownDiameterM | V1 — jedna czy dwie osie: NEEDS CLARIFICATION | decimal | m | nie | tak |
+| notes | V1 | text | — | nie | tak |
 | pomiary wielu pni | NEEDS CLARIFICATION | ? (osobna encja?) | ? | ? | nie |
 | stan / zdrowotność | NEEDS CLARIFICATION | ? | — | ? | nie |
 | VTA, poziom ryzyka | FUTURE | — | — | — | nie |

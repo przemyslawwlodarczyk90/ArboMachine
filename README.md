@@ -47,8 +47,9 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie projektu i workspace projektu
   (`/projects/:projectId`) z miejscem na moduły Drzewa / Mapa / Zdjęcia i dokumentacja
 - 🌳 **Drzewa projektu** - lista i dodawanie drzew oraz edytowalna karta drzewa (podgląd / edycja z Save i Cancel).
-  Kolejne pola drzewa dodajemy wyłącznie po discovery z arborystą - patrz
-  [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
+  Model **Tree V1**: numer inwentaryzacyjny, gatunek łaciński i polski, obwód pnia (cm), wysokość (m),
+  średnica korony (m), notatka. To roboczy model do rozwijania małymi krokami, nie docelowy model arborystyczny -
+  patrz [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
 
@@ -94,10 +95,11 @@ com.example.arbomachine
 │   └── exception   ProjectNotFoundException
 ├── domain.tree       (zależy od domain.project; własność drzewa = własność projektu)
 │   ├── entity      Tree (project -> Project; bez własnego ownera)
-│   ├── dto         CreateTreeRequest, UpdateTreeRequest, TreeResponse
+│   ├── entity      + TreeEditableAttributes (komplet pól edytowalnych - porównanie "czy coś się zmieniło")
+│   ├── dto         CreateTreeRequest, UpdateTreeRequest (oba: TreeEditableFieldsRequest), TreeResponse
 │   ├── facade      TreeFacade
 │   ├── service.treefacade  CreateTreeHandler, GetTreesOfProjectHandler, GetTreeHandler, UpdateTreeHandler,
-│   │                       FindTreeInProjectOwnedByCurrentUserHandler, TreeTextNormalizer
+│   │                       FindTreeInProjectOwnedByCurrentUserHandler, TreeEditableAttributesNormalizer
 │   ├── mapper      TreeMapper
 │   └── exception   TreeNotFoundException
 └── infrastructure
@@ -131,7 +133,8 @@ frontend/src
     ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
     │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
     ├── trees      ProjectTreesSection, NewTreeDialog, TreePage (orkiestracja), TreeDetailsView (podgląd),
-    │              TreeEditForm (edycja) + treesApi, treeDataTypes
+    │              TreeEditForm (edycja), TreeFormFields + treeFormValues (pola, wartości i walidacja wspólne
+    │              dla dodawania i edycji) + treesApi, treeDataTypes
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -167,6 +170,9 @@ Wymaga **JDK 25** (w IntelliJ: Project SDK = 25).
 ```bash
 ./mvnw spring-boot:run
 ```
+
+Backend to samo REST API - wejście na jego główny adres (`http://localhost:<port>/`) przekierowuje do Swagger UI.
+Aplikację (UI) otwiera się przez frontend - patrz punkt 4.
 
 Opcjonalne zmienne środowiskowe:
 
@@ -216,10 +222,10 @@ Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu
 | GET | `/api/projects` | każdy zalogowany | Tylko własne projekty (najnowsze pierwsze) |
 | GET | `/api/projects/{projectId}` | każdy zalogowany | Własny projekt; cudzy albo nieistniejący → 404 |
 | PATCH | `/api/projects/{projectId}` | każdy zalogowany | Zmiana `name` i/lub `description` własnego projektu; cudzy → 404 |
-| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, notes? }` → 201; cudzy/nieistniejący projekt → 404 |
+| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, speciesPolish?, trunkCircumferenceCm?, heightM?, crownDiameterM?, notes? }` → 201; cudzy/nieistniejący projekt → 404 |
 | GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
-| PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja `{ inventoryNumber, speciesLatin?, notes? }` → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięty/pusty gatunek lub notatka = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
+| PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
 że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
@@ -253,9 +259,12 @@ w schemacie `arbomachine`. Nowa tabela pojawia się przy pierwszym starcie aplik
 Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(id)` (indeks),
 `name varchar(255) NOT NULL`, `description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
 Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (indeks),
-`inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `notes text NULL`,
-`created_at` / `updated_at timestamptz NOT NULL`. Bez `owner_id` i bez unikalności numeru - zasady numeracji
-nie są jeszcze ustalone.
+`inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `species_polish varchar(255) NULL`,
+`trunk_circumference_cm integer NULL` (1-5000), `height_m numeric(5,2) NULL` (>0 do 150),
+`crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
+nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc
+`ddl-auto=update` dodaje je do istniejącej tabeli bez utraty danych.
 
 ## 🧭 Trasy frontendu projektów
 
