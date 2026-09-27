@@ -7,6 +7,7 @@ export interface Tree {
   /** uzytkowy identyfikator nadawany przez arboryste - tekst, np. "1", "A-12" */
   inventoryNumber: string;
   speciesLatin?: string | null;
+  speciesPolish?: string | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +20,7 @@ export interface Tree {
 export interface TreeEditableFieldsRequest {
   inventoryNumber: string;
   speciesLatin?: string;
+  speciesPolish?: string;
   notes?: string;
 }
 

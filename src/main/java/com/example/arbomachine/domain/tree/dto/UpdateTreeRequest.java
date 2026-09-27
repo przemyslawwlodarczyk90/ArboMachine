@@ -20,5 +20,8 @@ public record UpdateTreeRequest(
         @Size(max = Tree.MAXIMUM_SPECIES_LATIN_LENGTH, message = "Latin species name must have at most 255 characters")
         String speciesLatin,
 
+        @Size(max = Tree.MAXIMUM_SPECIES_POLISH_LENGTH, message = "Polish species name must have at most 255 characters")
+        String speciesPolish,
+
         String notes
 ) implements TreeEditableFieldsRequest {}

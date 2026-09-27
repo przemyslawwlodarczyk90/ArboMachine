@@ -410,6 +410,47 @@ class TreeApiIntegrationTest {
         assertThat(treeRepository.findById(treeId).orElseThrow().getInventoryNumber()).isEqualTo("1");
     }
 
+    // --- pola Tree V1 (ETAP 8) ---
+
+    @Test
+    void speciesPolishIsStoredOnCreateAndReturned() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1,
+                "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"  Dąb szypułkowy \"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.speciesPolish").value("Dąb szypułkowy")));
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(jsonPath("$.speciesPolish").value("Dąb szypułkowy"));
+    }
+
+    @Test
+    void speciesPolishCanBeChangedAndCleared() throws Exception {
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"Lipa drobnolistna\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speciesPolish").value("Lipa drobnolistna"));
+        assertThat(treeRepository.findById(treeId).orElseThrow().getSpeciesPolish()).isEqualTo("Lipa drobnolistna");
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"  \"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speciesPolish").doesNotExist());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getSpeciesPolish()).isNull();
+    }
+
+    @Test
+    void tooLongSpeciesPolishIsRejected() throws Exception {
+        String tooLongName = "d".repeat(Tree.MAXIMUM_SPECIES_POLISH_LENGTH + 1);
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"" + tooLongName + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.speciesPolish").value("Polish species name must have at most 255 characters"));
+        long treeId = createFullTreeAs(userAccountA, projectIdA1);
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"" + tooLongName + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.speciesPolish").value("Polish species name must have at most 255 characters"));
+    }
+
     // --- brak zalogowania ---
 
     @Test

@@ -8,6 +8,7 @@ public record TreeResponse(
         Long projectId,
         String inventoryNumber,
         String speciesLatin,
+        String speciesPolish,
         String notes,
         Instant createdAt,
         Instant updatedAt

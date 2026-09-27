@@ -25,6 +25,9 @@ public class Tree {
     /** Techniczny limit nazwy lacinskiej = dlugosc kolumny species_latin. */
     public static final int MAXIMUM_SPECIES_LATIN_LENGTH = 255;
 
+    /** Techniczny limit nazwy polskiej = dlugosc kolumny species_polish. */
+    public static final int MAXIMUM_SPECIES_POLISH_LENGTH = 255;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,6 +46,13 @@ public class Tree {
     /** Opcjonalna nazwa lacinska gatunku - zwykly tekst (bez slownika gatunkow na tym etapie). */
     @Column(name = "species_latin", length = MAXIMUM_SPECIES_LATIN_LENGTH)
     private String speciesLatin;
+
+    /**
+     * Opcjonalna polska nazwa gatunku (model V1) - zwykly tekst, niezalezny od nazwy lacinskiej.
+     * Bez slownika i bez automatycznego wiazania PL <-> LAT; slownik Species to ewentualnie osobna zmiana modelu.
+     */
+    @Column(name = "species_polish", length = MAXIMUM_SPECIES_POLISH_LENGTH)
+    private String speciesPolish;
 
     /** Ogolna notatka pierwszego pionu - NIE docelowe miejsce na stan zdrowotny, zagrozenia czy zalecenia. */
     @Column(columnDefinition = "text")
@@ -65,7 +75,7 @@ public class Tree {
 
     /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
     public TreeEditableAttributes editableAttributes() {
-        return new TreeEditableAttributes(inventoryNumber, speciesLatin, notes);
+        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, notes);
     }
 
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
@@ -77,6 +87,7 @@ public class Tree {
     private void applyEditableAttributes(TreeEditableAttributes attributes) {
         this.inventoryNumber = attributes.inventoryNumber();
         this.speciesLatin = attributes.speciesLatin();
+        this.speciesPolish = attributes.speciesPolish();
         this.notes = attributes.notes();
     }
 }

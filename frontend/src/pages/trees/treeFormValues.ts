@@ -7,12 +7,14 @@ import type { Tree, TreeEditableFieldsRequest } from './treeDataTypes';
 export interface TreeFormValues {
   inventoryNumber: string;
   speciesLatin: string;
+  speciesPolish: string;
   notes: string;
 }
 
 export const emptyTreeFormValues: TreeFormValues = {
   inventoryNumber: '',
   speciesLatin: '',
+  speciesPolish: '',
   notes: '',
 };
 
@@ -20,6 +22,7 @@ export const emptyTreeFormValues: TreeFormValues = {
 export const toTreeFormValues = (tree: Tree): TreeFormValues => ({
   inventoryNumber: tree.inventoryNumber,
   speciesLatin: tree.speciesLatin ?? '',
+  speciesPolish: tree.speciesPolish ?? '',
   notes: tree.notes ?? '',
 });
 
@@ -29,6 +32,7 @@ const trimmedOrUndefined = (fieldValue: string) => fieldValue.trim() || undefine
 export const toTreeEditableFieldsRequest = (formValues: TreeFormValues): TreeEditableFieldsRequest => ({
   inventoryNumber: formValues.inventoryNumber.trim(),
   speciesLatin: trimmedOrUndefined(formValues.speciesLatin),
+  speciesPolish: trimmedOrUndefined(formValues.speciesPolish),
   notes: trimmedOrUndefined(formValues.notes),
 });
 

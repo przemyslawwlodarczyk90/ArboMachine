@@ -8,5 +8,6 @@ package com.example.arbomachine.domain.tree.entity;
 public record TreeEditableAttributes(
         String inventoryNumber,
         String speciesLatin,
+        String speciesPolish,
         String notes
 ) {}

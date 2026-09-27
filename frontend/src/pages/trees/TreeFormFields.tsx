@@ -21,6 +21,10 @@ export function TreeFormFields({ treeFormValues, errorMessageByFieldName, change
                          value={treeFormValues.speciesLatin}
                          onChange={(changeEvent) => changeFormField('speciesLatin', changeEvent.target.value)}
                          errorMessage={errorMessageByFieldName.speciesLatin} />
+      <LabeledInputField label="Polish species" maxLength={255} placeholder="e.g. dąb szypułkowy"
+                         value={treeFormValues.speciesPolish}
+                         onChange={(changeEvent) => changeFormField('speciesPolish', changeEvent.target.value)}
+                         errorMessage={errorMessageByFieldName.speciesPolish} />
       <LabeledTextAreaField label="Notes" value={treeFormValues.notes}
                             onChange={(changeEvent) => changeFormField('notes', changeEvent.target.value)}
                             errorMessage={errorMessageByFieldName.notes} />

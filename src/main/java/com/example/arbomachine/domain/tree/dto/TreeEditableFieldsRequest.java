@@ -10,5 +10,7 @@ public interface TreeEditableFieldsRequest {
 
     String speciesLatin();
 
+    String speciesPolish();
+
     String notes();
 }

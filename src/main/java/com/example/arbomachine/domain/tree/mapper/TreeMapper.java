@@ -14,6 +14,7 @@ public class TreeMapper {
                 tree.getProject().getId(),
                 tree.getInventoryNumber(),
                 tree.getSpeciesLatin(),
+                tree.getSpeciesPolish(),
                 tree.getNotes(),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()

@@ -17,6 +17,7 @@ final class TreeEditableAttributesNormalizer {
         return new TreeEditableAttributes(
                 treeEditableFieldsRequest.inventoryNumber().trim(),
                 trimmedOrNullWhenBlank(treeEditableFieldsRequest.speciesLatin()),
+                trimmedOrNullWhenBlank(treeEditableFieldsRequest.speciesPolish()),
                 trimmedOrNullWhenBlank(treeEditableFieldsRequest.notes())
         );
     }
