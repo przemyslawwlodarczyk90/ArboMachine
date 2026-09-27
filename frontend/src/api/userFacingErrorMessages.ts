@@ -25,6 +25,10 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Token is mandatory': 'The link is missing its token.',
   'User data is mandatory': 'Fill in your details.',
   'Account type is mandatory': 'Choose an account type.',
+  'Project name is mandatory': 'Project name is required.',
+  'Project name must not be blank': 'Project name is required.',
+  'Project name must have at most 255 characters': 'Project name can have at most 255 characters.',
+  'Project not found': 'This project does not exist or you do not have access to it.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

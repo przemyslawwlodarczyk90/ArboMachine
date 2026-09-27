@@ -14,6 +14,7 @@ interface PanelNavigationLink {
 const NAVIGATION_LINKS_BY_ROLE: Record<UserRole, PanelNavigationLink[]> = {
   ARBORIST: [
     { path: '/arborist', label: 'Dashboard', matchExactPathOnly: true },
+    { path: '/projects', label: 'Projects' },
     { path: '/arborist/profile', label: 'My profile' },
   ],
   OFFICIAL: [

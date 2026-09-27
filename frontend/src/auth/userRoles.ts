@@ -27,11 +27,19 @@ export const REGISTRATION_ACCOUNT_TYPE_OPTIONS: { role: AssignableUserRole; disp
   },
 ];
 
+/** Sciezki nalezace do panelu danej roli (poza strona glowna panelu - np. projekty arborysty). */
+const PANEL_PATH_PREFIXES_BY_ROLE: Record<UserRole, string[]> = {
+  ARBORIST: ['/arborist', '/projects'],
+  OFFICIAL: ['/official'],
+  ADMIN: ['/admin'],
+};
+
 /**
  * Dokad przekierowac po zalogowaniu: na strone, z ktorej uzytkownika wyrzucilo do logowania,
  * ale tylko jesli nalezy do JEGO panelu - inaczej na glowna jego panelu (zeby nie trafil na 403).
  */
 export function resolvePanelPathAfterSignIn(role: UserRole, pathBeforeSignIn?: string): string {
-  const panelHomePath = PANEL_HOME_PATH_BY_ROLE[role];
-  return pathBeforeSignIn && pathBeforeSignIn.startsWith(panelHomePath) ? pathBeforeSignIn : panelHomePath;
+  const pathBelongsToRolePanel = !!pathBeforeSignIn
+    && PANEL_PATH_PREFIXES_BY_ROLE[role].some((panelPathPrefix) => pathBeforeSignIn.startsWith(panelPathPrefix));
+  return pathBelongsToRolePanel ? pathBeforeSignIn! : PANEL_HOME_PATH_BY_ROLE[role];
 }

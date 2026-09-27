@@ -6,8 +6,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -39,8 +37,11 @@ public class Project {
     @Column(nullable = false, length = MAXIMUM_NAME_LENGTH)
     private String name;
 
-    /** Opcjonalny, dowolnie dlugi opis - w PostgreSQL kolumna typu text. */
-    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    /**
+     * Opcjonalny, dowolnie dlugi opis - kolumna typu text. Celowo zwykle mapowanie String (wiazane jako VARCHAR):
+     * {@code @JdbcTypeCode(LONG32VARCHAR)} powodowal w PostgreSQL blad przy zapisie null ("Unable to bind parameter").
+     */
+    @Column(columnDefinition = "text")
     private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -33,6 +33,10 @@ export function registerUnauthorizedResponseHandler(handler: (() => void) | null
 }
 
 async function convertErrorResponseToApiRequestError(errorResponse: Response): Promise<ApiRequestError> {
+  // Tresc bledow 5xx to szczegoly techniczne serwera (np. "Internal Server Error", stack trace) - nie pokazujemy jej.
+  if (errorResponse.status >= 500) {
+    return new ApiRequestError(errorResponse.status, defaultMessageForHttpStatus(errorResponse.status));
+  }
   const responseText = await errorResponse.text();
   let responseBody: unknown = responseText;
   try {

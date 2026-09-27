@@ -44,6 +44,8 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 🔐 **Logowanie JWT**
 - 🔁 **Reset hasła** - jednorazowy link mailem, ważny 30 min
 - 🧭 **Trzy panele ról** z osobnym prefiksem ścieżek backendu dla każdej roli
+- 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie projektu i workspace projektu
+  (`/projects/:projectId`) z miejscem na moduły Drzewa / Mapa / Zdjęcia i dokumentacja
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
 
@@ -97,6 +99,8 @@ frontend/src
 ├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
 └── pages
     ├── arborist   ArboristDashboardPage + arboristPanelApi
+    ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
+    │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -208,3 +212,16 @@ Brak Flyway/Liquibase - schemat tworzy i aktualizuje Hibernate (`spring.jpa.hibe
 w schemacie `arbomachine`. Nowa tabela pojawia się przy pierwszym starcie aplikacji po dodaniu encji.
 Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(id)` (indeks),
 `name varchar(255) NOT NULL`, `description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+
+## 🧭 Trasy frontendu projektów
+
+| Trasa | Dostęp | Zawartość |
+|---|---|---|
+| `/projects` | ARBORIST | Lista własnych projektów, przycisk „New project” (okno tworzenia) |
+| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Trees” (placeholder) |
+| `/projects/:projectId/map` | ARBORIST | Sekcja „Map” (placeholder, bez biblioteki mapowej) |
+| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Photos & documentation” (placeholder) |
+
+Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
+Nowy moduł projektu (np. drzewa) dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
+bez zmian w `ProjectPage`.
