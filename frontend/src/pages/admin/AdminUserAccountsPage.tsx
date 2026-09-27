@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../../api/arboMachineApiClient';
+import { ApiRequestError } from '../../api/httpClient';
+import { adminUserAccountsApi } from './adminUserAccountsApi';
 import type { AssignableUserRole, UserAccount, UserRole } from '../../api/apiDataTypes';
 import { useAuthentication } from '../../auth/AuthenticationContext';
 import { USER_ROLE_DISPLAY_NAMES } from '../../auth/userRoles';
@@ -54,7 +55,7 @@ export function AdminUserAccountsPage() {
   const loadUserAccounts = useCallback(() => {
     setLoadingErrorMessage(null);
     setLoadedUserAccounts(null);
-    arboMachineApi.admin.listUserAccounts(selectedRoleFilter || undefined)
+    adminUserAccountsApi.listUserAccounts(selectedRoleFilter || undefined)
       .then(setLoadedUserAccounts)
       .catch((requestError) =>
         setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Unexpected error.'));
@@ -183,7 +184,7 @@ export function AdminUserAccountsPage() {
                                   onChange={(changeEvent) => {
                                     const newRole = changeEvent.target.value as AssignableUserRole;
                                     runAdminActionOnAccount(userAccount,
-                                      () => arboMachineApi.admin.changeUserRole(userAccount.id, newRole),
+                                      () => adminUserAccountsApi.changeUserRole(userAccount.id, newRole),
                                       `${fullNameOf(userAccount)} is now ${USER_ROLE_DISPLAY_NAMES[newRole].toLowerCase()}.`);
                                   }}>
                             <option value="ARBORIST">Arborist</option>
@@ -204,7 +205,7 @@ export function AdminUserAccountsPage() {
                             </button>
                             <button className="btn btn-sm btn-danger" disabled={isActionInProgress}
                                     onClick={() => runAdminActionOnAccount(userAccount,
-                                      () => arboMachineApi.admin.deleteUserAccount(userAccount.id),
+                                      () => adminUserAccountsApi.deleteUserAccount(userAccount.id),
                                       `${fullNameOf(userAccount)} has been deleted.`)}>
                               Yes, delete
                             </button>
@@ -218,14 +219,14 @@ export function AdminUserAccountsPage() {
                             {!userAccount.emailConfirmed && (
                               <button className="btn btn-sm btn-secondary" disabled={isActionInProgress}
                                       onClick={() => runAdminActionOnAccount(userAccount,
-                                        () => arboMachineApi.admin.confirmEmailOnUsersBehalf(userAccount.id),
+                                        () => adminUserAccountsApi.confirmEmailOnUsersBehalf(userAccount.id),
                                         `${fullNameOf(userAccount)}'s e-mail has been confirmed.`)}>
                                 Confirm e-mail
                               </button>
                             )}
                             <button className="btn btn-sm btn-secondary" disabled={isActionInProgress}
                                     onClick={() => runAdminActionOnAccount(userAccount,
-                                      () => arboMachineApi.admin.setAccountLockedByAdmin(userAccount.id, !userAccount.lockedByAdmin),
+                                      () => adminUserAccountsApi.setAccountLockedByAdmin(userAccount.id, !userAccount.lockedByAdmin),
                                       `${fullNameOf(userAccount)} has been ${userAccount.lockedByAdmin ? 'unlocked' : 'locked'}.`)}>
                               {userAccount.lockedByAdmin ? 'Unlock' : 'Lock'}
                             </button>
@@ -258,7 +259,7 @@ export function AdminUserAccountsPage() {
               editedAccount={accountBeingEdited}
               closeForm={() => setAccountBeingEdited(null)}
               saveProfile={async (updatedProfile) => {
-                const savedAccount = await arboMachineApi.admin.updateUserProfile(accountBeingEdited.id, updatedProfile);
+                const savedAccount = await adminUserAccountsApi.updateUserProfile(accountBeingEdited.id, updatedProfile);
                 replaceAccountInList(savedAccount);
                 setAccountBeingEdited(savedAccount);
                 return savedAccount;

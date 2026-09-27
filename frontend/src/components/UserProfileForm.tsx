@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { ApiRequestError } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
 import type { UserAccount, UserProfile } from '../api/apiDataTypes';
 import { toUserProfileRequestPayload } from '../pages/userProfileRequestPayload';
 import { Alert, type AlertVariant } from './Alert';

@@ -59,16 +59,47 @@ com.example.arbomachine
 │   ├── dto         UserProfileDto, UserAccountDto, LoginRequestDto, ...
 │   ├── service     UserRegistrationService, UserLoginService, EmailConfirmationService,
 │   │               PasswordResetService, UserProfileUpdateService, UserAccountDeletionService,
-│   │               UserAccountQueryService, AdminUserAccountManagementService
+│   │               UserAccountQueryService, AdminUserAccountManagementService, RolePanelWelcomeService,
+│   │               UserAccountDeletionGuard (punkt rozszerzenia dla innych modułów)
 │   ├── facade      UserAccountFacade - operacje użytkownika na WŁASNYM koncie
 │   ├── mapper      UserAccountMapper
 │   └── exception   wyjątki domenowe (każdy opisuje swój status HTTP)
+├── domain.project
+│   ├── entity      Project (owner -> UserAccount)
+│   ├── dto         CreateProjectRequest, UpdateProjectRequest, ProjectResponse
+│   ├── service     ProjectService (punkt wejścia modułu), ProjectCreationService, ProjectQueryService,
+│   │               ProjectUpdateService, ProjectOwnerAccountDeletionGuard
+│   ├── mapper      ProjectMapper
+│   └── exception   ProjectNotFoundException
 └── infrastructure
-    ├── api         UserAccountController, AdminUserAccountController, RolePanelController,
-    │               ApiExceptionHandler
+    ├── api         ApiExceptionHandler (wspólny) + podpakiety modułów:
+    │   ├── user      UserAccountController
+    │   ├── admin     AdminUserAccountController, AdminPanelController
+    │   ├── arborist  ArboristPanelController
+    │   ├── official  OfficialPanelController
+    │   └── project   ProjectController, ProjectApiExceptionHandler
     ├── security    SecurityConfig (reguły dostępu), JwtTokenService, JwtAuthenticationFilter, ...
     ├── repository  repozytoria Spring Data
     └── service     EmailSenderService (maile z szablonów Thymeleaf)
+```
+
+Każdy moduł ma własne pliki i nie sięga do wnętrza innych modułów. Moduł projektów korzysta z modułu
+użytkowników tylko przez `UserAccountQueryService`, a blokadę usuwania kont dostarcza przez interfejs
+`UserAccountDeletionGuard` - moduł użytkowników nie wie nic o projektach.
+
+## 🗂️ Struktura frontendu
+
+```
+frontend/src
+├── api          httpClient (wspólna warstwa HTTP + JWT), authenticationApi, currentUserAccountApi,
+│                apiDataTypes, userFacingErrorMessages
+├── auth         AuthenticationContext (sesja, logowanie), routeGuards, userRoles
+├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
+└── pages
+    ├── arborist   ArboristDashboardPage + arboristPanelApi
+    ├── official   OfficialDashboardPage + officialPanelApi
+    ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
+    └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
 ```
 
 ---
@@ -144,8 +175,14 @@ Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu
 | PATCH | `/api/admin/users/{userAccountId}/locked` | ADMIN | `{ lockedByAdmin: true \| false }` |
 | POST | `/api/admin/users/{userAccountId}/confirm-email` | ADMIN | Potwierdzenie e-maila w imieniu użytkownika |
 | DELETE | `/api/admin/users/{userAccountId}` | ADMIN | Usunięcie konta |
+| POST | `/api/projects` | każdy zalogowany | Nowy projekt `{ name, description? }` → 201; właścicielem zostaje zalogowany użytkownik |
+| GET | `/api/projects` | każdy zalogowany | Tylko własne projekty (najnowsze pierwsze) |
+| GET | `/api/projects/{projectId}` | każdy zalogowany | Własny projekt; cudzy albo nieistniejący → 404 |
+| PATCH | `/api/projects/{projectId}` | każdy zalogowany | Zmiana `name` i/lub `description` własnego projektu; cudzy → 404 |
 
-Brak tokenu → 401, zła rola → 403.
+Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
+że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
+polityka do czasu ustalenia archiwizacji / przenoszenia własności).
 
 ---
 
@@ -161,3 +198,13 @@ Brak tokenu → 401, zła rola → 403.
   przepuszcza wszystkie żądania - dzięki temu sprawdzają logikę, a nie uprawnienia.
 - `JwtTokenServiceTest` pilnuje m.in., żeby czas wystawienia tokenu nie wypadał w przyszłości
   (wcześniejszy błąd strefy czasowej).
+- `ProjectApiIntegrationTest` i `ProjectOwnerAccountDeletionIntegrationTest` przechodzą pełną ścieżkę
+  API projektów na prawdziwym `SecurityConfig` i prawdziwych tokenach JWT (użytkownicy A i B: własność,
+  walidacja, brak dostępu dla niezalogowanych, blokada usuwania konta z projektami).
+
+## 🗄️ Schemat bazy
+
+Brak Flyway/Liquibase - schemat tworzy i aktualizuje Hibernate (`spring.jpa.hibernate.ddl-auto=update`)
+w schemacie `arbomachine`. Nowa tabela pojawia się przy pierwszym starcie aplikacji po dodaniu encji.
+Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(id)` (indeks),
+`name varchar(255) NOT NULL`, `description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../../api/arboMachineApiClient';
-import type { RolePanelWelcome, UserAccountStatistics } from '../../api/apiDataTypes';
+import { ApiRequestError } from '../../api/httpClient';
+import { adminPanelApi } from './adminPanelApi';
+import type { RolePanelWelcome } from '../../api/apiDataTypes';
+import type { UserAccountStatistics } from './adminDataTypes';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 
@@ -12,7 +14,7 @@ export function AdminDashboardPage() {
   const [loadingErrorMessage, setLoadingErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([arboMachineApi.getRolePanelWelcome('ADMIN'), arboMachineApi.admin.getUserAccountStatistics()])
+    Promise.all([adminPanelApi.getAdminPanelWelcome(), adminPanelApi.getUserAccountStatistics()])
       .then(([loadedPanelWelcome, loadedStatistics]) => {
         setPanelWelcome(loadedPanelWelcome);
         setAccountStatistics(loadedStatistics);

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
-import type { RolePanelWelcome, UserRole } from '../api/apiDataTypes';
+import { ApiRequestError } from '../api/httpClient';
+import type { RolePanelWelcome } from '../api/apiDataTypes';
 import { Alert } from './Alert';
 import { LoadingSpinner } from './LoadingSpinner';
 
@@ -10,11 +10,12 @@ export interface PlannedPanelModule {
 }
 
 /**
- * Wspolny pulpit arborysty i urzednika: powitanie z endpointu panelu danej roli (przy okazji
- * potwierdza, ze backend wpuszcza te role) oraz karty modulow planowanych dla tego panelu.
+ * Wspolny pulpit arborysty i urzednika: powitanie z endpointu panelu (przy okazji potwierdza, ze backend
+ * wpuszcza te role) oraz karty planowanych modulow. Komponent nie zna zadnego panelu - funkcje pobierajaca
+ * powitanie dostaje od strony danego modulu.
  */
-export function RoleDashboardWithPlannedModules({ panelRole, introductionText, plannedModules, children }: {
-  panelRole: UserRole;
+export function RoleDashboardWithPlannedModules({ loadPanelWelcome, introductionText, plannedModules, children }: {
+  loadPanelWelcome: () => Promise<RolePanelWelcome>;
   introductionText: string;
   plannedModules: PlannedPanelModule[];
   children?: ReactNode;
@@ -23,11 +24,11 @@ export function RoleDashboardWithPlannedModules({ panelRole, introductionText, p
   const [loadingErrorMessage, setLoadingErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    arboMachineApi.getRolePanelWelcome(panelRole)
+    loadPanelWelcome()
       .then(setPanelWelcome)
       .catch((requestError) =>
         setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Unexpected error.'));
-  }, [panelRole]);
+  }, [loadPanelWelcome]);
 
   return (
     <div className="stack-lg">

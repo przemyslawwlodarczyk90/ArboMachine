@@ -1,4 +1,4 @@
-package com.example.arbomachine.infrastructure.api;
+package com.example.arbomachine.infrastructure.api.user;
 
 import com.example.arbomachine.domain.user.dto.UserProfileDto;
 import com.example.arbomachine.domain.user.enums.AssignableUserRole;

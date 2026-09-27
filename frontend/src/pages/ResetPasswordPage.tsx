@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
+import { authenticationApi } from '../api/authenticationApi';
 import { Alert } from '../components/Alert';
 import { AuthCardPageLayout } from '../components/AuthCardPageLayout';
 import { LabeledInputField } from '../components/LabeledInputField';
@@ -25,7 +26,7 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     if (!resetToken) return;
-    arboMachineApi.validatePasswordResetToken(resetToken)
+    authenticationApi.validatePasswordResetToken(resetToken)
       .then(() => setTokenValidationStatus('valid'))
       .catch((validationError) => {
         setTokenValidationStatus('invalid');
@@ -42,7 +43,7 @@ export function ResetPasswordPage() {
 
     setIsSaving(true);
     try {
-      await arboMachineApi.resetPasswordUsingToken(resetToken, newPassword);
+      await authenticationApi.resetPasswordUsingToken(resetToken, newPassword);
       navigate('/login', {
         replace: true,
         state: { noticeMessage: 'Your password has been changed. Sign in with the new password.' },

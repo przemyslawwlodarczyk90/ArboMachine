@@ -21,7 +21,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>rejestracja, logowanie, potwierdzenie e-maila i reset hasla - publiczne,</li>
  *   <li>/api/admin/** - tylko ADMIN (jedyne miejsce, w ktorym mozna ruszac cudze konta),</li>
  *   <li>/api/arborist/** - tylko ARBORIST, /api/official/** - tylko OFFICIAL,</li>
- *   <li>/api/users/** (wlasne konto) - kazdy zalogowany.</li>
+ *   <li>/api/users/** (wlasne konto) - kazdy zalogowany,</li>
+ *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje modul projektu (ProjectQueryService).</li>
  * </ul>
  * Brak tokenu = 401, zla rola = 403.
  */
@@ -51,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/arborist/**").hasRole("ARBORIST")
                         .requestMatchers("/api/official/**").hasRole("OFFICIAL")
                         .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/projects", "/api/projects/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session

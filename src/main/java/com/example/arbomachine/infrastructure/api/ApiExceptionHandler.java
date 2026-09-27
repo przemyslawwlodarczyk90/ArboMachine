@@ -58,6 +58,12 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
     }
 
+    /** Inny modul (np. projekty) nie pozwala usunac konta, bo naleza do niego jego dane. */
+    @ExceptionHandler(UserAccountDeletionBlockedException.class)
+    public ResponseEntity<String> handleUserAccountDeletionBlocked(UserAccountDeletionBlockedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
+    }
+
     /** Np. "Email cannot be changed" przy edycji profilu. */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException exception) {

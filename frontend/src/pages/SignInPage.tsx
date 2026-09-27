@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ApiRequestError } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { resolvePanelPathAfterSignIn } from '../auth/userRoles';
 import { Alert } from '../components/Alert';

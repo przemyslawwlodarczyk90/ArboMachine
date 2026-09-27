@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
+import { authenticationApi } from '../api/authenticationApi';
 import { Alert } from '../components/Alert';
 import { AuthCardPageLayout } from '../components/AuthCardPageLayout';
 import { LabeledInputField } from '../components/LabeledInputField';
@@ -17,7 +18,7 @@ export function ForgotPasswordPage() {
     setRequestError(null);
     setIsSending(true);
     try {
-      await arboMachineApi.requestPasswordResetLink(email.trim());
+      await authenticationApi.requestPasswordResetLink(email.trim());
       setEmailLinkWasSentTo(email.trim());
     } catch (sendingError) {
       setRequestError(sendingError instanceof ApiRequestError ? sendingError : new ApiRequestError(0, 'Unexpected error.'));

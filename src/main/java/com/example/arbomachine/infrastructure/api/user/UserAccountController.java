@@ -1,4 +1,4 @@
-package com.example.arbomachine.infrastructure.api;
+package com.example.arbomachine.infrastructure.api.user;
 
 import com.example.arbomachine.domain.user.dto.LoginRequestDto;
 import com.example.arbomachine.domain.user.dto.LoginResponseDto;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Publiczne endpointy kont (rejestracja, logowanie, potwierdzenie e-maila, reset hasla) oraz obsluga
  * WLASNEGO konta zalogowanego uzytkownika (/me). Operacje na cudzych kontach sa tylko w
- * {@link AdminUserAccountController}.
+ * {@link com.example.arbomachine.infrastructure.api.admin.AdminUserAccountController}.
  */
 @RestController
 @RequestMapping("/api/users")

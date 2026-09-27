@@ -1,15 +1,7 @@
 import { toUserFacingErrorMessage } from './userFacingErrorMessages';
-import type {
-  AssignableUserRole,
-  LoginRequest,
-  LoginResponse,
-  RolePanelWelcome,
-  UserAccount,
-  UserAccountStatistics,
-  UserProfile,
-  UserRegistrationRequest,
-  UserRole,
-} from './apiDataTypes';
+
+// Wspolna warstwa HTTP dla wszystkich modulow. Nie zna zadnych konkretnych endpointow -
+// te zyja w plikach *Api.ts poszczegolnych modulow.
 
 const ACCESS_TOKEN_STORAGE_KEY = 'arbomachine.accessToken';
 
@@ -77,14 +69,15 @@ function defaultMessageForHttpStatus(httpStatus: number): string {
   return `Request failed (${httpStatus}).`;
 }
 
-interface ApiRequestOptions {
+export interface ApiRequestOptions {
   httpMethod?: string;
   requestBody?: unknown;
   /** dolacz naglowek Authorization z zapisanym tokenem */
   sendAccessToken?: boolean;
 }
 
-async function sendApiRequest<ResponseType>(
+/** Wysyla zadanie JSON; rzuca ApiRequestError przy odpowiedzi innej niz 2xx albo braku polaczenia. */
+export async function sendApiRequest<ResponseType>(
   path: string,
   { httpMethod = 'GET', requestBody, sendAccessToken = false }: ApiRequestOptions = {},
 ): Promise<ResponseType> {
@@ -120,79 +113,3 @@ async function sendApiRequest<ResponseType>(
     return responseText as ResponseType;
   }
 }
-
-const PANEL_WELCOME_PATH_BY_ROLE: Record<UserRole, string> = {
-  ARBORIST: '/api/arborist/panel',
-  OFFICIAL: '/api/official/panel',
-  ADMIN: '/api/admin/panel',
-};
-
-/** Wszystkie wywolania backendu ArboMachine w jednym miejscu. */
-export const arboMachineApi = {
-  // --- publiczne ---
-  registerNewUserAccount: (registrationRequest: UserRegistrationRequest) =>
-    sendApiRequest<string>('/api/users/register', { httpMethod: 'POST', requestBody: registrationRequest }),
-
-  signIn: (loginRequest: LoginRequest) =>
-    sendApiRequest<LoginResponse>('/api/users/login', { httpMethod: 'POST', requestBody: loginRequest }),
-
-  confirmEmailUsingToken: (confirmationToken: string) =>
-    sendApiRequest<string>(`/api/users/confirm?token=${encodeURIComponent(confirmationToken)}`),
-
-  requestPasswordResetLink: (email: string) =>
-    sendApiRequest<string>('/api/users/password-reset/request', { httpMethod: 'POST', requestBody: { email } }),
-
-  validatePasswordResetToken: (resetToken: string) =>
-    sendApiRequest<string>(`/api/users/password-reset/validate?token=${encodeURIComponent(resetToken)}`),
-
-  resetPasswordUsingToken: (resetToken: string, newPassword: string) =>
-    sendApiRequest<string>('/api/users/password-reset/confirm', {
-      httpMethod: 'POST',
-      requestBody: { resetToken, newPassword },
-    }),
-
-  // --- wlasne konto (kazda rola) ---
-  getCurrentUserAccount: () =>
-    sendApiRequest<UserAccount>('/api/users/me', { sendAccessToken: true }),
-
-  updateCurrentUserProfile: (updatedProfile: UserProfile) =>
-    sendApiRequest<UserAccount>('/api/users/me', { httpMethod: 'PUT', requestBody: updatedProfile, sendAccessToken: true }),
-
-  deleteCurrentUserAccount: () =>
-    sendApiRequest<void>('/api/users/me', { httpMethod: 'DELETE', sendAccessToken: true }),
-
-  getRolePanelWelcome: (role: UserRole) =>
-    sendApiRequest<RolePanelWelcome>(PANEL_WELCOME_PATH_BY_ROLE[role], { sendAccessToken: true }),
-
-  // --- tylko admin ---
-  admin: {
-    getUserAccountStatistics: () =>
-      sendApiRequest<UserAccountStatistics>('/api/admin/stats', { sendAccessToken: true }),
-
-    listUserAccounts: (roleFilter?: UserRole) =>
-      sendApiRequest<UserAccount[]>(`/api/admin/users${roleFilter ? `?role=${roleFilter}` : ''}`, { sendAccessToken: true }),
-
-    updateUserProfile: (userAccountId: number, updatedProfile: UserProfile) =>
-      sendApiRequest<UserAccount>(`/api/admin/users/${userAccountId}`, {
-        httpMethod: 'PUT', requestBody: updatedProfile, sendAccessToken: true,
-      }),
-
-    changeUserRole: (userAccountId: number, newRole: AssignableUserRole) =>
-      sendApiRequest<UserAccount>(`/api/admin/users/${userAccountId}/role`, {
-        httpMethod: 'PATCH', requestBody: { newRole }, sendAccessToken: true,
-      }),
-
-    setAccountLockedByAdmin: (userAccountId: number, lockedByAdmin: boolean) =>
-      sendApiRequest<UserAccount>(`/api/admin/users/${userAccountId}/locked`, {
-        httpMethod: 'PATCH', requestBody: { lockedByAdmin }, sendAccessToken: true,
-      }),
-
-    confirmEmailOnUsersBehalf: (userAccountId: number) =>
-      sendApiRequest<UserAccount>(`/api/admin/users/${userAccountId}/confirm-email`, {
-        httpMethod: 'POST', sendAccessToken: true,
-      }),
-
-    deleteUserAccount: (userAccountId: number) =>
-      sendApiRequest<void>(`/api/admin/users/${userAccountId}`, { httpMethod: 'DELETE', sendAccessToken: true }),
-  },
-};

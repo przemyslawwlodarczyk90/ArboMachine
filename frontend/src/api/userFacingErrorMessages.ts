@@ -25,6 +25,8 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Token is mandatory': 'The link is missing its token.',
   'User data is mandatory': 'Fill in your details.',
   'Account type is mandatory': 'Choose an account type.',
+  'User account owns projects and cannot be deleted':
+    'This account owns projects and cannot be deleted yet.',
 };
 
 /** Zwraca przyjazny tekst albo oryginalny komunikat, jesli nie ma go w slowniku. */

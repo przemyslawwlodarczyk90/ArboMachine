@@ -1,4 +1,5 @@
 import { RoleDashboardWithPlannedModules, type PlannedPanelModule } from '../../components/RoleDashboardWithPlannedModules';
+import { arboristPanelApi } from './arboristPanelApi';
 
 /** Moduly planowane w panelu arborysty - na razie tylko zapowiedzi na pulpicie. */
 const ARBORIST_PLANNED_MODULES: PlannedPanelModule[] = [
@@ -11,7 +12,7 @@ const ARBORIST_PLANNED_MODULES: PlannedPanelModule[] = [
 export function ArboristDashboardPage() {
   return (
     <RoleDashboardWithPlannedModules
-      panelRole="ARBORIST"
+      loadPanelWelcome={arboristPanelApi.getArboristPanelWelcome}
       introductionText="Your arborist workspace. The modules below are planned and will appear here."
       plannedModules={ARBORIST_PLANNED_MODULES}
     />

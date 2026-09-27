@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
+import { currentUserAccountApi } from '../api/currentUserAccountApi';
 import type { UserProfile } from '../api/apiDataTypes';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
@@ -19,7 +20,7 @@ export function MyProfilePage() {
   if (!currentUserAccount) return null;
 
   const saveOwnProfile = async (updatedProfile: UserProfile) => {
-    const savedAccount = await arboMachineApi.updateCurrentUserProfile(updatedProfile);
+    const savedAccount = await currentUserAccountApi.updateCurrentUserProfile(updatedProfile);
     replaceCurrentUserAccount(savedAccount);
     return savedAccount;
   };
@@ -28,7 +29,7 @@ export function MyProfilePage() {
     setAccountDeletionErrorMessage(null);
     setIsDeletingAccount(true);
     try {
-      await arboMachineApi.deleteCurrentUserAccount();
+      await currentUserAccountApi.deleteCurrentUserAccount();
       signOut();
       navigate('/login', { replace: true, state: { noticeMessage: 'Your account has been deleted.' } });
     } catch (deletionError) {

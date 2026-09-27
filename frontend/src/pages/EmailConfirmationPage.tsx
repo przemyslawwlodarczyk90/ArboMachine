@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
+import { authenticationApi } from '../api/authenticationApi';
 import { Alert } from '../components/Alert';
 import { AuthCardPageLayout } from '../components/AuthCardPageLayout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -19,7 +20,7 @@ export function EmailConfirmationPage() {
   useEffect(() => {
     if (!confirmationToken || confirmationRequestAlreadySent.current) return;
     confirmationRequestAlreadySent.current = true;
-    arboMachineApi.confirmEmailUsingToken(confirmationToken)
+    authenticationApi.confirmEmailUsingToken(confirmationToken)
       .then(() => setConfirmationStatus('confirmed'))
       .catch((confirmationError) => {
         setConfirmationStatus('failed');

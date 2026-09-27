@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { accessTokenStorage, arboMachineApi, registerUnauthorizedResponseHandler } from '../api/arboMachineApiClient';
+import { accessTokenStorage, registerUnauthorizedResponseHandler } from '../api/httpClient';
+import { authenticationApi } from '../api/authenticationApi';
+import { currentUserAccountApi } from '../api/currentUserAccountApi';
 import type { UserAccount } from '../api/apiDataTypes';
 
 interface AuthenticationState {
@@ -36,17 +38,17 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
       setIsRestoringSession(false);
       return;
     }
-    arboMachineApi.getCurrentUserAccount()
+    currentUserAccountApi.getCurrentUserAccount()
       .then(setCurrentUserAccount)
       .catch(() => signOut())
       .finally(() => setIsRestoringSession(false));
   }, [signOut]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { accessToken } = await arboMachineApi.signIn({ email, password });
+    const { accessToken } = await authenticationApi.signIn({ email, password });
     accessTokenStorage.save(accessToken);
     try {
-      const signedInAccount = await arboMachineApi.getCurrentUserAccount();
+      const signedInAccount = await currentUserAccountApi.getCurrentUserAccount();
       setCurrentUserAccount(signedInAccount);
       return signedInAccount;
     } catch (loadingAccountError) {

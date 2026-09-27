@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ApiRequestError, arboMachineApi } from '../api/arboMachineApiClient';
+import { ApiRequestError } from '../api/httpClient';
+import { authenticationApi } from '../api/authenticationApi';
 import type { AssignableUserRole, UserProfile } from '../api/apiDataTypes';
 import { REGISTRATION_ACCOUNT_TYPE_OPTIONS } from '../auth/userRoles';
 import { Alert } from '../components/Alert';
@@ -42,7 +43,7 @@ export function RegistrationPage() {
 
     setIsSubmitting(true);
     try {
-      await arboMachineApi.registerNewUserAccount({
+      await authenticationApi.registerNewUserAccount({
         profile: toUserProfileRequestPayload(profileFormValues),
         password,
         accountType: selectedAccountType,

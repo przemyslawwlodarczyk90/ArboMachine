@@ -48,12 +48,3 @@ export interface RolePanelWelcome {
   lastName: string;
   welcomeMessage: string;
 }
-
-export interface UserAccountStatistics {
-  totalAccounts: number;
-  arboristAccounts: number;
-  officialAccounts: number;
-  adminAccounts: number;
-  accountsAwaitingEmailConfirmation: number;
-  accountsLockedByAdmin: number;
-}

@@ -1,4 +1,4 @@
-package com.example.arbomachine.infrastructure.api;
+package com.example.arbomachine.infrastructure.api.admin;
 
 import com.example.arbomachine.domain.user.dto.ChangeAccountLockRequestDto;
 import com.example.arbomachine.domain.user.dto.ChangeUserRoleRequestDto;
