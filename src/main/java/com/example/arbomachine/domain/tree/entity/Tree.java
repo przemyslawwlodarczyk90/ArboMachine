@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * Drzewo w projekcie - celowo minimalny model pierwszego pionu (bez lokalizacji, pomiarow, oceny).
+ * Drzewo w projekcie - model V1: numer, gatunek (LAT/PL), podstawowe pomiary jako proste kolumny, notatka.
+ * To NIE jest docelowy model arborystyczny: bez lokalizacji, oceny stanu/ryzyka, zdjec; wiele pni i historia
+ * pomiarow wymagalyby osobnych encji. Kolejne pola dochodza malymi, osobnymi zmianami.
  * Nie istnieje bez projektu. Nie ma wlasnego wlasciciela: wlasnosc wynika z Tree -> Project -> owner.
  * Relacja jednokierunkowa - Project nie trzyma kolekcji drzew (liste daje TreeRepository).
  */
@@ -39,6 +41,9 @@ public class Tree {
 
     /** Gorna granica wysokosci drzewa w m (najwyzsze drzewa swiata maja ok. 116 m) - ochrona przed literowkami. */
     public static final String MAXIMUM_HEIGHT_M = "150";
+
+    /** Gorna granica srednicy korony w m (figowce bengalskie przekraczaja 100 m) - ochrona przed literowkami. */
+    public static final String MAXIMUM_CROWN_DIAMETER_M = "200";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -77,6 +82,13 @@ public class Tree {
     @Column(name = "height_m", precision = MEASUREMENT_IN_METERS_PRECISION, scale = MEASUREMENT_IN_METERS_SCALE)
     private BigDecimal heightM;
 
+    /**
+     * Srednica korony w metrach (model V1 - jeden wymiar). Jesli potrzebne beda dwie osie (N-S, E-W),
+     * dojdzie to osobna zmiana modelu.
+     */
+    @Column(name = "crown_diameter_m", precision = MEASUREMENT_IN_METERS_PRECISION, scale = MEASUREMENT_IN_METERS_SCALE)
+    private BigDecimal crownDiameterM;
+
     /** Ogolna notatka pierwszego pionu - NIE docelowe miejsce na stan zdrowotny, zagrozenia czy zalecenia. */
     @Column(columnDefinition = "text")
     private String notes;
@@ -98,7 +110,8 @@ public class Tree {
 
     /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
     public TreeEditableAttributes editableAttributes() {
-        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, heightM, notes);
+        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, heightM,
+                crownDiameterM, notes);
     }
 
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
@@ -113,6 +126,7 @@ public class Tree {
         this.speciesPolish = attributes.speciesPolish();
         this.trunkCircumferenceCm = attributes.trunkCircumferenceCm();
         this.heightM = attributes.heightM();
+        this.crownDiameterM = attributes.crownDiameterM();
         this.notes = attributes.notes();
     }
 }

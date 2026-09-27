@@ -19,5 +19,7 @@ public interface TreeEditableFieldsRequest {
 
     BigDecimal heightM();
 
+    BigDecimal crownDiameterM();
+
     String notes();
 }

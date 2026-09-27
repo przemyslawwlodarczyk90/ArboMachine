@@ -35,5 +35,10 @@ public record CreateTreeRequest(
         @DecimalMax(value = Tree.MAXIMUM_HEIGHT_M, message = "Height must be at most 150 m")
         BigDecimal heightM,
 
+        @Digits(integer = 3, fraction = Tree.MEASUREMENT_IN_METERS_SCALE, message = "Crown diameter can have at most 2 decimal places")
+        @DecimalMin(value = "0", inclusive = false, message = "Crown diameter must be greater than 0 m")
+        @DecimalMax(value = Tree.MAXIMUM_CROWN_DIAMETER_M, message = "Crown diameter must be at most 200 m")
+        BigDecimal crownDiameterM,
+
         String notes
 ) implements TreeEditableFieldsRequest {}

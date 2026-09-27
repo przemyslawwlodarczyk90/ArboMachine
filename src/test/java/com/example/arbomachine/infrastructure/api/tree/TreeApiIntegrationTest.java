@@ -538,6 +538,57 @@ class TreeApiIntegrationTest {
         assertThat(treeRepository.findById(treeId).orElseThrow().getHeightM()).isEqualByComparingTo("12");
     }
 
+    @Test
+    void crownDiameterIsStoredInMetersAndCanBeChangedAndCleared() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"crownDiameterM\":12.25}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.crownDiameterM").value(12.25)));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"crownDiameterM\":200}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.crownDiameterM").value(200));
+        assertThat(treeRepository.findById(treeId).orElseThrow().getCrownDiameterM()).isEqualByComparingTo("200");
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.crownDiameterM").doesNotExist());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getCrownDiameterM()).isNull();
+    }
+
+    @Test
+    void invalidCrownDiameterIsRejected() throws Exception {
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"crownDiameterM\":1.005}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.crownDiameterM").value("Crown diameter can have at most 2 decimal places"));
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"crownDiameterM\":-1}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.crownDiameterM").value("Crown diameter must be greater than 0 m"));
+        postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"crownDiameterM\":200.5}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.crownDiameterM").value("Crown diameter must be at most 200 m"));
+        assertThat(treeRepository.count()).isZero();
+    }
+
+    @Test
+    void allTreeV1FieldsAreReturnedTogetherByListAndDetails() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"7\",\"speciesLatin\":\"Tilia cordata\","
+                + "\"speciesPolish\":\"Lipa drobnolistna\",\"trunkCircumferenceCm\":251,\"heightM\":21.4,\"crownDiameterM\":14,"
+                + "\"notes\":\"Pien z ubytkiem\"}")
+                .andExpect(status().isCreated()));
+
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(jsonPath("$.speciesLatin").value("Tilia cordata"))
+                .andExpect(jsonPath("$.speciesPolish").value("Lipa drobnolistna"))
+                .andExpect(jsonPath("$.trunkCircumferenceCm").value(251))
+                .andExpect(jsonPath("$.heightM").value(21.4))
+                .andExpect(jsonPath("$.crownDiameterM").value(14))
+                .andExpect(jsonPath("$.notes").value("Pien z ubytkiem"));
+        mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdA1).header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(jsonPath("$[0].speciesPolish").value("Lipa drobnolistna"))
+                .andExpect(jsonPath("$[0].heightM").value(21.4));
+    }
+
     // --- brak zalogowania ---
 
     @Test

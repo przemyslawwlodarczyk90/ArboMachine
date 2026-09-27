@@ -40,6 +40,9 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Height can have at most 2 decimal places': 'Height can have at most 2 decimal places.',
   'Height must be greater than 0 m': 'Height must be greater than 0 and at most 150 m.',
   'Height must be at most 150 m': 'Height must be greater than 0 and at most 150 m.',
+  'Crown diameter can have at most 2 decimal places': 'Crown diameter can have at most 2 decimal places.',
+  'Crown diameter must be greater than 0 m': 'Crown diameter must be greater than 0 and at most 200 m.',
+  'Crown diameter must be at most 200 m': 'Crown diameter must be greater than 0 and at most 200 m.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

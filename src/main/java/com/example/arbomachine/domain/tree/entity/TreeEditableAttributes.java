@@ -13,5 +13,6 @@ public record TreeEditableAttributes(
         String speciesPolish,
         Integer trunkCircumferenceCm,
         BigDecimal heightM,
+        BigDecimal crownDiameterM,
         String notes
 ) {}

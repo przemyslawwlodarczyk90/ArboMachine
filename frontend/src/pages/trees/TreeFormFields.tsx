@@ -34,6 +34,10 @@ export function TreeFormFields({ treeFormValues, errorMessageByFieldName, change
                          value={treeFormValues.heightM}
                          onChange={(changeEvent) => changeFormField('heightM', changeEvent.target.value)}
                          errorMessage={errorMessageByFieldName.heightM} />
+      <LabeledInputField label="Crown diameter (m)" inputMode="decimal" placeholder="e.g. 12"
+                         value={treeFormValues.crownDiameterM}
+                         onChange={(changeEvent) => changeFormField('crownDiameterM', changeEvent.target.value)}
+                         errorMessage={errorMessageByFieldName.crownDiameterM} />
       <LabeledTextAreaField label="Notes" value={treeFormValues.notes}
                             onChange={(changeEvent) => changeFormField('notes', changeEvent.target.value)}
                             errorMessage={errorMessageByFieldName.notes} />

@@ -17,6 +17,7 @@ public class TreeMapper {
                 tree.getSpeciesPolish(),
                 tree.getTrunkCircumferenceCm(),
                 tree.getHeightM(),
+                tree.getCrownDiameterM(),
                 tree.getNotes(),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()

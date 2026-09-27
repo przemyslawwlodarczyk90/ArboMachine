@@ -24,6 +24,7 @@ final class TreeEditableAttributesNormalizer {
                 trimmedOrNullWhenBlank(treeEditableFieldsRequest.speciesPolish()),
                 wholeNumberOrNull(treeEditableFieldsRequest.trunkCircumferenceCm()),
                 metersWithColumnScaleOrNull(treeEditableFieldsRequest.heightM()),
+                metersWithColumnScaleOrNull(treeEditableFieldsRequest.crownDiameterM()),
                 trimmedOrNullWhenBlank(treeEditableFieldsRequest.notes())
         );
     }

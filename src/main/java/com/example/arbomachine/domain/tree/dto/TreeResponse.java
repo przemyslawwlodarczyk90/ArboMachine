@@ -12,6 +12,7 @@ public record TreeResponse(
         String speciesPolish,
         Integer trunkCircumferenceCm,
         BigDecimal heightM,
+        BigDecimal crownDiameterM,
         String notes,
         Instant createdAt,
         Instant updatedAt

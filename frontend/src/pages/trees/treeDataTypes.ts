@@ -12,6 +12,8 @@ export interface Tree {
   trunkCircumferenceCm?: number | null;
   /** wysokosc w metrach, max 2 miejsca po przecinku */
   heightM?: number | null;
+  /** srednica korony w metrach (jeden wymiar), max 2 miejsca po przecinku */
+  crownDiameterM?: number | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -27,6 +29,7 @@ export interface TreeEditableFieldsRequest {
   speciesPolish?: string;
   trunkCircumferenceCm?: number;
   heightM?: number;
+  crownDiameterM?: number;
   notes?: string;
 }
 

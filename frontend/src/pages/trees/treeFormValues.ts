@@ -11,6 +11,7 @@ export interface TreeFormValues {
   speciesPolish: string;
   trunkCircumferenceCm: string;
   heightM: string;
+  crownDiameterM: string;
   notes: string;
 }
 
@@ -18,6 +19,7 @@ export interface TreeFormValues {
 const MINIMUM_TRUNK_CIRCUMFERENCE_CM = 1;
 const MAXIMUM_TRUNK_CIRCUMFERENCE_CM = 5000;
 const MAXIMUM_HEIGHT_M = 150;
+const MAXIMUM_CROWN_DIAMETER_M = 200;
 
 const WHOLE_NUMBER_PATTERN = /^\d+$/;
 /** Liczba dodatnia z maksymalnie 2 miejscami po kropce lub przecinku (precyzja kolumny numeric(5,2)). */
@@ -29,6 +31,7 @@ export const emptyTreeFormValues: TreeFormValues = {
   speciesPolish: '',
   trunkCircumferenceCm: '',
   heightM: '',
+  crownDiameterM: '',
   notes: '',
 };
 
@@ -39,6 +42,7 @@ export const toTreeFormValues = (tree: Tree): TreeFormValues => ({
   speciesPolish: tree.speciesPolish ?? '',
   trunkCircumferenceCm: tree.trunkCircumferenceCm?.toString() ?? '',
   heightM: tree.heightM?.toString() ?? '',
+  crownDiameterM: tree.crownDiameterM?.toString() ?? '',
   notes: tree.notes ?? '',
 });
 
@@ -57,6 +61,7 @@ export const toTreeEditableFieldsRequest = (formValues: TreeFormValues): TreeEdi
   speciesPolish: trimmedOrUndefined(formValues.speciesPolish),
   trunkCircumferenceCm: numberOrUndefined(formValues.trunkCircumferenceCm),
   heightM: numberOrUndefined(formValues.heightM),
+  crownDiameterM: numberOrUndefined(formValues.crownDiameterM),
   notes: trimmedOrUndefined(formValues.notes),
 });
 
@@ -96,5 +101,8 @@ export const validateTreeFormValues = (formValues: TreeFormValues): Record<strin
 
   const heightError = errorOfOptionalMeters(formValues.heightM, 'Height', MAXIMUM_HEIGHT_M);
   if (heightError) errorMessageByFieldName.heightM = heightError;
+
+  const crownDiameterError = errorOfOptionalMeters(formValues.crownDiameterM, 'Crown diameter', MAXIMUM_CROWN_DIAMETER_M);
+  if (crownDiameterError) errorMessageByFieldName.crownDiameterM = crownDiameterError;
   return errorMessageByFieldName;
 };
