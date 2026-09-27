@@ -30,5 +30,10 @@ public record CreateTreeRequest(
         @DecimalMax(value = "" + Tree.MAXIMUM_TRUNK_CIRCUMFERENCE_CM, message = "Trunk circumference must be at most 5000 cm")
         BigDecimal trunkCircumferenceCm,
 
+        @Digits(integer = 3, fraction = Tree.MEASUREMENT_IN_METERS_SCALE, message = "Height can have at most 2 decimal places")
+        @DecimalMin(value = "0", inclusive = false, message = "Height must be greater than 0 m")
+        @DecimalMax(value = Tree.MAXIMUM_HEIGHT_M, message = "Height must be at most 150 m")
+        BigDecimal heightM,
+
         String notes
 ) implements TreeEditableFieldsRequest {}

@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -31,6 +32,13 @@ public class Tree {
     /** Zakres obwodu pnia w cm - ochrona przed literowkami (najwieksze drzewa swiata maja ok. 3000 cm). */
     public static final int MINIMUM_TRUNK_CIRCUMFERENCE_CM = 1;
     public static final int MAXIMUM_TRUNK_CIRCUMFERENCE_CM = 5000;
+
+    /** Pomiary w metrach: numeric(5,2) - do 999.99 m z dokladnoscia do 1 cm. */
+    public static final int MEASUREMENT_IN_METERS_PRECISION = 5;
+    public static final int MEASUREMENT_IN_METERS_SCALE = 2;
+
+    /** Gorna granica wysokosci drzewa w m (najwyzsze drzewa swiata maja ok. 116 m) - ochrona przed literowkami. */
+    public static final String MAXIMUM_HEIGHT_M = "150";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,6 +73,10 @@ public class Tree {
     @Column(name = "trunk_circumference_cm")
     private Integer trunkCircumferenceCm;
 
+    /** Wysokosc drzewa w metrach, np. 18.50 (model V1 - bez metody i dokladnosci pomiaru). */
+    @Column(name = "height_m", precision = MEASUREMENT_IN_METERS_PRECISION, scale = MEASUREMENT_IN_METERS_SCALE)
+    private BigDecimal heightM;
+
     /** Ogolna notatka pierwszego pionu - NIE docelowe miejsce na stan zdrowotny, zagrozenia czy zalecenia. */
     @Column(columnDefinition = "text")
     private String notes;
@@ -86,7 +98,7 @@ public class Tree {
 
     /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
     public TreeEditableAttributes editableAttributes() {
-        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, notes);
+        return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, heightM, notes);
     }
 
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
@@ -100,6 +112,7 @@ public class Tree {
         this.speciesLatin = attributes.speciesLatin();
         this.speciesPolish = attributes.speciesPolish();
         this.trunkCircumferenceCm = attributes.trunkCircumferenceCm();
+        this.heightM = attributes.heightM();
         this.notes = attributes.notes();
     }
 }

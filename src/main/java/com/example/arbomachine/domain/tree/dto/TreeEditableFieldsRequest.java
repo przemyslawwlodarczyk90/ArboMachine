@@ -17,5 +17,7 @@ public interface TreeEditableFieldsRequest {
     /** BigDecimal zamiast Integer: Jackson po cichu obcialby 123.7 do 123, a tak walidacja zwraca czytelny blad. */
     BigDecimal trunkCircumferenceCm();
 
+    BigDecimal heightM();
+
     String notes();
 }

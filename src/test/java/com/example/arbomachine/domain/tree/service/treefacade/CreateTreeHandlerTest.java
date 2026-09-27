@@ -43,26 +43,28 @@ class CreateTreeHandlerTest {
 
     @Test
     void treeBelongsToOwnedProjectAndHasEqualCreationAndUpdateTime() {
-        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("1", "Quercus robur", "Dąb szypułkowy", new BigDecimal("314"), "Example field note."));
+        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("1", "Quercus robur", "Dąb szypułkowy", new BigDecimal("314"), new BigDecimal("18.5"), "Example field note."));
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getProject()).isSameAs(ownedProject);
         assertThat(createdTree.getSpeciesLatin()).isEqualTo("Quercus robur");
         assertThat(createdTree.getSpeciesPolish()).isEqualTo("Dąb szypułkowy");
         assertThat(createdTree.getTrunkCircumferenceCm()).isEqualTo(314);
+        assertThat(createdTree.getHeightM()).isEqualTo(new BigDecimal("18.50"));
         assertThat(createdTree.getNotes()).isEqualTo("Example field note.");
         assertThat(createdTree.getCreatedAt()).isNotNull().isEqualTo(createdTree.getUpdatedAt());
     }
 
     @Test
     void trimsInventoryNumberAndStoresBlankOptionalFieldsAsNull() {
-        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", null, ""));
+        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", null, null, ""));
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getInventoryNumber()).isEqualTo("A-12");
         assertThat(createdTree.getSpeciesLatin()).isNull();
         assertThat(createdTree.getSpeciesPolish()).isNull();
         assertThat(createdTree.getTrunkCircumferenceCm()).isNull();
+        assertThat(createdTree.getHeightM()).isNull();
         assertThat(createdTree.getNotes()).isNull();
     }
 }

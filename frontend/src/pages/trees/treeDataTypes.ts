@@ -10,6 +10,8 @@ export interface Tree {
   speciesPolish?: string | null;
   /** obwod pnia w cm - liczba calkowita */
   trunkCircumferenceCm?: number | null;
+  /** wysokosc w metrach, max 2 miejsca po przecinku */
+  heightM?: number | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +26,7 @@ export interface TreeEditableFieldsRequest {
   speciesLatin?: string;
   speciesPolish?: string;
   trunkCircumferenceCm?: number;
+  heightM?: number;
   notes?: string;
 }
 

@@ -1,5 +1,6 @@
 package com.example.arbomachine.domain.tree.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Drzewo zwracane przez API - samo id projektu, bez zagniezdzonego projektu. */
@@ -10,6 +11,7 @@ public record TreeResponse(
         String speciesLatin,
         String speciesPolish,
         Integer trunkCircumferenceCm,
+        BigDecimal heightM,
         String notes,
         Instant createdAt,
         Instant updatedAt

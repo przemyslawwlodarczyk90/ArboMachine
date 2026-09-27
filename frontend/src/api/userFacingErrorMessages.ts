@@ -37,6 +37,9 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Trunk circumference must be a whole number of centimeters': 'Trunk circumference must be a whole number of centimeters.',
   'Trunk circumference must be at least 1 cm': 'Trunk circumference must be between 1 and 5000 cm.',
   'Trunk circumference must be at most 5000 cm': 'Trunk circumference must be between 1 and 5000 cm.',
+  'Height can have at most 2 decimal places': 'Height can have at most 2 decimal places.',
+  'Height must be greater than 0 m': 'Height must be greater than 0 and at most 150 m.',
+  'Height must be at most 150 m': 'Height must be greater than 0 and at most 150 m.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

@@ -10,20 +10,25 @@ export interface TreeFormValues {
   speciesLatin: string;
   speciesPolish: string;
   trunkCircumferenceCm: string;
+  heightM: string;
   notes: string;
 }
 
-/** Zakres obwodu pnia - taki sam jak w backendzie (Tree.MINIMUM/MAXIMUM_TRUNK_CIRCUMFERENCE_CM). */
+/** Zakresy pomiarow - takie same jak w backendzie (stale w encji Tree). */
 const MINIMUM_TRUNK_CIRCUMFERENCE_CM = 1;
 const MAXIMUM_TRUNK_CIRCUMFERENCE_CM = 5000;
+const MAXIMUM_HEIGHT_M = 150;
 
 const WHOLE_NUMBER_PATTERN = /^\d+$/;
+/** Liczba dodatnia z maksymalnie 2 miejscami po kropce lub przecinku (precyzja kolumny numeric(5,2)). */
+const METERS_WITH_TWO_DECIMALS_PATTERN = /^\d+([.,]\d{1,2})?$/;
 
 export const emptyTreeFormValues: TreeFormValues = {
   inventoryNumber: '',
   speciesLatin: '',
   speciesPolish: '',
   trunkCircumferenceCm: '',
+  heightM: '',
   notes: '',
 };
 
@@ -33,6 +38,7 @@ export const toTreeFormValues = (tree: Tree): TreeFormValues => ({
   speciesLatin: tree.speciesLatin ?? '',
   speciesPolish: tree.speciesPolish ?? '',
   trunkCircumferenceCm: tree.trunkCircumferenceCm?.toString() ?? '',
+  heightM: tree.heightM?.toString() ?? '',
   notes: tree.notes ?? '',
 });
 
@@ -50,12 +56,26 @@ export const toTreeEditableFieldsRequest = (formValues: TreeFormValues): TreeEdi
   speciesLatin: trimmedOrUndefined(formValues.speciesLatin),
   speciesPolish: trimmedOrUndefined(formValues.speciesPolish),
   trunkCircumferenceCm: numberOrUndefined(formValues.trunkCircumferenceCm),
+  heightM: numberOrUndefined(formValues.heightM),
   notes: trimmedOrUndefined(formValues.notes),
 });
 
-/** Czy dwa stany formularza daja ten sam request (np. dopisanie samych spacji nie jest zmiana). */
+/** Czy dwa stany formularza daja ten sam request (np. dopisanie samych spacji albo 18.50 zamiast 18.5 nie jest zmiana). */
 export const areTreeFormValuesEquivalent = (firstFormValues: TreeFormValues, secondFormValues: TreeFormValues) =>
   JSON.stringify(toTreeEditableFieldsRequest(firstFormValues)) === JSON.stringify(toTreeEditableFieldsRequest(secondFormValues));
+
+/** Blad opcjonalnego pomiaru w metrach albo undefined, gdy pole jest puste lub poprawne. */
+const errorOfOptionalMeters = (fieldValue: string, measurementName: string, maximumMeters: number) => {
+  const metersText = fieldValue.trim();
+  if (!metersText) return undefined;
+  if (!METERS_WITH_TWO_DECIMALS_PATTERN.test(metersText)) {
+    return `${measurementName} must be a number with at most 2 decimal places.`;
+  }
+  const meters = Number(metersText.replace(',', '.'));
+  return meters > 0 && meters <= maximumMeters
+    ? undefined
+    : `${measurementName} must be greater than 0 and at most ${maximumMeters} m.`;
+};
 
 /** Walidacja po stronie przegladarki - pusty wynik oznacza, ze formularz mozna wyslac. Backend waliduje ponownie. */
 export const validateTreeFormValues = (formValues: TreeFormValues): Record<string, string> => {
@@ -73,5 +93,8 @@ export const validateTreeFormValues = (formValues: TreeFormValues): Record<strin
       errorMessageByFieldName.trunkCircumferenceCm = 'Trunk circumference must be between 1 and 5000 cm.';
     }
   }
+
+  const heightError = errorOfOptionalMeters(formValues.heightM, 'Height', MAXIMUM_HEIGHT_M);
+  if (heightError) errorMessageByFieldName.heightM = heightError;
   return errorMessageByFieldName;
 };

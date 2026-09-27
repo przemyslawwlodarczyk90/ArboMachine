@@ -490,6 +490,54 @@ class TreeApiIntegrationTest {
         assertThat(treeRepository.findById(treeId).orElseThrow().getTrunkCircumferenceCm()).isEqualTo(120);
     }
 
+    @Test
+    void heightIsStoredInMetersAndCanBeChangedAndCleared() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"heightM\":18.5}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.heightM").value(18.5)));
+        assertThat(treeRepository.findById(treeId).orElseThrow().getHeightM()).isEqualByComparingTo("18.5");
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":150}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.heightM").value(150));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":null}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.heightM").doesNotExist());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getHeightM()).isNull();
+    }
+
+    @Test
+    void sameHeightWrittenDifferentlyIsNotAChange() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"heightM\":18.5}")
+                .andExpect(status().isCreated()));
+        Tree treeBefore = treeRepository.findById(treeId).orElseThrow();
+
+        Thread.sleep(5);
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":18.50}")
+                .andExpect(status().isOk());
+
+        assertThat(treeRepository.findById(treeId).orElseThrow().getUpdatedAt()).isEqualTo(treeBefore.getUpdatedAt());
+    }
+
+    @Test
+    void invalidHeightIsRejectedAndTreeStaysIntact() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"heightM\":12}")
+                .andExpect(status().isCreated()));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":12.345}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.heightM").value("Height can have at most 2 decimal places"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":0}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.heightM").value("Height must be greater than 0 m"));
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\",\"heightM\":150.01}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.heightM").value("Height must be at most 150 m"));
+
+        assertThat(treeRepository.findById(treeId).orElseThrow().getHeightM()).isEqualByComparingTo("12");
+    }
+
     // --- brak zalogowania ---
 
     @Test

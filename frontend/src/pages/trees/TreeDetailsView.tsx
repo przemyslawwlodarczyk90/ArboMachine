@@ -16,6 +16,8 @@ export function TreeDetailsView({ tree, startEditing }: { tree: Tree; startEditi
         <dd>{tree.speciesPolish || <span className="muted">Not provided</span>}</dd>
         <dt>Trunk circumference</dt>
         <dd>{tree.trunkCircumferenceCm != null ? `${tree.trunkCircumferenceCm} cm` : <span className="muted">Not provided</span>}</dd>
+        <dt>Height</dt>
+        <dd>{tree.heightM != null ? `${tree.heightM} m` : <span className="muted">Not provided</span>}</dd>
         <dt>Notes</dt>
         <dd className="tree-details-notes">{tree.notes || <span className="muted">Not provided</span>}</dd>
         <dt>Created</dt>
