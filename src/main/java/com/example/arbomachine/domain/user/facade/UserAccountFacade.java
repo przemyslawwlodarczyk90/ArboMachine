@@ -1,57 +1,39 @@
 package com.example.arbomachine.domain.user.facade;
 
-import com.example.arbomachine.domain.user.dto.LoginRequestDto;
 import com.example.arbomachine.domain.user.dto.UserAccountDto;
 import com.example.arbomachine.domain.user.dto.UserProfileDto;
-import com.example.arbomachine.domain.user.enums.AssignableUserRole;
-import com.example.arbomachine.domain.user.service.*;
-import org.springframework.stereotype.Service;
+import com.example.arbomachine.domain.user.service.useraccountfacade.DeleteCurrentUserAccountHandler;
+import com.example.arbomachine.domain.user.service.useraccountfacade.GetCurrentUserAccountHandler;
+import com.example.arbomachine.domain.user.service.useraccountfacade.UpdateCurrentUserProfileHandler;
+import org.springframework.stereotype.Component;
 
 /**
- * Operacje, ktore uzytkownik wykonuje sam na sobie: rejestracja, logowanie i obsluga WLASNEGO konta.
- * Konto "biezacego uzytkownika" wskazuje e-mail z tokenu JWT, wiec nie da sie tu podac cudzego id.
+ * WLASNE konto zalogowanego uzytkownika (/api/users/me). Konto wskazuje e-mail z tokenu JWT,
+ * wiec nie da sie tu podac cudzego id. Tylko deleguje do handlerow z service/useraccountfacade.
  */
-@Service
+@Component
 public class UserAccountFacade {
-    private final UserRegistrationService userRegistrationService;
-    private final UserLoginService userLoginService;
-    private final UserProfileUpdateService userProfileUpdateService;
-    private final UserAccountDeletionService userAccountDeletionService;
-    private final UserAccountQueryService userAccountQueryService;
+    private final GetCurrentUserAccountHandler getCurrentUserAccountHandler;
+    private final UpdateCurrentUserProfileHandler updateCurrentUserProfileHandler;
+    private final DeleteCurrentUserAccountHandler deleteCurrentUserAccountHandler;
 
-    public UserAccountFacade(UserRegistrationService userRegistrationService,
-                             UserLoginService userLoginService,
-                             UserProfileUpdateService userProfileUpdateService,
-                             UserAccountDeletionService userAccountDeletionService,
-                             UserAccountQueryService userAccountQueryService) {
-        this.userRegistrationService = userRegistrationService;
-        this.userLoginService = userLoginService;
-        this.userProfileUpdateService = userProfileUpdateService;
-        this.userAccountDeletionService = userAccountDeletionService;
-        this.userAccountQueryService = userAccountQueryService;
-    }
-
-    public void registerNewUserAccount(UserProfileDto userProfile, String plainTextPassword,
-                                       AssignableUserRole requestedRole) {
-        userRegistrationService.registerNewUserAccount(userProfile, plainTextPassword, requestedRole);
-    }
-
-    public String loginAndIssueAccessToken(LoginRequestDto loginRequest) {
-        return userLoginService.loginAndIssueAccessToken(loginRequest);
+    public UserAccountFacade(GetCurrentUserAccountHandler getCurrentUserAccountHandler,
+                             UpdateCurrentUserProfileHandler updateCurrentUserProfileHandler,
+                             DeleteCurrentUserAccountHandler deleteCurrentUserAccountHandler) {
+        this.getCurrentUserAccountHandler = getCurrentUserAccountHandler;
+        this.updateCurrentUserProfileHandler = updateCurrentUserProfileHandler;
+        this.deleteCurrentUserAccountHandler = deleteCurrentUserAccountHandler;
     }
 
     public UserAccountDto getCurrentUserAccount(String currentUserEmail) {
-        return userAccountQueryService.getUserAccountByEmail(currentUserEmail);
+        return getCurrentUserAccountHandler.handle(currentUserEmail);
     }
 
     public UserAccountDto updateCurrentUserProfile(String currentUserEmail, UserProfileDto updatedProfile) {
-        Long currentUserAccountId = userAccountQueryService.getUserAccountEntityByEmail(currentUserEmail).getId();
-        userProfileUpdateService.updateUserProfile(currentUserAccountId, updatedProfile);
-        return userAccountQueryService.getUserAccountByEmail(currentUserEmail);
+        return updateCurrentUserProfileHandler.handle(currentUserEmail, updatedProfile);
     }
 
     public void deleteCurrentUserAccount(String currentUserEmail) {
-        Long currentUserAccountId = userAccountQueryService.getUserAccountEntityByEmail(currentUserEmail).getId();
-        userAccountDeletionService.deleteUserAccountById(currentUserAccountId);
+        deleteCurrentUserAccountHandler.handle(currentUserEmail);
     }
 }

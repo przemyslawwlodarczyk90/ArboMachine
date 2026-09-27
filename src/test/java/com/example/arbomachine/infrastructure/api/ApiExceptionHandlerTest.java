@@ -3,8 +3,7 @@ package com.example.arbomachine.infrastructure.api;
 import com.example.arbomachine.domain.user.exception.InvalidCredentialsException;
 import com.example.arbomachine.domain.user.exception.TokenExpiredException;
 import com.example.arbomachine.domain.user.exception.TokenNotFoundException;
-import com.example.arbomachine.domain.user.service.EmailConfirmationService;
-import com.example.arbomachine.domain.user.service.UserLoginService;
+import com.example.arbomachine.domain.user.facade.UserAuthenticationFacade;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +28,7 @@ class ApiExceptionHandlerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private UserLoginService userLoginService;
-
-    @MockBean
-    private EmailConfirmationService emailConfirmationService;
+    private UserAuthenticationFacade userAuthenticationFacade;
 
     @Test
     void validationErrorsAreReturnedAsFieldToMessageMap() throws Exception {
@@ -47,7 +43,7 @@ class ApiExceptionHandlerTest {
     @Test
     void unknownTokenGivesNotFound() throws Exception {
         Mockito.doThrow(new TokenNotFoundException("Token not found"))
-                .when(emailConfirmationService).confirmEmailUsingToken("invalid-token");
+                .when(userAuthenticationFacade).confirmEmailUsingToken("invalid-token");
 
         mockMvc.perform(get("/api/users/confirm").param("token", "invalid-token"))
                 .andExpect(status().isNotFound())
@@ -57,7 +53,7 @@ class ApiExceptionHandlerTest {
     @Test
     void expiredTokenGivesBadRequest() throws Exception {
         Mockito.doThrow(new TokenExpiredException("Token has expired"))
-                .when(emailConfirmationService).confirmEmailUsingToken("expired-token");
+                .when(userAuthenticationFacade).confirmEmailUsingToken("expired-token");
 
         mockMvc.perform(get("/api/users/confirm").param("token", "expired-token"))
                 .andExpect(status().isBadRequest())
@@ -75,7 +71,7 @@ class ApiExceptionHandlerTest {
     @Test
     void invalidCredentialsGiveUnauthorized() throws Exception {
         Mockito.doThrow(new InvalidCredentialsException("Invalid email or password"))
-                .when(userLoginService).loginAndIssueAccessToken(Mockito.any());
+                .when(userAuthenticationFacade).loginAndIssueAccessToken(Mockito.any());
 
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)

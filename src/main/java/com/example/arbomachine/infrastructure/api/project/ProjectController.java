@@ -3,7 +3,7 @@ package com.example.arbomachine.infrastructure.api.project;
 import com.example.arbomachine.domain.project.dto.CreateProjectRequest;
 import com.example.arbomachine.domain.project.dto.ProjectResponse;
 import com.example.arbomachine.domain.project.dto.UpdateProjectRequest;
-import com.example.arbomachine.domain.project.service.ProjectService;
+import com.example.arbomachine.domain.project.facade.ProjectFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * Projekty zalogowanego uzytkownika. Wymaga zalogowania (SecurityConfig: /api/projects/**).
- * Kontroler nie sprawdza wlasnosci sam - przekazuje e-mail z tokenu do ProjectService,
+ * Kontroler nie sprawdza wlasnosci sam - przekazuje e-mail z tokenu do ProjectFacade,
  * ktory pobiera projekty wylacznie w kontekscie wlasciciela.
  */
 @RestController
@@ -27,17 +27,17 @@ import java.util.List;
 @Tag(name = "Projekty", description = "Projekty zalogowanego uzytkownika (tylko wlasne)")
 public class ProjectController {
 
-    private final ProjectService projectService;
+    private final ProjectFacade projectFacade;
 
-    public ProjectController(ProjectService projectService) {
-        this.projectService = projectService;
+    public ProjectController(ProjectFacade projectFacade) {
+        this.projectFacade = projectFacade;
     }
 
     @Operation(summary = "Utworzenie projektu - wlascicielem zostaje zalogowany uzytkownik")
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                          @Valid @RequestBody CreateProjectRequest createProjectRequest) {
-        ProjectResponse createdProject = projectService.createProjectForCurrentUser(authenticatedUser.getUsername(),
+        ProjectResponse createdProject = projectFacade.createProjectForCurrentUser(authenticatedUser.getUsername(),
                 createProjectRequest);
         return ResponseEntity.created(URI.create("/api/projects/" + createdProject.id())).body(createdProject);
     }
@@ -45,14 +45,14 @@ public class ProjectController {
     @Operation(summary = "Lista projektow zalogowanego uzytkownika (najnowsze pierwsze)")
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> getProjectsOfCurrentUser(@AuthenticationPrincipal UserDetails authenticatedUser) {
-        return ResponseEntity.ok(projectService.getProjectsOfCurrentUser(authenticatedUser.getUsername()));
+        return ResponseEntity.ok(projectFacade.getProjectsOfCurrentUser(authenticatedUser.getUsername()));
     }
 
     @Operation(summary = "Projekt po id - tylko wlasny; cudzy albo nieistniejacy daje 404")
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> getProjectOfCurrentUser(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                                    @PathVariable Long projectId) {
-        return ResponseEntity.ok(projectService.getProjectOfCurrentUser(authenticatedUser.getUsername(), projectId));
+        return ResponseEntity.ok(projectFacade.getProjectOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
     @Operation(summary = "Zmiana nazwy i/lub opisu wlasnego projektu (pola pominiete zostaja bez zmian)")
@@ -60,7 +60,7 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> updateProjectOfCurrentUser(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                                       @PathVariable Long projectId,
                                                                       @Valid @RequestBody UpdateProjectRequest updateProjectRequest) {
-        return ResponseEntity.ok(projectService.updateProjectOfCurrentUser(authenticatedUser.getUsername(), projectId,
+        return ResponseEntity.ok(projectFacade.updateProjectOfCurrentUser(authenticatedUser.getUsername(), projectId,
                 updateProjectRequest));
     }
 }

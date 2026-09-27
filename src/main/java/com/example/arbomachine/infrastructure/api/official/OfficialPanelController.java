@@ -1,7 +1,7 @@
 package com.example.arbomachine.infrastructure.api.official;
 
 import com.example.arbomachine.domain.user.dto.RolePanelWelcomeDto;
-import com.example.arbomachine.domain.user.service.RolePanelWelcomeService;
+import com.example.arbomachine.domain.user.facade.RolePanelWelcomeFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -18,16 +18,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class OfficialPanelController {
     private static final String OFFICIAL_PANEL_WELCOME_MESSAGE = "Welcome to the official panel";
 
-    private final RolePanelWelcomeService rolePanelWelcomeService;
+    private final RolePanelWelcomeFacade rolePanelWelcomeFacade;
 
-    public OfficialPanelController(RolePanelWelcomeService rolePanelWelcomeService) {
-        this.rolePanelWelcomeService = rolePanelWelcomeService;
+    public OfficialPanelController(RolePanelWelcomeFacade rolePanelWelcomeFacade) {
+        this.rolePanelWelcomeFacade = rolePanelWelcomeFacade;
     }
 
     @Operation(summary = "Dane powitalne panelu urzednika")
     @GetMapping("/panel")
     public ResponseEntity<RolePanelWelcomeDto> getOfficialPanelWelcome(@AuthenticationPrincipal UserDetails authenticatedUser) {
-        return ResponseEntity.ok(rolePanelWelcomeService.buildPanelWelcomeForUser(authenticatedUser.getUsername(),
+        return ResponseEntity.ok(rolePanelWelcomeFacade.buildPanelWelcomeForUser(authenticatedUser.getUsername(),
                 OFFICIAL_PANEL_WELCOME_MESSAGE));
     }
 }

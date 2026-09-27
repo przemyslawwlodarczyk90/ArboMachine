@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>/api/admin/** - tylko ADMIN (jedyne miejsce, w ktorym mozna ruszac cudze konta),</li>
  *   <li>/api/arborist/** - tylko ARBORIST, /api/official/** - tylko OFFICIAL,</li>
  *   <li>/api/users/** (wlasne konto) - kazdy zalogowany,</li>
- *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje modul projektu (ProjectQueryService).</li>
+ *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje FindProjectOwnedByCurrentUserHandler.</li>
  * </ul>
  * Brak tokenu = 401, zla rola = 403.
  */

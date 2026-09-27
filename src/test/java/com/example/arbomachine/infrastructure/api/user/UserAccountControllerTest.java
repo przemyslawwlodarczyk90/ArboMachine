@@ -4,7 +4,7 @@ import com.example.arbomachine.domain.user.dto.LoginRequestDto;
 import com.example.arbomachine.domain.user.dto.UserProfileDto;
 import com.example.arbomachine.domain.user.enums.AssignableUserRole;
 import com.example.arbomachine.domain.user.facade.UserAccountFacade;
-import com.example.arbomachine.domain.user.service.EmailConfirmationService;
+import com.example.arbomachine.domain.user.facade.UserAuthenticationFacade;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +63,7 @@ class UserAccountControllerTest {
     private UserAccountFacade userAccountFacade;
 
     @MockBean
-    private EmailConfirmationService emailConfirmationService;
+    private UserAuthenticationFacade userAuthenticationFacade;
 
     @Test
     void registersAccountWithChosenRole() throws Exception {
@@ -73,7 +73,7 @@ class UserAccountControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$").value("User registered successfully"));
 
-        Mockito.verify(userAccountFacade)
+        Mockito.verify(userAuthenticationFacade)
                 .registerNewUserAccount(any(UserProfileDto.class), eq("haslo123"), eq(AssignableUserRole.OFFICIAL));
     }
 
@@ -84,7 +84,7 @@ class UserAccountControllerTest {
                         .content(REGISTRATION_REQUEST_TEMPLATE.formatted("ADMIN")))
                 .andExpect(status().isBadRequest());
 
-        Mockito.verify(userAccountFacade, Mockito.never()).registerNewUserAccount(any(), anyString(), any());
+        Mockito.verify(userAuthenticationFacade, Mockito.never()).registerNewUserAccount(any(), anyString(), any());
     }
 
     @Test
@@ -100,7 +100,7 @@ class UserAccountControllerTest {
 
     @Test
     void loginReturnsAccessToken() throws Exception {
-        Mockito.when(userAccountFacade.loginAndIssueAccessToken(any(LoginRequestDto.class))).thenReturn("fake-jwt-token");
+        Mockito.when(userAuthenticationFacade.loginAndIssueAccessToken(any(LoginRequestDto.class))).thenReturn("fake-jwt-token");
 
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -135,6 +135,6 @@ class UserAccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value("User confirmed successfully"));
 
-        Mockito.verify(emailConfirmationService).confirmEmailUsingToken("fake-token");
+        Mockito.verify(userAuthenticationFacade).confirmEmailUsingToken("fake-token");
     }
 }

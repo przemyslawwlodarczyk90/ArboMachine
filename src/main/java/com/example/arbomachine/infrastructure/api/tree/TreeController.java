@@ -2,7 +2,7 @@ package com.example.arbomachine.infrastructure.api.tree;
 
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
-import com.example.arbomachine.domain.tree.service.TreeService;
+import com.example.arbomachine.domain.tree.facade.TreeFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Drzewa w projekcie zalogowanego uzytkownika. Wymaga zalogowania (SecurityConfig: /api/projects/**).
- * Id projektu pochodzi wylacznie z URL; wlasnosc projektu sprawdza TreeService przed kazda operacja.
+ * Id projektu pochodzi wylacznie z URL; wlasnosc projektu sprawdza TreeFacade (handlery) przed kazda operacja.
  */
 @RestController
 @RequestMapping("/api/projects/{projectId}/trees")
@@ -25,10 +25,10 @@ import java.util.List;
 @Tag(name = "Drzewa", description = "Drzewa w projektach zalogowanego uzytkownika (tylko wlasne projekty)")
 public class TreeController {
 
-    private final TreeService treeService;
+    private final TreeFacade treeFacade;
 
-    public TreeController(TreeService treeService) {
-        this.treeService = treeService;
+    public TreeController(TreeFacade treeFacade) {
+        this.treeFacade = treeFacade;
     }
 
     @Operation(summary = "Dodanie drzewa do wlasnego projektu; cudzy albo nieistniejacy projekt daje 404")
@@ -36,7 +36,7 @@ public class TreeController {
     public ResponseEntity<TreeResponse> createTree(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                    @PathVariable Long projectId,
                                                    @Valid @RequestBody CreateTreeRequest createTreeRequest) {
-        TreeResponse createdTree = treeService.createTreeInProjectOfCurrentUser(authenticatedUser.getUsername(),
+        TreeResponse createdTree = treeFacade.createTreeInProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, createTreeRequest);
         return ResponseEntity.created(URI.create("/api/projects/" + projectId + "/trees/" + createdTree.id()))
                 .body(createdTree);
@@ -46,7 +46,7 @@ public class TreeController {
     @GetMapping
     public ResponseEntity<List<TreeResponse>> getTreesOfProject(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                                 @PathVariable Long projectId) {
-        return ResponseEntity.ok(treeService.getTreesOfProjectOfCurrentUser(authenticatedUser.getUsername(), projectId));
+        return ResponseEntity.ok(treeFacade.getTreesOfProjectOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
     @Operation(summary = "Drzewo po id - tylko z tego (wlasnego) projektu; w innym przypadku 404")
@@ -54,7 +54,7 @@ public class TreeController {
     public ResponseEntity<TreeResponse> getTreeOfProject(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                          @PathVariable Long projectId,
                                                          @PathVariable Long treeId) {
-        return ResponseEntity.ok(treeService.getTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+        return ResponseEntity.ok(treeFacade.getTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, treeId));
     }
 }

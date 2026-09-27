@@ -9,7 +9,7 @@ import java.util.Optional;
 
 /**
  * Drzewa zawsze pobieramy w kontekscie projektu. Wlasnosc projektu musi byc sprawdzona WCZESNIEJ
- * (TreeService -> ProjectQueryService) - to repozytorium zaweza tylko do projektu.
+ * (FindProjectOwnedByCurrentUserHandler) - to repozytorium zaweza tylko do projektu.
  */
 @Repository
 public interface TreeRepository extends JpaRepository<Tree, Long> {
