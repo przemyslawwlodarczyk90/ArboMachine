@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -12,5 +13,11 @@ export default defineConfig({
     proxy: {
       '/api': backendApiProxyTarget,
     },
+  },
+  build: {
+    // "npm run build" wrzuca gotowy frontend do zasobow backendu - Spring Boot serwuje go razem z API
+    // (FrontendSinglePageAppConfig). Stary build czysci skrypt "prebuild", a nie Vite: w static leza tez inne pliki.
+    outDir: resolve(__dirname, '../src/main/resources/static'),
+    emptyOutDir: false,
   },
 });

@@ -38,3 +38,8 @@ arbomachine-secrets.properties
 ### Frontend ###
 frontend/node_modules/
 frontend/dist/
+
+### Zbudowany frontend (npm run build w frontend/ -> zasoby backendu) ###
+src/main/resources/static/index.html
+src/main/resources/static/assets/
+src/main/resources/static/favicon.svg
