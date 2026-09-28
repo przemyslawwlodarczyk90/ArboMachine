@@ -78,7 +78,10 @@ export function ProjectTreesSection() {
               <Link to={`trees/${tree.id}`} className="tree-list-item">
                 <span className="tree-list-item-number">Tree {tree.inventoryNumber}</span>
                 {tree.speciesLatin && <span className="tree-list-item-species">{tree.speciesLatin}</span>}
+                {!tree.speciesLatin && tree.speciesPolish && <span>{tree.speciesPolish}</span>}
                 {tree.notes && <span className="tree-list-item-notes">{tree.notes}</span>}
+                {/* Pokazujemy tylko brak - to drzewa, ktore wymagaja jeszcze ustalenia punktu. */}
+                {!tree.location && <span className="tree-list-item-no-location">No location</span>}
               </Link>
             </li>
           ))}

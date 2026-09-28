@@ -1,11 +1,14 @@
 package com.example.arbomachine.domain.tree.facade;
 
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
+import com.example.arbomachine.domain.tree.dto.TreeLocationRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
 import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
+import com.example.arbomachine.domain.tree.service.treefacade.ClearTreeLocationHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.CreateTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreesOfProjectHandler;
+import com.example.arbomachine.domain.tree.service.treefacade.SetTreeLocationHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.UpdateTreeHandler;
 import org.springframework.stereotype.Component;
 
@@ -21,15 +24,21 @@ public class TreeFacade {
     private final GetTreesOfProjectHandler getTreesOfProjectHandler;
     private final GetTreeHandler getTreeHandler;
     private final UpdateTreeHandler updateTreeHandler;
+    private final SetTreeLocationHandler setTreeLocationHandler;
+    private final ClearTreeLocationHandler clearTreeLocationHandler;
 
     public TreeFacade(CreateTreeHandler createTreeHandler,
                       GetTreesOfProjectHandler getTreesOfProjectHandler,
                       GetTreeHandler getTreeHandler,
-                      UpdateTreeHandler updateTreeHandler) {
+                      UpdateTreeHandler updateTreeHandler,
+                      SetTreeLocationHandler setTreeLocationHandler,
+                      ClearTreeLocationHandler clearTreeLocationHandler) {
         this.createTreeHandler = createTreeHandler;
         this.getTreesOfProjectHandler = getTreesOfProjectHandler;
         this.getTreeHandler = getTreeHandler;
         this.updateTreeHandler = updateTreeHandler;
+        this.setTreeLocationHandler = setTreeLocationHandler;
+        this.clearTreeLocationHandler = clearTreeLocationHandler;
     }
 
     public TreeResponse createTreeInProjectOfCurrentUser(String currentUserEmail, Long projectId,
@@ -48,5 +57,14 @@ public class TreeFacade {
     public TreeResponse updateTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
                                                         UpdateTreeRequest updateTreeRequest) {
         return updateTreeHandler.handle(currentUserEmail, projectId, treeId, updateTreeRequest);
+    }
+
+    public TreeResponse setLocationOfTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
+                                                               TreeLocationRequest treeLocationRequest) {
+        return setTreeLocationHandler.handle(currentUserEmail, projectId, treeId, treeLocationRequest);
+    }
+
+    public TreeResponse clearLocationOfTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {
+        return clearTreeLocationHandler.handle(currentUserEmail, projectId, treeId);
     }
 }

@@ -1,6 +1,7 @@
 package com.example.arbomachine.infrastructure.api.tree;
 
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
+import com.example.arbomachine.domain.tree.dto.TreeLocationRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
 import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
 import com.example.arbomachine.domain.tree.facade.TreeFacade;
@@ -68,5 +69,25 @@ public class TreeController {
                                                             @Valid @RequestBody UpdateTreeRequest updateTreeRequest) {
         return ResponseEntity.ok(treeFacade.updateTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, treeId, updateTreeRequest));
+    }
+
+    @Operation(summary = "Ustawienie albo zmiana lokalizacji drzewa (latitude/longitude WGS84, obie wymagane); "
+            + "drzewo z innego projektu albo cudzy projekt daje 404")
+    @PutMapping("/{treeId}/location")
+    public ResponseEntity<TreeResponse> setTreeLocation(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                        @PathVariable Long projectId,
+                                                        @PathVariable Long treeId,
+                                                        @Valid @RequestBody TreeLocationRequest treeLocationRequest) {
+        return ResponseEntity.ok(treeFacade.setLocationOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId, treeLocationRequest));
+    }
+
+    @Operation(summary = "Usuniecie lokalizacji drzewa (drzewo wraca do stanu bez lokalizacji); zwraca drzewo")
+    @DeleteMapping("/{treeId}/location")
+    public ResponseEntity<TreeResponse> clearTreeLocation(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                          @PathVariable Long projectId,
+                                                          @PathVariable Long treeId) {
+        return ResponseEntity.ok(treeFacade.clearLocationOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId));
     }
 }

@@ -14,3 +14,12 @@ export interface CreateProjectRequest {
   name: string;
   description?: string;
 }
+
+/**
+ * UpdateProjectRequest (PATCH) - pole pominiete = bez zmian. Formularz edycji zawsze wysyla oba pola;
+ * pusty opis ("") czysci opis projektu.
+ */
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string;
+}

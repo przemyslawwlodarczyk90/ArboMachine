@@ -43,6 +43,10 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Crown diameter can have at most 2 decimal places': 'Crown diameter can have at most 2 decimal places.',
   'Crown diameter must be greater than 0 m': 'Crown diameter must be greater than 0 and at most 200 m.',
   'Crown diameter must be at most 200 m': 'Crown diameter must be greater than 0 and at most 200 m.',
+  'Latitude is mandatory': 'Latitude is required.',
+  'Latitude must be between -90 and 90': 'Latitude must be between -90 and 90.',
+  'Longitude is mandatory': 'Longitude is required.',
+  'Longitude must be between -180 and 180': 'Longitude must be between -180 and 180.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

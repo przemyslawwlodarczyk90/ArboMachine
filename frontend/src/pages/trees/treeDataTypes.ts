@@ -15,9 +15,26 @@ export interface Tree {
   /** srednica korony w metrach (jeden wymiar), max 2 miejsca po przecinku */
   crownDiameterM?: number | null;
   notes?: string | null;
+  /** null = lokalizacja drzewa nie jest jeszcze ustalona (nigdy 0,0 ani jedna wspolrzedna) */
+  location?: TreeLocation | null;
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * TreeLocationResponse - punkt drzewa w stopniach dziesietnych (WGS84), zawsze kompletna para.
+ * Przyszle dane pomiaru (dokladnosc, zrodlo) dojda tutaj, a nie jako luzne pola drzewa.
+ */
+export interface TreeLocation {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * Body PUT /api/projects/{projectId}/trees/{treeId}/location. Backend nie wie, skad pochodza wspolrzedne
+ * (formularz, mapa, GNSS) - usuniecie lokalizacji to osobne DELETE, a nie wyslanie pustych pol.
+ */
+export type TreeLocationRequest = TreeLocation;
 
 /**
  * Pola drzewa ustawiane przez uzytkownika (TreeEditableFieldsRequest w backendzie) - bez projectId (idzie w URL)

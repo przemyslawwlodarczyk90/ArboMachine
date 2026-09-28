@@ -8,10 +8,12 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
- * Drzewo w projekcie - model V1: numer, gatunek (LAT/PL), podstawowe pomiary jako proste kolumny, notatka.
- * To NIE jest docelowy model arborystyczny: bez lokalizacji, oceny stanu/ryzyka, zdjec; wiele pni i historia
+ * Drzewo w projekcie - model V1: numer, gatunek (LAT/PL), podstawowe pomiary jako proste kolumny, notatka
+ * i opcjonalny punkt lokalizacji (TreeLocation). To NIE jest docelowy model arborystyczny: bez oceny stanu/ryzyka,
+ * zdjec; wiele pni i historia
  * pomiarow wymagalyby osobnych encji. Kolejne pola dochodza malymi, osobnymi zmianami.
  * Nie istnieje bez projektu. Nie ma wlasnego wlasciciela: wlasnosc wynika z Tree -> Project -> owner.
  * Relacja jednokierunkowa - Project nie trzyma kolekcji drzew (liste daje TreeRepository).
@@ -93,6 +95,14 @@ public class Tree {
     @Column(columnDefinition = "text")
     private String notes;
 
+    /**
+     * Opcjonalny punkt drzewa (kolumny latitude/longitude, obie null = brak lokalizacji). Nie jest polem
+     * edytowalnym formularza karty drzewa - zmienia sie osobna operacja, bo docelowo punkt bedzie pochodzil
+     * z mapy albo GNSS, a nie z edycji danych opisowych.
+     */
+    @Embedded
+    private TreeLocation location;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -117,6 +127,18 @@ public class Tree {
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
     public void replaceEditableAttributes(TreeEditableAttributes newAttributes, Instant updateTime) {
         applyEditableAttributes(newAttributes);
+        this.updatedAt = updateTime;
+    }
+
+    /** Ustawia albo zastepuje lokalizacje drzewa i przesuwa updatedAt. */
+    public void placeAt(TreeLocation newLocation, Instant updateTime) {
+        this.location = Objects.requireNonNull(newLocation, "Use clearLocation to remove the location");
+        this.updatedAt = updateTime;
+    }
+
+    /** Drzewo wraca do stanu "lokalizacja nie ustalona" i przesuwa updatedAt. */
+    public void clearLocation(Instant updateTime) {
+        this.location = null;
         this.updatedAt = updateTime;
     }
 

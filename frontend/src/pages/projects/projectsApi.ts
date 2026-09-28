@@ -1,5 +1,5 @@
 import { sendApiRequest } from '../../api/httpClient';
-import type { CreateProjectRequest, Project } from './projectDataTypes';
+import type { CreateProjectRequest, Project, UpdateProjectRequest } from './projectDataTypes';
 
 /**
  * Endpointy modulu projektow (/api/projects/**). Wlasnosci projektu pilnuje backend -
@@ -16,4 +16,9 @@ export const projectsApi = {
 
   getProjectOfCurrentUser: (projectId: number) =>
     sendApiRequest<Project>(`/api/projects/${projectId}`, { sendAccessToken: true }),
+
+  updateProjectOfCurrentUser: (projectId: number, updateProjectRequest: UpdateProjectRequest) =>
+    sendApiRequest<Project>(`/api/projects/${projectId}`, {
+      httpMethod: 'PATCH', requestBody: updateProjectRequest, sendAccessToken: true,
+    }),
 };

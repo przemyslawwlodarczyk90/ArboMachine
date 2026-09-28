@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
 import { TreeDetailsView } from './TreeDetailsView';
 import { TreeEditForm } from './TreeEditForm';
+import { TreeLocationSection } from './location/TreeLocationSection';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
 
@@ -18,7 +19,8 @@ type TreeLoadingState =
 
 /**
  * Karta drzewa (/projects/:projectId/trees/:treeId). Strona tylko orkiestruje: laduje drzewo
- * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm). Wlasnosci nie sprawdzamy w React.
+ * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm); pod podgladem sekcja lokalizacji
+ * (TreeLocationSection). Wlasnosci nie sprawdzamy w React.
  */
 export function TreePage() {
   const routeParams = useParams();
@@ -77,11 +79,14 @@ export function TreePage() {
 
   const { tree } = treeLoadingState;
   // Po zapisie podmieniamy drzewo odpowiedzia PATCH (bez dodatkowego GET) i wracamy do podgladu.
+  const replaceTree = (changedTree: Tree) => setTreeLoadingState({ status: 'loaded', tree: changedTree });
   const replaceTreeWithSavedOne = (savedTree: Tree) => {
-    setTreeLoadingState({ status: 'loaded', tree: savedTree });
+    replaceTree(savedTree);
     setIsEditingTree(false);
   };
 
+  // Lokalizacja to osobna sekcja z wlasna operacja zapisu - w trybie edycji danych drzewa jest ukryta,
+  // zeby na ekranie byl tylko jeden aktywny formularz.
   return (
     <div className="stack">
       {backToTreesLink}
@@ -89,6 +94,9 @@ export function TreePage() {
         ? <TreeEditForm projectId={projectId} savedTree={tree} onTreeSaved={replaceTreeWithSavedOne}
                         cancelEditing={() => setIsEditingTree(false)} />
         : <TreeDetailsView tree={tree} startEditing={() => setIsEditingTree(true)} />}
+      {!isEditingTree && projectId !== null && (
+        <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+      )}
     </div>
   );
 }

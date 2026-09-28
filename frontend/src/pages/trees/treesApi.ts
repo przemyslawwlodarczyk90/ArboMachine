@@ -1,5 +1,5 @@
 import { sendApiRequest } from '../../api/httpClient';
-import type { CreateTreeRequest, Tree, UpdateTreeRequest } from './treeDataTypes';
+import type { CreateTreeRequest, Tree, TreeLocationRequest, UpdateTreeRequest } from './treeDataTypes';
 
 /**
  * Endpointy modulu drzew (/api/projects/{projectId}/trees/**). Dostep do drzew wynika z wlasnosci projektu,
@@ -20,5 +20,17 @@ export const treesApi = {
   updateTreeOfProject: (projectId: number, treeId: number, updateTreeRequest: UpdateTreeRequest) =>
     sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}`, {
       httpMethod: 'PATCH', requestBody: updateTreeRequest, sendAccessToken: true,
+    }),
+
+  /** Ustawia albo zastepuje lokalizacje; zwraca zaktualizowane drzewo. */
+  setTreeLocation: (projectId: number, treeId: number, treeLocationRequest: TreeLocationRequest) =>
+    sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}/location`, {
+      httpMethod: 'PUT', requestBody: treeLocationRequest, sendAccessToken: true,
+    }),
+
+  /** Usuwa lokalizacje (drzewo wraca do stanu "nie ustalono"); zwraca zaktualizowane drzewo. */
+  clearTreeLocation: (projectId: number, treeId: number) =>
+    sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}/location`, {
+      httpMethod: 'DELETE', sendAccessToken: true,
     }),
 };

@@ -4,6 +4,7 @@ import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
+import { EditProjectDialog } from './EditProjectDialog';
 import type { Project } from './projectDataTypes';
 import { projectsApi } from './projectsApi';
 
@@ -32,6 +33,7 @@ export function ProjectPage() {
   // Hook wywolywany przed wczesnymi returnami ponizej (zasady hookow Reacta).
   const isTreeDetailRoute = useMatch('/projects/:projectId/trees/*') !== null;
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
+  const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
 
   useEffect(() => {
     if (projectId === null) {
@@ -88,7 +90,10 @@ export function ProjectPage() {
     <div className="stack-lg">
       <header className="page-header">
         {backToProjectsLink}
-        <h1>{project.name}</h1>
+        <div className="page-header-row">
+          <h1>{project.name}</h1>
+          <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edit project</button>
+        </div>
         {project.description && <p className="muted project-description">{project.description}</p>}
       </header>
 
@@ -105,6 +110,14 @@ export function ProjectPage() {
       <section className="card workspace-section">
         <Outlet />
       </section>
+
+      {isEditProjectDialogOpen && (
+        <EditProjectDialog savedProject={project} closeDialog={() => setIsEditProjectDialogOpen(false)}
+                           onProjectSaved={(savedProject) => {
+                             setProjectLoadingState({ status: 'loaded', project: savedProject });
+                             setIsEditProjectDialogOpen(false);
+                           }} />
+      )}
     </div>
   );
 }

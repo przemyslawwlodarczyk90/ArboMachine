@@ -3,7 +3,10 @@ package com.example.arbomachine.domain.tree.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** Drzewo zwracane przez API - samo id projektu, bez zagniezdzonego projektu. */
+/**
+ * Drzewo zwracane przez API - samo id projektu, bez zagniezdzonego projektu.
+ * location == null oznacza, ze lokalizacja drzewa nie jest jeszcze ustalona.
+ */
 public record TreeResponse(
         Long id,
         Long projectId,
@@ -14,6 +17,7 @@ public record TreeResponse(
         BigDecimal heightM,
         BigDecimal crownDiameterM,
         String notes,
+        TreeLocationResponse location,
         Instant createdAt,
         Instant updatedAt
 ) {}

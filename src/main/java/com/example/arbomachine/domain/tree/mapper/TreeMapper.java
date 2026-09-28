@@ -1,7 +1,9 @@
 package com.example.arbomachine.domain.tree.mapper;
 
+import com.example.arbomachine.domain.tree.dto.TreeLocationResponse;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
 import com.example.arbomachine.domain.tree.entity.Tree;
+import com.example.arbomachine.domain.tree.entity.TreeLocation;
 import org.springframework.stereotype.Component;
 
 /** Encja Tree -> TreeResponse. Z projektu bierze tylko id (nie inicjalizuje leniwie ladowanego projektu). */
@@ -19,8 +21,13 @@ public class TreeMapper {
                 tree.getHeightM(),
                 tree.getCrownDiameterM(),
                 tree.getNotes(),
+                toTreeLocationResponseOrNull(tree.getLocation()),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()
         );
+    }
+
+    private TreeLocationResponse toTreeLocationResponseOrNull(TreeLocation location) {
+        return location == null ? null : new TreeLocationResponse(location.getLatitude(), location.getLongitude());
     }
 }

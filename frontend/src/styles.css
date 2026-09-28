@@ -464,7 +464,7 @@ th.right, td.right { text-align: right; }
 }
 .tree-list-item:hover { background: var(--surface-muted); color: var(--text); }
 .tree-list-item:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus) 50%, transparent); outline-offset: -3px; }
-.tree-list-item-number { font-weight: 600; grid-row: span 2; }
+.tree-list-item-number { font-weight: 600; grid-row: span 3; }
 .tree-list-item-species { font-style: italic; }
 .tree-list-item-notes {
   grid-column: 2;
@@ -478,8 +478,15 @@ th.right, td.right { text-align: right; }
 .tree-details dt { color: var(--text-muted); }
 .tree-details dd { margin: 0; }
 .tree-details-notes { white-space: pre-line; }
+.tree-list-item-no-location { grid-column: 2; color: var(--text-muted); font-size: 0.83rem; }
+
+/* Sekcja lokalizacji na karcie drzewa - oddzielona od danych opisowych, bo ma wlasna operacje zapisu. */
+.tree-location-section { display: grid; gap: 0.6rem; margin-top: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.tree-location-section h3 { margin: 0; }
+.tree-location-section .form { margin-top: 0; }
+.tree-location-coordinates { margin: 0; font-size: 1.1rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 @media (max-width: 560px) {
   .tree-list-item, .tree-details { grid-template-columns: 1fr; }
   .tree-list-item-number { grid-row: auto; }
-  .tree-list-item-notes { grid-column: 1; }
+  .tree-list-item-notes, .tree-list-item-no-location { grid-column: 1; }
 }
