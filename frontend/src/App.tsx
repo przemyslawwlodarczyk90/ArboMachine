@@ -13,6 +13,7 @@ import { OfficialDashboardPage } from './pages/official/OfficialDashboardPage';
 import { ProjectPage } from './pages/projects/ProjectPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { ProjectWorkspaceSectionPlaceholder } from './pages/projects/ProjectWorkspaceSectionPlaceholder';
+import { ProjectTreeMapSection } from './pages/trees/map/ProjectTreeMapSection';
 import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
 import { TreePage } from './pages/trees/TreePage';
 import { RegistrationPage } from './pages/RegistrationPage';
@@ -51,10 +52,9 @@ export default function App() {
               <Route path=":projectId" element={<ProjectPage />}>
                 <Route index element={<ProjectTreesSection />} />
                 <Route path="trees/:treeId" element={<TreePage />} />
-                <Route path="map" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Map"
-                  plannedModuleMessage="The project map will be added in a later stage." />} />
-                <Route path="documentation" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Photos & documentation"
-                  plannedModuleMessage="Photos and documentation will be added in a later stage." />} />
+                <Route path="map" element={<ProjectTreeMapSection />} />
+                <Route path="documentation" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Zdjęcia i dokumentacja"
+                  plannedModuleMessage="Zdjęcia i dokumentacja zostaną dodane w kolejnym etapie." />} />
               </Route>
             </Route>
           </Route>

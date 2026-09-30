@@ -50,8 +50,10 @@ Czy ręczne wpisywanie współrzędnych jest w ogóle potrzebne arboryście, czy
 Formularz współrzędnych to rozwiązanie przejściowe przed mapą; nie wiemy, czy w terenie ktoś przepisuje punkty ręcznie.
 
 ### Co przyjęto tymczasowo w V1
-Karta drzewa ma sekcję „Location” z ręcznym formularzem (latitude/longitude). Backend nie zakłada źródła współrzędnych —
-mapa/GNSS użyją tego samego endpointu `PUT .../trees/{treeId}/location`.
+Karta drzewa ma sekcję „Lokalizacja”: wskazanie punktu na mapie („Ustaw na mapie” / „Zmień na mapie”) oraz ręczny
+formularz („Wpisz współrzędne”). Oba zapisują ten sam `TreeLocation` tym samym endpointem
+`PUT .../trees/{treeId}/location`; backend nie zna źródła współrzędnych. Formularza nie usuwamy, dopóki discovery
+nie potwierdzi, że jest zbędny.
 
 ### Czy blokuje dalszy development?
 NIE.
@@ -76,22 +78,55 @@ NIE.
 
 ---
 
-## Biblioteka mapowa
+## Biblioteka mapowa — DECYZJA V1 (etapy 11–12)
+
+### Decyzja
+**OpenLayers** (`ol`) jako jedyna biblioteka mapowa — pod przyszły workflow GIS (WMS, Geoportal, PL-2000/PL-1992,
+QGIS). Nie oznacza to decyzji, jak te funkcje zostaną zrealizowane; żadna z nich nie jest zaimplementowana.
+
+### Co działa w V1
+Mapa projektu (`/projects/:projectId/map`, podgląd markerów drzew z lokalizacją) i mapa lokalizacji w karcie drzewa
+(wybór punktu → „Zapisz lokalizację” / „Anuluj”). Dane w WGS84; EPSG:3857 tylko do renderowania.
+
+### Nadal otwarte
+Wydajność przy dużej liczbie drzew (clustering), praca offline, WMS/Geoportal — patrz sekcje poniżej.
+
+---
+
+## Podkład mapowy
 
 ### Pytanie
-Leaflet, OpenLayers czy MapLibre? Jakie podkłady (Geoportal, WMS, ortofotomapa), praca offline, wydajność przy dużej
-liczbie drzew?
+Jakich podkładów potrzebuje arborysta (ortofotomapa, Geoportal/WMS GUGiK, mapy klienta, własne rastry)?
 
 ### Dlaczego wymaga doprecyzowania
-Wybór zależy od WMS/Geoportalu, układów współrzędnych (OpenLayers lepiej obsługuje PL-2000), trybu offline i liczby
-markerów — tego jeszcze nie wiemy.
+Brak realnego projektu pokazującego, na czym arborysta pracuje w terenie.
 
 ### Co przyjęto tymczasowo w V1
-Brak biblioteki mapowej. Zakładka „Map” w projekcie jest placeholderem. Frontend ma osobne komponenty
-`TreeLocationSection` / `TreeLocationForm`, obok których może dojść `TreeLocationMap`.
+Publiczne kafelki OpenStreetMap (`tile.openstreetmap.org`). Ich polityka użycia nie dopuszcza intensywnego ruchu
+produkcyjnego — przed wdrożeniem trzeba wybrać dostawcę podkładu (własny serwer kafelków, komercyjny dostawca,
+WMS GUGiK).
 
 ### Czy blokuje dalszy development?
-TAK dla etapu mapy — przed nim trzeba wybrać bibliotekę i podkład. NIE dla pozostałych prac.
+NIE dla developmentu. TAK przed wdrożeniem produkcyjnym.
+
+---
+
+## Mapa — domyślny widok i marker
+
+### Pytanie
+Od jakiego widoku startuje mapa, gdy projekt nie ma zlokalizowanych drzew? Co ma przedstawiać marker drzewa
+(numer, gatunek, stan, prace, ryzyko)? Jakie etykiety są potrzebne?
+
+### Dlaczego wymaga doprecyzowania
+Projekt nie ma adresu/obszaru; symbolika arborystyczna nie jest znana.
+
+### Co przyjęto tymczasowo w V1
+Widok startowy: cała Polska (stały, bez geolokalizacji przeglądarki). Brak ograniczenia współrzędnych „tylko Polska”.
+Jeden neutralny styl markera (zielony punkt; tymczasowy punkt przy wyborze — pomarańczowy). Brak etykiet na mapie —
+numer i gatunek pokazuje panel po kliknięciu markera.
+
+### Czy blokuje dalszy development?
+NIE.
 
 ---
 
@@ -106,7 +141,26 @@ wymaga osobnej zgody. Przy PostGIS i zmianach typów kolumn `ddl-auto=update` pr
 
 ### Co przyjęto tymczasowo w V1
 Nowe kolumny `latitude`, `longitude` (`numeric(10,7)`, nullable) dodaje Hibernate przy starcie aplikacji, jak dotychczas
-wszystkie kolumny. Istniejące drzewa dostają `null` = „brak lokalizacji”.
+wszystkie kolumny. Istniejące drzewa dostają `null` = „brak lokalizacji”. Etapy 11–12 (mapa) nie zmieniły modelu DB.
 
 ### Czy blokuje dalszy development?
 NIE teraz. TAK przed pierwszą zmianą, której `ddl-auto=update` nie wykona (zmiana typu, PostGIS, przeniesienie danych).
+
+---
+
+## Język interfejsu poza panelem arborysty
+
+### Pytanie
+Czy ekrany logowania/rejestracji/resetu hasła oraz panele urzędnika i administratora też mają być po polsku
+(i kiedy)? Czy potrzebna będzie wielojęzyczność (biblioteka i18n)?
+
+### Dlaczego wymaga doprecyzowania
+Zakres polonizacji w etapach 11–12 obejmował panel arborysty. Pozostałe ekrany i komunikaty kont
+(`userFacingErrorMessages.ts`, część „konta/logowanie”) są nadal po angielsku.
+
+### Co przyjęto tymczasowo w V1
+Polski UI: panel arborysty (projekty, drzewa, lokalizacja, mapa), górny pasek panelu, nazwy ról, ogólne komunikaty
+błędów HTTP. Bez biblioteki i18n — teksty wprost w komponentach. Kod, endpointy, enumy i pola API po angielsku.
+
+### Czy blokuje dalszy development?
+NIE.

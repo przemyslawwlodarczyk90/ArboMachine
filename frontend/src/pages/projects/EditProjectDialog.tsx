@@ -33,7 +33,7 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
     setFormErrorMessage(null);
 
     if (!projectName.trim()) {
-      setErrorMessageByFieldName({ name: 'Project name is required.' });
+      setErrorMessageByFieldName({ name: 'Nazwa projektu jest wymagana.' });
       return;
     }
     setErrorMessageByFieldName({});
@@ -52,7 +52,7 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
         setFormErrorMessage(savingError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
@@ -60,19 +60,19 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
   };
 
   return (
-    <ModalDialog title="Edit project" closeDialog={closeDialog} isClosingBlocked={isSaving}>
+    <ModalDialog title="Edytuj projekt" closeDialog={closeDialog} isClosingBlocked={isSaving}>
       <form onSubmit={submitProjectChanges} className="form" noValidate>
         {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
-        <LabeledInputField label="Project name *" autoFocus value={projectName} maxLength={255}
+        <LabeledInputField label="Nazwa projektu *" autoFocus value={projectName} maxLength={255}
                            onChange={(changeEvent) => setProjectName(changeEvent.target.value)}
                            errorMessage={errorMessageByFieldName.name} />
-        <LabeledTextAreaField label="Description" value={projectDescription}
+        <LabeledTextAreaField label="Opis" value={projectDescription}
                               onChange={(changeEvent) => setProjectDescription(changeEvent.target.value)}
                               errorMessage={errorMessageByFieldName.description} />
         <div className="form-actions">
-          <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isSaving}>Cancel</button>
+          <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isSaving}>Anuluj</button>
           <button type="submit" className="btn btn-primary" disabled={!hasUnsavedChanges || isSaving}>
-            {isSaving ? 'Saving…' : 'Save'}
+            {isSaving ? 'Zapisywanie…' : 'Zapisz'}
           </button>
         </div>
       </form>

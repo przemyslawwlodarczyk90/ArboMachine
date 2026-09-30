@@ -3,9 +3,15 @@
 Backend Spring Boot 3.5 (**Java 25**) z pełną obsługą kont użytkowników, projektów i drzew oraz frontend React
 (Vite, TypeScript) w katalogu [`frontend/`](frontend).
 
-Konwencja w kodzie: **nazwy klas, encji, metod i zmiennych po angielsku** i możliwie samoopisujące się
-(np. `UserAccount`, `ConfirmEmailOnUsersBehalfHandler`), **komentarze i dokumentacja po polsku**.
-Interfejs użytkownika i komunikaty API są po angielsku.
+Konwencja językowa:
+- **kod i identyfikatory techniczne po angielsku** - klasy, encje, metody, zmienne, DTO, komponenty React, typy
+  TypeScript, pliki, endpointy REST, enumy i pola API (możliwie samoopisujące się, np. `UserAccount`,
+  `ProjectTreeMap`, `setTreeLocation`);
+- **interfejs użytkownika po polsku** - panel arborysty (projekty, drzewa, lokalizacja, mapa) i wspólne elementy
+  (górny pasek, komunikaty błędów HTTP). Bez biblioteki i18n - teksty są wprost w komponentach;
+- **komentarze i dokumentacja po polsku**. Surowe komunikaty walidacji API są po angielsku - frontend tłumaczy je
+  w `userFacingErrorMessages.ts`. Ekrany logowania/rejestracji i panele urzędnika/admina nie są jeszcze
+  przetłumaczone (patrz `docs/DO_DOPRECYZOWANIA.md`).
 
 ---
 
@@ -50,6 +56,10 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   Model **Tree V1**: numer inwentaryzacyjny, gatunek łaciński i polski, obwód pnia (cm), wysokość (m),
   średnica korony (m), notatka. To roboczy model do rozwijania małymi krokami, nie docelowy model arborystyczny -
   patrz [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
+- 📍 **Lokalizacja drzewa (TreeLocation V1)** - punkt WGS84 (`latitude`/`longitude` w stopniach dziesiętnych),
+  ustawiany w karcie drzewa wskazaniem na mapie albo ręcznym formularzem współrzędnych; można go też usunąć
+- 🗺️ **Mapa projektu** (`/projects/:projectId/map`, OpenLayers + podkład OpenStreetMap) - markery drzew
+  z zapisaną lokalizacją; kliknięcie markera pokazuje „Drzewo {numer}”, gatunek i link do karty drzewa
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
 
@@ -128,13 +138,19 @@ frontend/src
 │                apiDataTypes, userFacingErrorMessages
 ├── auth         AuthenticationContext (sesja, logowanie), routeGuards, userRoles
 ├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
+├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera)
 └── pages
     ├── arborist   ArboristDashboardPage + arboristPanelApi
     ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
     │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
     ├── trees      ProjectTreesSection, NewTreeDialog, TreePage (orkiestracja), TreeDetailsView (podgląd),
-    │              TreeEditForm (edycja), TreeFormFields + treeFormValues (pola, wartości i walidacja wspólne
-    │              dla dodawania i edycji) + treesApi, treeDataTypes
+    │   │          TreeEditForm (edycja), TreeFormFields + treeFormValues (pola, wartości i walidacja wspólne
+    │   │          dla dodawania i edycji) + treesApi, treeDataTypes
+    │   ├── location  TreeLocationSection (tryby: podgląd / ręczny formularz / wybór na mapie), TreeLocationForm,
+    │   │             TreeLocationMap, RemoveTreeLocationDialog, treeLocationMapCoordinates (WGS84 <-> mapa),
+    │   │             treeLocationValidRange, treeLocationFormValues
+    │   └── map       ProjectTreeMapSection (trasa /map: dane i stany UI), ProjectTreeMap (OpenLayers),
+    │                 treeMapPoints (drzewa -> punkty mapy)
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -196,6 +212,30 @@ npm run dev          # http://localhost:5173
 Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu:
 `API_PROXY_TARGET=http://localhost:8081 npm run dev`.
 
+```bash
+npm test             # testy logiki (node --test, bez dodatkowych zależności)
+npm run build        # tsc + build do src/main/resources/static (serwuje go Spring Boot)
+```
+
+### 🗺️ Mapa (OpenLayers)
+
+Jedyną biblioteką mapową jest **OpenLayers** (`ol`) - wybrana pod przyszły workflow GIS (WMS, Geoportal,
+układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane**. Podkład V1 to OpenStreetMap.
+
+- Dane w bazie i API zostają w **WGS84** (`latitude`/`longitude`). OpenLayers renderuje w EPSG:3857 -
+  transformacja odbywa się wyłącznie na potrzeby mapy w `treeLocationMapCoordinates.ts` (jedyne miejsce zamiany;
+  OpenLayers używa kolejności `[longitude, latitude]`, API `{ latitude, longitude }`). Współrzędnych projekcji
+  mapy nigdy nie wysyłamy do backendu.
+- **Mapa projektu** korzysta z `GET /api/projects/{projectId}/trees` (odpowiedź zawiera już `location`) -
+  bez osobnego endpointu mapy i bez zapytań o każde drzewo. Widok dopasowuje się do markerów (jedno drzewo -
+  zoom 18, a nie ekstremalny); bez lokalizacji - widok całej Polski i komunikat „Brak drzew z zapisaną lokalizacją.”.
+  Geolokalizacja przeglądarki nie jest używana.
+- **Ustawianie lokalizacji na mapie** (karta drzewa, sekcja „Lokalizacja”): „Ustaw na mapie” / „Zmień na mapie”
+  → kliknięcie stawia tymczasowy (pomarańczowy) punkt → „Zapisz lokalizację” albo „Anuluj”. Dopiero zapis wysyła
+  istniejące `PUT .../trees/{treeId}/location`; po sukcesie UI pokazuje punkt zwrócony przez backend
+  (backend zaokrągla do 7 miejsc). Ręczny formularz („Wpisz współrzędne”) zostaje i zmienia ten sam `TreeLocation`;
+  karta drzewa trzyma jedno źródło prawdy o drzewie, więc mapa i formularz zawsze pokazują te same dane.
+
 ---
 
 ## 🔌 REST API
@@ -226,6 +266,8 @@ Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu
 | GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
 | PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
+| PUT | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Ustawienie/zamiana punktu `{ latitude, longitude }` (WGS84, oba wymagane) → 200 z drzewem; używają go i mapa, i ręczny formularz |
+| DELETE | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Usunięcie lokalizacji (`location: null`) → 200 z drzewem |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
 że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
@@ -270,12 +312,12 @@ nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą by�
 
 | Trasa | Dostęp | Zawartość |
 |---|---|---|
-| `/projects` | ARBORIST | Lista własnych projektów, przycisk „New project” (okno tworzenia) |
-| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Trees”: lista drzew i „Add tree” |
-| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd (numer, gatunek, notatka, daty) i edycja (Save / Cancel) |
-| `/projects/:projectId/map` | ARBORIST | Sekcja „Map” (placeholder, bez biblioteki mapowej) |
-| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Photos & documentation” (placeholder) |
+| `/projects` | ARBORIST | Lista własnych projektów, przycisk „Nowy projekt” (okno tworzenia) |
+| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
+| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcja „Lokalizacja” z mapą i ręcznym formularzem |
+| `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
+| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Zdjęcia i dokumentacja” (placeholder) |
 
 Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
-Kolejny moduł projektu (np. mapa) dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
+Kolejny moduł projektu dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
 bez zmian w `ProjectPage`.

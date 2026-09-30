@@ -57,7 +57,7 @@ async function convertErrorResponseToApiRequestError(errorResponse: Response): P
     for (const [fieldPath, fieldErrorMessage] of Object.entries(responseFields)) {
       errorMessageByFieldName[fieldPath.replace(/^profile\./, '')] = toUserFacingErrorMessage(String(fieldErrorMessage));
     }
-    return new ApiRequestError(errorResponse.status, 'Please correct the highlighted fields.', errorMessageByFieldName);
+    return new ApiRequestError(errorResponse.status, 'Popraw zaznaczone pola.', errorMessageByFieldName);
   }
 
   const message = typeof responseBody === 'string' && responseBody.trim()
@@ -69,8 +69,8 @@ async function convertErrorResponseToApiRequestError(errorResponse: Response): P
 function defaultMessageForHttpStatus(httpStatus: number): string {
   if (httpStatus === 401) return toUserFacingErrorMessage('Unauthorized');
   if (httpStatus === 403) return toUserFacingErrorMessage('Forbidden');
-  if (httpStatus >= 500) return 'Server error. Please try again later.';
-  return `Request failed (${httpStatus}).`;
+  if (httpStatus >= 500) return 'Błąd serwera. Spróbuj ponownie później.';
+  return `Żądanie nie powiodło się (${httpStatus}).`;
 }
 
 export interface ApiRequestOptions {
@@ -100,7 +100,7 @@ export async function sendApiRequest<ResponseType>(
       body: requestBody !== undefined ? JSON.stringify(requestBody) : undefined,
     });
   } catch {
-    throw new ApiRequestError(0, 'Cannot reach the server. Is the backend running?');
+    throw new ApiRequestError(0, 'Brak połączenia z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie.');
   }
 
   if (!response.ok) {

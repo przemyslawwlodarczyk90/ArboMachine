@@ -1,8 +1,8 @@
 import type { AssignableUserRole, UserRole } from '../api/apiDataTypes';
 
 export const USER_ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  ARBORIST: 'Arborist',
-  OFFICIAL: 'Official',
+  ARBORIST: 'Arborysta',
+  OFFICIAL: 'Urzędnik',
   ADMIN: 'Administrator',
 };
 

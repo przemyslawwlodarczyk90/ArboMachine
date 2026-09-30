@@ -29,7 +29,7 @@ export function ProjectsPage() {
         if (!isResponseStillWanted) return;
         setProjectListState({
           status: 'failed',
-          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Unexpected error.',
+          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.',
         });
       });
     return () => { isResponseStillWanted = false; };
@@ -40,8 +40,8 @@ export function ProjectsPage() {
   return (
     <div className="stack-lg">
       <header className="page-header page-header-row">
-        <h1>Projects</h1>
-        <button className="btn btn-primary" onClick={openNewProjectDialog}>New project</button>
+        <h1>Projekty</h1>
+        <button className="btn btn-primary" onClick={openNewProjectDialog}>Nowy projekt</button>
       </header>
 
       {projectListState.status === 'loading' && (
@@ -49,13 +49,13 @@ export function ProjectsPage() {
       )}
 
       {projectListState.status === 'failed' && (
-        <Alert variant="error">We could not load your projects. {projectListState.errorMessage}</Alert>
+        <Alert variant="error">Nie udało się wczytać projektów. {projectListState.errorMessage}</Alert>
       )}
 
       {projectListState.status === 'loaded' && projectListState.projects.length === 0 && (
         <section className="card empty-state">
-          <p>You don't have any projects yet.</p>
-          <button className="btn btn-primary" onClick={openNewProjectDialog}>Create your first project</button>
+          <p>Nie masz jeszcze żadnych projektów.</p>
+          <button className="btn btn-primary" onClick={openNewProjectDialog}>Utwórz pierwszy projekt</button>
         </section>
       )}
 
@@ -67,8 +67,8 @@ export function ProjectsPage() {
                 <span className="project-list-item-name">{project.name}</span>
                 {project.description && <span className="project-list-item-description">{project.description}</span>}
                 <span className="muted small">
-                  Created {formatTimestampForDisplay(project.createdAt)}
-                  {project.updatedAt !== project.createdAt && <> · Updated {formatTimestampForDisplay(project.updatedAt)}</>}
+                  Utworzono {formatTimestampForDisplay(project.createdAt)}
+                  {project.updatedAt !== project.createdAt && <> · Zaktualizowano {formatTimestampForDisplay(project.updatedAt)}</>}
                 </span>
               </Link>
             </li>

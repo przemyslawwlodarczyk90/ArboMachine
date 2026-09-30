@@ -18,9 +18,9 @@ type ProjectLoadingState =
 /** Sekcje workspace - kazda to osobna trasa zagniezdzona, pod ktora pozniej wejdzie jej modul. */
 const WORKSPACE_SECTION_LINKS = [
   // Lista drzew to strona glowna projektu, ale zakladka ma byc aktywna takze na stronie drzewa (trees/:treeId).
-  { relativePath: '', label: 'Trees', matchExactPathOnly: true, alsoActiveOnTreeDetailRoute: true },
-  { relativePath: 'map', label: 'Map', matchExactPathOnly: false },
-  { relativePath: 'documentation', label: 'Photos & documentation', matchExactPathOnly: false },
+  { relativePath: '', label: 'Drzewa', matchExactPathOnly: true, alsoActiveOnTreeDetailRoute: true },
+  { relativePath: 'map', label: 'Mapa', matchExactPathOnly: false },
+  { relativePath: 'documentation', label: 'Zdjęcia i dokumentacja', matchExactPathOnly: false },
 ];
 
 /**
@@ -52,13 +52,13 @@ export function ProjectPage() {
           && (loadingError.httpStatus === 404 || loadingError.httpStatus === 403);
         setProjectLoadingState(isNotFoundOrForbidden
           ? { status: 'notFoundOrNoAccess' }
-          : { status: 'failed', errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Unexpected error.' });
+          : { status: 'failed', errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.' });
       });
     // Zmiana projectId w adresie (albo odmontowanie) uniewaznia odpowiedz na poprzednie zapytanie.
     return () => { isResponseStillWanted = false; };
   }, [projectId]);
 
-  const backToProjectsLink = <Link to="/projects" className="back-link">← All projects</Link>;
+  const backToProjectsLink = <Link to="/projects" className="back-link">← Wszystkie projekty</Link>;
 
   if (projectLoadingState.status === 'loading') {
     return <div className="center"><LoadingSpinner /></div>;
@@ -69,8 +69,8 @@ export function ProjectPage() {
       <div className="stack-lg">
         {backToProjectsLink}
         <section className="card empty-state">
-          <p>This project does not exist or you do not have access to it.</p>
-          <Link to="/projects" className="btn btn-primary">Back to projects</Link>
+          <p>Ten projekt nie istnieje albo nie masz do niego dostępu.</p>
+          <Link to="/projects" className="btn btn-primary">Wróć do projektów</Link>
         </section>
       </div>
     );
@@ -80,7 +80,7 @@ export function ProjectPage() {
     return (
       <div className="stack-lg">
         {backToProjectsLink}
-        <Alert variant="error">We could not load this project. {projectLoadingState.errorMessage}</Alert>
+        <Alert variant="error">Nie udało się wczytać projektu. {projectLoadingState.errorMessage}</Alert>
       </div>
     );
   }
@@ -92,12 +92,12 @@ export function ProjectPage() {
         {backToProjectsLink}
         <div className="page-header-row">
           <h1>{project.name}</h1>
-          <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edit project</button>
+          <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edytuj projekt</button>
         </div>
         {project.description && <p className="muted project-description">{project.description}</p>}
       </header>
 
-      <nav className="workspace-tabs" aria-label="Project sections">
+      <nav className="workspace-tabs" aria-label="Sekcje projektu">
         {WORKSPACE_SECTION_LINKS.map((sectionLink) => (
           <NavLink key={sectionLink.label} to={sectionLink.relativePath} end={sectionLink.matchExactPathOnly}
                    className={({ isActive }) =>

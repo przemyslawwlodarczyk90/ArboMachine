@@ -46,12 +46,12 @@ export function TreePage() {
           && (loadingError.httpStatus === 404 || loadingError.httpStatus === 403);
         setTreeLoadingState(isNotFoundOrForbidden
           ? { status: 'notFoundOrNoAccess' }
-          : { status: 'failed', errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Unexpected error.' });
+          : { status: 'failed', errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.' });
       });
     return () => { isResponseStillWanted = false; };
   }, [projectId, treeId]);
 
-  const backToTreesLink = <Link to={`/projects/${projectId ?? ''}`} className="back-link">← Back to trees</Link>;
+  const backToTreesLink = <Link to={`/projects/${projectId ?? ''}`} className="back-link">← Wróć do listy drzew</Link>;
 
   if (treeLoadingState.status === 'loading') {
     return <div className="center"><LoadingSpinner /></div>;
@@ -62,7 +62,7 @@ export function TreePage() {
       <div className="stack">
         {backToTreesLink}
         <div className="empty-state">
-          <p>This tree does not exist or you do not have access to it.</p>
+          <p>To drzewo nie istnieje albo nie masz do niego dostępu.</p>
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export function TreePage() {
     return (
       <div className="stack">
         {backToTreesLink}
-        <Alert variant="error">We could not load this tree. {treeLoadingState.errorMessage}</Alert>
+        <Alert variant="error">Nie udało się wczytać drzewa. {treeLoadingState.errorMessage}</Alert>
       </div>
     );
   }

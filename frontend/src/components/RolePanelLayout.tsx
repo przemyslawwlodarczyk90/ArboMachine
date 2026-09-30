@@ -13,9 +13,10 @@ interface PanelNavigationLink {
 
 const NAVIGATION_LINKS_BY_ROLE: Record<UserRole, PanelNavigationLink[]> = {
   ARBORIST: [
-    { path: '/arborist', label: 'Dashboard', matchExactPathOnly: true },
-    { path: '/projects', label: 'Projects' },
-    { path: '/arborist/profile', label: 'My profile' },
+    // Panel arborysty ma polski UI; panele urzednika i admina - na razie bez zmian (docs/DO_DOPRECYZOWANIA.md).
+    { path: '/arborist', label: 'Pulpit', matchExactPathOnly: true },
+    { path: '/projects', label: 'Projekty' },
+    { path: '/arborist/profile', label: 'Mój profil' },
   ],
   OFFICIAL: [
     { path: '/official', label: 'Dashboard', matchExactPathOnly: true },
@@ -56,7 +57,7 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
         </nav>
         <div className="topbar-user">
           <span className="muted">{currentUserAccount?.firstName} {currentUserAccount?.lastName}</span>
-          <button className="btn btn-ghost" onClick={signOutAndGoToSignInPage}>Sign out</button>
+          <button className="btn btn-ghost" onClick={signOutAndGoToSignInPage}>Wyloguj</button>
         </div>
       </header>
       <main className="content">

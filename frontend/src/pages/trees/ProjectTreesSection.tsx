@@ -15,7 +15,7 @@ type TreeListState =
   | { status: 'loaded'; trees: Tree[] };
 
 /**
- * Sekcja "Trees" workspace projektu (/projects/:projectId). Renderuje sie wewnatrz ProjectPage dopiero
+ * Sekcja "Drzewa" workspace projektu (/projects/:projectId). Renderuje sie wewnatrz ProjectPage dopiero
  * po udanym pobraniu projektu, wiec nie pobiera projektu ponownie - bierze tylko projectId z trasy.
  */
 export function ProjectTreesSection() {
@@ -35,7 +35,7 @@ export function ProjectTreesSection() {
         if (!isResponseStillWanted) return;
         setTreeListState({
           status: 'failed',
-          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Unexpected error.',
+          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.',
         });
       });
     return () => { isResponseStillWanted = false; };
@@ -54,20 +54,20 @@ export function ProjectTreesSection() {
   return (
     <div className="stack">
       <div className="section-header-row">
-        <h2>Trees</h2>
-        <button className="btn btn-primary" onClick={openNewTreeDialog}>Add tree</button>
+        <h2>Drzewa</h2>
+        <button className="btn btn-primary" onClick={openNewTreeDialog}>Dodaj drzewo</button>
       </div>
 
       {treeListState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
 
       {treeListState.status === 'failed' && (
-        <Alert variant="error">We could not load the trees of this project. {treeListState.errorMessage}</Alert>
+        <Alert variant="error">Nie udało się wczytać drzew projektu. {treeListState.errorMessage}</Alert>
       )}
 
       {treeListState.status === 'loaded' && treeListState.trees.length === 0 && (
         <div className="empty-state">
-          <p>No trees have been added to this project yet.</p>
-          <button className="btn btn-primary" onClick={openNewTreeDialog}>Add first tree</button>
+          <p>Do tego projektu nie dodano jeszcze drzew.</p>
+          <button className="btn btn-primary" onClick={openNewTreeDialog}>Dodaj pierwsze drzewo</button>
         </div>
       )}
 
@@ -76,12 +76,12 @@ export function ProjectTreesSection() {
           {treeListState.trees.map((tree) => (
             <li key={tree.id}>
               <Link to={`trees/${tree.id}`} className="tree-list-item">
-                <span className="tree-list-item-number">Tree {tree.inventoryNumber}</span>
+                <span className="tree-list-item-number">Drzewo {tree.inventoryNumber}</span>
                 {tree.speciesLatin && <span className="tree-list-item-species">{tree.speciesLatin}</span>}
                 {!tree.speciesLatin && tree.speciesPolish && <span>{tree.speciesPolish}</span>}
                 {tree.notes && <span className="tree-list-item-notes">{tree.notes}</span>}
                 {/* Pokazujemy tylko brak - to drzewa, ktore wymagaja jeszcze ustalenia punktu. */}
-                {!tree.location && <span className="tree-list-item-no-location">No location</span>}
+                {!tree.location && <span className="tree-list-item-no-location">Brak lokalizacji</span>}
               </Link>
             </li>
           ))}

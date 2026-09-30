@@ -51,7 +51,7 @@ export function TreeEditForm({ projectId, savedTree, onTreeSaved, cancelEditing 
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
         setFormErrorMessage(savingError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
@@ -60,15 +60,15 @@ export function TreeEditForm({ projectId, savedTree, onTreeSaved, cancelEditing 
 
   return (
     <form onSubmit={submitTreeChanges} className="form" noValidate>
-      <h2>Edit tree {savedTree.inventoryNumber}</h2>
+      <h2>Edycja drzewa {savedTree.inventoryNumber}</h2>
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
       <TreeFormFields treeFormValues={treeFormValues} errorMessageByFieldName={errorMessageByFieldName}
                       changeFormField={changeFormField} />
       <div className="form-actions">
-        {/* Cancel zablokowany w trakcie zapisu - inaczej odpowiedz PATCH moglaby nadpisac porzucona edycje. */}
-        <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Cancel</button>
+        {/* Anuluj zablokowane w trakcie zapisu - inaczej odpowiedz PATCH moglaby nadpisac porzucona edycje. */}
+        <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Anuluj</button>
         <button type="submit" className="btn btn-primary" disabled={!hasUnsavedChanges || isSaving}>
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Zapisywanie…' : 'Zapisz'}
         </button>
       </div>
     </form>

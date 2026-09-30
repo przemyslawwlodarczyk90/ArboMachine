@@ -74,35 +74,35 @@ const errorOfOptionalMeters = (fieldValue: string, measurementName: string, maxi
   const metersText = fieldValue.trim();
   if (!metersText) return undefined;
   if (!METERS_WITH_TWO_DECIMALS_PATTERN.test(metersText)) {
-    return `${measurementName} must be a number with at most 2 decimal places.`;
+    return `${measurementName} musi być liczbą z maksymalnie 2 miejscami po przecinku.`;
   }
   const meters = Number(metersText.replace(',', '.'));
   return meters > 0 && meters <= maximumMeters
     ? undefined
-    : `${measurementName} must be greater than 0 and at most ${maximumMeters} m.`;
+    : `${measurementName} musi być większa od 0 i nie większa niż ${maximumMeters} m.`;
 };
 
 /** Walidacja po stronie przegladarki - pusty wynik oznacza, ze formularz mozna wyslac. Backend waliduje ponownie. */
 export const validateTreeFormValues = (formValues: TreeFormValues): Record<string, string> => {
   const errorMessageByFieldName: Record<string, string> = {};
   if (!formValues.inventoryNumber.trim()) {
-    errorMessageByFieldName.inventoryNumber = 'Inventory number is required.';
+    errorMessageByFieldName.inventoryNumber = 'Numer inwentaryzacyjny jest wymagany.';
   }
 
   const trunkCircumferenceText = formValues.trunkCircumferenceCm.trim();
   if (trunkCircumferenceText && !WHOLE_NUMBER_PATTERN.test(trunkCircumferenceText)) {
-    errorMessageByFieldName.trunkCircumferenceCm = 'Trunk circumference must be a whole number of centimeters.';
+    errorMessageByFieldName.trunkCircumferenceCm = 'Obwód pnia musi być liczbą całkowitą centymetrów.';
   } else if (trunkCircumferenceText) {
     const trunkCircumferenceCm = Number(trunkCircumferenceText);
     if (trunkCircumferenceCm < MINIMUM_TRUNK_CIRCUMFERENCE_CM || trunkCircumferenceCm > MAXIMUM_TRUNK_CIRCUMFERENCE_CM) {
-      errorMessageByFieldName.trunkCircumferenceCm = 'Trunk circumference must be between 1 and 5000 cm.';
+      errorMessageByFieldName.trunkCircumferenceCm = 'Obwód pnia musi mieścić się w zakresie od 1 do 5000 cm.';
     }
   }
 
-  const heightError = errorOfOptionalMeters(formValues.heightM, 'Height', MAXIMUM_HEIGHT_M);
+  const heightError = errorOfOptionalMeters(formValues.heightM, 'Wysokość', MAXIMUM_HEIGHT_M);
   if (heightError) errorMessageByFieldName.heightM = heightError;
 
-  const crownDiameterError = errorOfOptionalMeters(formValues.crownDiameterM, 'Crown diameter', MAXIMUM_CROWN_DIAMETER_M);
+  const crownDiameterError = errorOfOptionalMeters(formValues.crownDiameterM, 'Średnica korony', MAXIMUM_CROWN_DIAMETER_M);
   if (crownDiameterError) errorMessageByFieldName.crownDiameterM = crownDiameterError;
   return errorMessageByFieldName;
 };

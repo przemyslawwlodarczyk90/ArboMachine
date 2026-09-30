@@ -47,7 +47,7 @@ export function NewTreeDialog({ projectId, onTreeCreated, closeDialog }: {
         setErrorMessageByFieldName(creationError.errorMessageByFieldName);
         setFormErrorMessage(creationError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
       isSubmissionInProgress.current = false;
       setIsAddingTree(false);
@@ -55,17 +55,17 @@ export function NewTreeDialog({ projectId, onTreeCreated, closeDialog }: {
   };
 
   return (
-    <ModalDialog title="Add tree" closeDialog={closeDialog} isClosingBlocked={isAddingTree}>
+    <ModalDialog title="Dodaj drzewo" closeDialog={closeDialog} isClosingBlocked={isAddingTree}>
       <form onSubmit={submitNewTree} className="form" noValidate>
         {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
         <TreeFormFields treeFormValues={treeFormValues} errorMessageByFieldName={errorMessageByFieldName}
                         changeFormField={changeFormField} />
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isAddingTree}>
-            Cancel
+            Anuluj
           </button>
           <button type="submit" className="btn btn-primary" disabled={isAddingTree}>
-            {isAddingTree ? 'Adding…' : 'Add tree'}
+            {isAddingTree ? 'Dodawanie…' : 'Dodaj drzewo'}
           </button>
         </div>
       </form>

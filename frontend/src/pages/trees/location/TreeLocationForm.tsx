@@ -9,9 +9,9 @@ import {
 } from './treeLocationFormValues';
 
 /**
- * Reczne wpisanie wspolrzednych - manual coordinate input is V1 fallback. Docelowo podstawowym sposobem
- * ustawiania lokalizacji bedzie mapa i/lub GNSS; wtedy dojda obok nich osobne komponenty (np. TreeLocationMap),
- * ktore wysla ten sam request (treesApi.setTreeLocation). Ten formularz niczego o nich nie zaklada.
+ * Reczne wpisanie wspolrzednych - manual coordinate input is V1 fallback. Obok niego jest wskazanie punktu na mapie
+ * (TreeLocationMap w TreeLocationSection), ktore wysyla ten sam request (treesApi.setTreeLocation).
+ * Ten formularz niczego o mapie nie zaklada.
  * Po udanym zapisie oddaje drzewo z odpowiedzi (onTreeLocationSaved) - bez dodatkowego GET.
  */
 export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelEditing }: {
@@ -50,7 +50,7 @@ export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelE
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
         setFormErrorMessage(savingError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
@@ -62,22 +62,22 @@ export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelE
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
       <div className="grid-2">
         {/* Zwykla klawiatura zamiast inputMode="decimal" - klawiatura dziesietna iOS nie ma znaku minus. */}
-        <LabeledInputField label="Latitude *" autoFocus autoComplete="off" placeholder="e.g. 52.2297"
+        <LabeledInputField label="Szerokość geograficzna *" autoFocus autoComplete="off" placeholder="np. 52.2297"
                            value={locationFormValues.latitude}
-                           hintText="Decimal degrees, from -90 to 90."
+                           hintText="Stopnie dziesiętne, od -90 do 90."
                            onChange={(changeEvent) => changeFormField('latitude', changeEvent.target.value)}
                            errorMessage={errorMessageByFieldName.latitude} />
-        <LabeledInputField label="Longitude *" autoComplete="off" placeholder="e.g. 21.0122"
+        <LabeledInputField label="Długość geograficzna *" autoComplete="off" placeholder="np. 21.0122"
                            value={locationFormValues.longitude}
-                           hintText="Decimal degrees, from -180 to 180."
+                           hintText="Stopnie dziesiętne, od -180 do 180."
                            onChange={(changeEvent) => changeFormField('longitude', changeEvent.target.value)}
                            errorMessage={errorMessageByFieldName.longitude} />
       </div>
       <div className="form-actions">
-        {/* Cancel zablokowany w trakcie zapisu - inaczej odpowiedz PUT moglaby nadpisac porzucona edycje. */}
-        <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Cancel</button>
+        {/* Anuluj zablokowane w trakcie zapisu - inaczej odpowiedz PUT moglaby nadpisac porzucona edycje. */}
+        <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Anuluj</button>
         <button type="submit" className="btn btn-primary" disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save location'}
+          {isSaving ? 'Zapisywanie…' : 'Zapisz lokalizację'}
         </button>
       </div>
     </form>

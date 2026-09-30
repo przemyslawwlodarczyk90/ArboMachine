@@ -1,97 +1,150 @@
 import { useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
-import { ModalDialog } from '../../../components/ModalDialog';
-import type { Tree } from '../treeDataTypes';
+import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import { formatTreeLocationForDisplay } from './formatTreeLocationForDisplay';
+import { RemoveTreeLocationDialog } from './RemoveTreeLocationDialog';
 import { TreeLocationForm } from './TreeLocationForm';
+import { TreeLocationMap } from './TreeLocationMap';
+import { isTreeLocationWithinValidRange } from './treeLocationValidRange';
+
+/** Co robi sekcja: tylko pokazuje punkt, edytuje go recznym formularzem albo wskazaniem na mapie. */
+type LocationEditingMode = 'viewing' | 'manualForm' | 'mapPicking';
 
 /**
- * Sekcja "Location" karty drzewa: pokazuje punkt albo "nie ustawiono" i pozwala go ustawic, zmienic lub usunac.
- * Zmienione drzewo oddaje wyzej (onTreeChanged) - TreePage trzyma jedno zrodlo prawdy o drzewie.
- * Przyszla mapa (TreeLocationMap) moze dojsc tutaj jako kolejny sposob ustawienia punktu obok formularza.
+ * Sekcja "Lokalizacja" karty drzewa: zapisany punkt (tekst + mapa) i trzy operacje na tym samym TreeLocation -
+ * wskazanie na mapie, reczne wspolrzedne (formularz) i usuniecie. Mapa i formularz uzywaja tego samego endpointu
+ * (PUT .../location) i tego samego drzewa z TreePage (jedno zrodlo prawdy), wiec zapis jednym od razu widac w drugim.
+ * Wybor na mapie: "Ustaw/Zmien na mapie" -> klikniecie ustawia tymczasowy punkt -> "Zapisz lokalizacje" / "Anuluj".
+ * Dopiero zapis wysyla request; po sukcesie pokazujemy punkt z odpowiedzi backendu (moze go zaokraglic).
  */
 export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
   projectId: number;
   tree: Tree;
   onTreeChanged: (changedTree: Tree) => void;
 }) {
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [editingMode, setEditingMode] = useState<LocationEditingMode>('viewing');
+  const [pendingMapLocation, setPendingMapLocation] = useState<TreeLocation | null>(null);
+  const [isSavingMapLocation, setIsSavingMapLocation] = useState(false);
+  const [mapSavingErrorMessage, setMapSavingErrorMessage] = useState<string | null>(null);
   const [isRemovalDialogOpen, setIsRemovalDialogOpen] = useState(false);
-  const [isRemovingLocation, setIsRemovingLocation] = useState(false);
-  const [removalErrorMessage, setRemovalErrorMessage] = useState<string | null>(null);
-  // Synchroniczna blokada podwojnego klikniecia "Remove".
-  const isRemovalInProgress = useRef(false);
+  // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
+  const isMapLocationSubmissionInProgress = useRef(false);
+
+  const savedLocation = tree.location ?? null;
+
+  const startMapPicking = () => {
+    setPendingMapLocation(null);
+    setMapSavingErrorMessage(null);
+    setEditingMode('mapPicking');
+  };
+
+  // Anulowanie niczego nie wysyla - zostaje zapisany punkt z drzewa.
+  const stopEditing = () => {
+    setPendingMapLocation(null);
+    setMapSavingErrorMessage(null);
+    setEditingMode('viewing');
+  };
 
   const replaceTreeAndStopEditing = (savedTree: Tree) => {
     onTreeChanged(savedTree);
-    setIsEditingLocation(false);
+    stopEditing();
   };
 
-  const removeLocation = async () => {
-    if (isRemovalInProgress.current) return;
-    isRemovalInProgress.current = true;
-    setIsRemovingLocation(true);
-    setRemovalErrorMessage(null);
-    try {
-      onTreeChanged(await treesApi.clearTreeLocation(projectId, tree.id));
-      setIsRemovalDialogOpen(false);
-    } catch (removalError) {
-      setRemovalErrorMessage(removalError instanceof ApiRequestError ? removalError.message : 'Unexpected error.');
-    } finally {
-      isRemovalInProgress.current = false;
-      setIsRemovingLocation(false);
+  const saveMapLocation = async () => {
+    if (!pendingMapLocation || isMapLocationSubmissionInProgress.current) return;
+    if (!isTreeLocationWithinValidRange(pendingMapLocation)) {
+      setMapSavingErrorMessage('Wybrany punkt ma nieprawidłowe współrzędne. Wskaż punkt ponownie.');
+      return;
     }
-  };
-
-  const openRemovalDialog = () => {
-    setRemovalErrorMessage(null);
-    setIsRemovalDialogOpen(true);
+    isMapLocationSubmissionInProgress.current = true;
+    setIsSavingMapLocation(true);
+    setMapSavingErrorMessage(null);
+    try {
+      // Tymczasowy punkt zostaje na mapie do odpowiedzi; potem zastepuje go punkt zapisany przez backend.
+      replaceTreeAndStopEditing(await treesApi.setTreeLocation(projectId, tree.id, pendingMapLocation));
+    } catch (savingError) {
+      // Blad nie kasuje wskazanego punktu - mozna sprobowac ponownie albo wskazac inny.
+      setMapSavingErrorMessage(savingError instanceof ApiRequestError
+        ? Object.values(savingError.errorMessageByFieldName).join(' ') || savingError.message
+        : 'Nieoczekiwany błąd.');
+    } finally {
+      isMapLocationSubmissionInProgress.current = false;
+      setIsSavingMapLocation(false);
+    }
   };
 
   return (
     <section className="tree-location-section" aria-labelledby="tree-location-heading">
       <div className="section-header-row">
-        <h3 id="tree-location-heading">Location</h3>
-        {!isEditingLocation && (
+        <h3 id="tree-location-heading">Lokalizacja</h3>
+        {editingMode === 'viewing' && (
           <div className="form-actions">
-            {tree.location ? (
-              <>
-                <button className="btn btn-secondary" onClick={() => setIsEditingLocation(true)}>Change</button>
-                <button className="btn btn-danger-outline" onClick={openRemovalDialog}>Remove</button>
-              </>
-            ) : (
-              <button className="btn btn-primary" onClick={() => setIsEditingLocation(true)}>Set location</button>
+            <button className={`btn ${savedLocation ? 'btn-secondary' : 'btn-primary'}`} onClick={startMapPicking}>
+              {savedLocation ? 'Zmień na mapie' : 'Ustaw na mapie'}
+            </button>
+            <button className="btn btn-secondary" onClick={() => setEditingMode('manualForm')}>Wpisz współrzędne</button>
+            {savedLocation && (
+              <button className="btn btn-danger-outline" onClick={() => setIsRemovalDialogOpen(true)}>Usuń</button>
             )}
           </div>
         )}
       </div>
 
-      {isEditingLocation ? (
+      {editingMode !== 'manualForm' && (savedLocation ? (
+        <p className="tree-location-coordinates">
+          <span className="muted small">Współrzędne (WGS84): </span>{formatTreeLocationForDisplay(savedLocation)}
+        </p>
+      ) : editingMode === 'viewing' && (
+        <p className="muted">
+          Lokalizacja drzewa nie została jeszcze ustalona. Wybierz „Ustaw na mapie” i kliknij mapę, aby wskazać
+          lokalizację drzewa, albo wpisz współrzędne ręcznie.
+        </p>
+      ))}
+
+      {editingMode === 'manualForm' && (
         <TreeLocationForm projectId={projectId} tree={tree} onTreeLocationSaved={replaceTreeAndStopEditing}
-                          cancelEditing={() => setIsEditingLocation(false)} />
-      ) : tree.location ? (
-        <p className="tree-location-coordinates">{formatTreeLocationForDisplay(tree.location)}</p>
-      ) : (
-        <p className="muted">The location of this tree has not been set yet.</p>
+                          cancelEditing={stopEditing} />
       )}
 
-      {isRemovalDialogOpen && (
-        <ModalDialog title="Remove location?" closeDialog={() => setIsRemovalDialogOpen(false)}
-                     isClosingBlocked={isRemovingLocation}>
-          <div className="form">
-            {removalErrorMessage && <Alert variant="error">{removalErrorMessage}</Alert>}
-            <p className="muted">The tree will be marked as having no location. You can set it again at any time.</p>
-            <div className="form-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setIsRemovalDialogOpen(false)}
-                      disabled={isRemovingLocation}>Cancel</button>
-              <button type="button" className="btn btn-danger" onClick={removeLocation} disabled={isRemovingLocation}>
-                {isRemovingLocation ? 'Removing…' : 'Remove location'}
-              </button>
-            </div>
+      {editingMode === 'mapPicking' && (
+        <div className="map-picking-panel stack">
+          {mapSavingErrorMessage && <Alert variant="error">{mapSavingErrorMessage}</Alert>}
+          {pendingMapLocation ? (
+            <p>
+              Wybrany punkt: <strong>{formatTreeLocationForDisplay(pendingMapLocation)}</strong>
+              <span className="muted small"> — kliknij mapę ponownie, aby go poprawić.</span>
+            </p>
+          ) : (
+            <p><strong>Kliknij mapę, aby wskazać lokalizację drzewa.</strong></p>
+          )}
+          <div className="form-actions">
+            {/* Anuluj zablokowane w trakcie zapisu - inaczej odpowiedz PUT nadpisalaby porzucona edycje. */}
+            <button type="button" className="btn btn-ghost" onClick={stopEditing} disabled={isSavingMapLocation}>
+              Anuluj
+            </button>
+            <button type="button" className="btn btn-primary" onClick={saveMapLocation}
+                    disabled={!pendingMapLocation || isSavingMapLocation}>
+              {isSavingMapLocation ? 'Zapisywanie…' : 'Zapisz lokalizację'}
+            </button>
           </div>
-        </ModalDialog>
+        </div>
+      )}
+
+      {/* Mapa zamontowana stale (jedna instancja OpenLayers) - zmienia sie tylko to, co pokazuje. */}
+      <TreeLocationMap savedLocation={savedLocation}
+                       pendingLocation={editingMode === 'mapPicking' ? pendingMapLocation : null}
+                       isPickingLocation={editingMode === 'mapPicking' && !isSavingMapLocation}
+                       onLocationPicked={setPendingMapLocation} />
+
+      {isRemovalDialogOpen && (
+        <RemoveTreeLocationDialog projectId={projectId} treeId={tree.id}
+                                  onTreeLocationRemoved={(changedTree) => {
+                                    onTreeChanged(changedTree);
+                                    setIsRemovalDialogOpen(false);
+                                  }}
+                                  closeDialog={() => setIsRemovalDialogOpen(false)} />
       )}
     </section>
   );

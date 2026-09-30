@@ -6,25 +6,25 @@ export function TreeDetailsView({ tree, startEditing }: { tree: Tree; startEditi
   return (
     <>
       <div className="section-header-row">
-        <h2>Tree {tree.inventoryNumber}</h2>
-        <button className="btn btn-secondary" onClick={startEditing}>Edit</button>
+        <h2>Drzewo {tree.inventoryNumber}</h2>
+        <button className="btn btn-secondary" onClick={startEditing}>Edytuj</button>
       </div>
       <dl className="tree-details">
-        <dt>Latin species</dt>
-        <dd>{tree.speciesLatin || <span className="muted">Not provided</span>}</dd>
-        <dt>Polish species</dt>
-        <dd>{tree.speciesPolish || <span className="muted">Not provided</span>}</dd>
-        <dt>Trunk circumference</dt>
-        <dd>{tree.trunkCircumferenceCm != null ? `${tree.trunkCircumferenceCm} cm` : <span className="muted">Not provided</span>}</dd>
-        <dt>Height</dt>
-        <dd>{tree.heightM != null ? `${tree.heightM} m` : <span className="muted">Not provided</span>}</dd>
-        <dt>Crown diameter</dt>
-        <dd>{tree.crownDiameterM != null ? `${tree.crownDiameterM} m` : <span className="muted">Not provided</span>}</dd>
-        <dt>Notes</dt>
-        <dd className="tree-details-notes">{tree.notes || <span className="muted">Not provided</span>}</dd>
-        <dt>Created</dt>
+        <dt>Gatunek (nazwa łacińska)</dt>
+        <dd>{tree.speciesLatin || <span className="muted">Nie podano</span>}</dd>
+        <dt>Gatunek (nazwa polska)</dt>
+        <dd>{tree.speciesPolish || <span className="muted">Nie podano</span>}</dd>
+        <dt>Obwód pnia</dt>
+        <dd>{tree.trunkCircumferenceCm != null ? `${tree.trunkCircumferenceCm} cm` : <span className="muted">Nie podano</span>}</dd>
+        <dt>Wysokość</dt>
+        <dd>{tree.heightM != null ? `${tree.heightM} m` : <span className="muted">Nie podano</span>}</dd>
+        <dt>Średnica korony</dt>
+        <dd>{tree.crownDiameterM != null ? `${tree.crownDiameterM} m` : <span className="muted">Nie podano</span>}</dd>
+        <dt>Uwagi</dt>
+        <dd className="tree-details-notes">{tree.notes || <span className="muted">Nie podano</span>}</dd>
+        <dt>Utworzono</dt>
         <dd>{formatTimestampForDisplay(tree.createdAt)}</dd>
-        <dt>Updated</dt>
+        <dt>Zaktualizowano</dt>
         <dd>{formatTimestampForDisplay(tree.updatedAt)}</dd>
       </dl>
     </>

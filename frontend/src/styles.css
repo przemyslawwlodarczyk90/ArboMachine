@@ -490,3 +490,31 @@ th.right, td.right { text-align: right; }
   .tree-list-item-number { grid-row: auto; }
   .tree-list-item-notes, .tree-list-item-no-location { grid-column: 1; }
 }
+
+/* ---------- Mapy (OpenLayers): mapa projektu i mapa lokalizacji drzewa ---------- */
+/* Wysokosc zalezna od ekranu (tablet pionowo/poziomo, telefon), z rozsadnymi granicami. min-width: 0 - kontener
+   w gridzie nie moze rozepchnac strony (brak poziomego scrolla). */
+.map-frame { position: relative; min-width: 0; }
+.map-container {
+  width: 100%; min-width: 0;
+  height: clamp(320px, 65vh, 720px);
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  background: var(--surface-muted);
+  touch-action: none; /* gesty palcem przesuwaja mape, a nie strone */
+}
+.map-container-compact { height: clamp(260px, 45vh, 480px); }
+.map-container-picking { cursor: crosshair; outline: 3px solid color-mix(in srgb, #d9480f 55%, transparent); outline-offset: -3px; }
+/* Informacja o kliknietym drzewie - nad dolna krawedzia mapy, na telefonie na cala szerokosc. */
+.map-selected-tree {
+  position: absolute; left: 0.75rem; bottom: 0.75rem; z-index: 1;
+  max-width: min(420px, calc(100% - 1.5rem));
+  display: grid; gap: 0.6rem; padding: 0.85rem 1rem;
+}
+.map-selected-tree-text { display: grid; gap: 0.15rem; overflow-wrap: anywhere; }
+.map-picking-panel { padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.map-picking-panel p { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .map-selected-tree { left: 0.5rem; right: 0.5rem; bottom: 0.5rem; max-width: none; }
+  .map-selected-tree .form-actions { justify-content: stretch; }
+  .map-selected-tree .form-actions > * { flex: 1; text-align: center; }
+}
