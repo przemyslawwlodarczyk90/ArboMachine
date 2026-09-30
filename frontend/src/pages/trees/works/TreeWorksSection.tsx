@@ -1,0 +1,135 @@
+import { useEffect, useState } from 'react';
+import { ApiRequestError } from '../../../api/httpClient';
+import { Alert } from '../../../components/Alert';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { DeleteTreeWorkDialog } from './DeleteTreeWorkDialog';
+import type { TreeWork } from './treeWorkDataTypes';
+import { TreeWorkForm } from './TreeWorkForm';
+import { emptyTreeWorkFormValues, toTreeWorkFormValues } from './treeWorkFormValues';
+import { treeWorksApi } from './treeWorksApi';
+
+type TreeWorkListState =
+  | { status: 'loading' }
+  | { status: 'failed'; errorMessage: string }
+  | { status: 'loaded'; treeWorks: TreeWork[] };
+
+/**
+ * Sekcja "Zalecenia i prace" karty drzewa: lista prac (nazwa + opis), dodawanie, edycja w miejscu i usuwanie.
+ * Ma wlasny stan listy; po kazdej operacji uzywa odpowiedzi backendu, bez przeladowania karty drzewa.
+ * Celowo bez powiazania z mapa (symbole/kolory prac) - slownik prac nie jest jeszcze ustalony.
+ */
+export function TreeWorksSection({ projectId, treeId }: { projectId: number; treeId: number }) {
+  const [treeWorkListState, setTreeWorkListState] = useState<TreeWorkListState>({ status: 'loading' });
+  const [isAddingWork, setIsAddingWork] = useState(false);
+  const [editedTreeWorkId, setEditedTreeWorkId] = useState<number | null>(null);
+  const [workAwaitingDeletion, setWorkAwaitingDeletion] = useState<TreeWork | null>(null);
+
+  useEffect(() => {
+    let isResponseStillWanted = true;
+    setTreeWorkListState({ status: 'loading' });
+    treeWorksApi.listTreeWorks(projectId, treeId)
+      .then((treeWorks) => {
+        if (isResponseStillWanted) setTreeWorkListState({ status: 'loaded', treeWorks });
+      })
+      .catch((loadingError) => {
+        if (!isResponseStillWanted) return;
+        setTreeWorkListState({
+          status: 'failed',
+          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.',
+        });
+      });
+    return () => { isResponseStillWanted = false; };
+  }, [projectId, treeId]);
+
+  const updateLoadedWorks = (changeTreeWorks: (treeWorks: TreeWork[]) => TreeWork[]) =>
+    setTreeWorkListState((currentState) => currentState.status === 'loaded'
+      ? { status: 'loaded', treeWorks: changeTreeWorks(currentState.treeWorks) }
+      : currentState);
+
+  const appendCreatedWork = (createdTreeWork: TreeWork) => {
+    updateLoadedWorks((treeWorks) => [...treeWorks, createdTreeWork]);
+    setIsAddingWork(false);
+  };
+
+  const replaceUpdatedWork = (updatedTreeWork: TreeWork) => {
+    updateLoadedWorks((treeWorks) => treeWorks.map((treeWork) =>
+      treeWork.id === updatedTreeWork.id ? updatedTreeWork : treeWork));
+    setEditedTreeWorkId(null);
+  };
+
+  const removeDeletedWork = (deletedTreeWorkId: number) => {
+    updateLoadedWorks((treeWorks) => treeWorks.filter((treeWork) => treeWork.id !== deletedTreeWorkId));
+    setWorkAwaitingDeletion(null);
+  };
+
+  const startAddingWork = () => {
+    setEditedTreeWorkId(null);
+    setIsAddingWork(true);
+  };
+
+  // Jeden aktywny formularz naraz: dodawanie albo edycja jednej pracy.
+  const isAnyFormOpen = isAddingWork || editedTreeWorkId !== null;
+
+  return (
+    <section className="tree-card-section" aria-labelledby="tree-works-heading">
+      <div className="section-header-row">
+        <h3 id="tree-works-heading">Zalecenia i prace</h3>
+        {treeWorkListState.status === 'loaded' && !isAnyFormOpen && (
+          <button className="btn btn-secondary" onClick={startAddingWork}>Dodaj pracę</button>
+        )}
+      </div>
+
+      {treeWorkListState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
+
+      {treeWorkListState.status === 'failed' && (
+        <Alert variant="error">Nie udało się wczytać zaleceń i prac. {treeWorkListState.errorMessage}</Alert>
+      )}
+
+      {isAddingWork && (
+        <TreeWorkForm initialFormValues={emptyTreeWorkFormValues} submitButtonLabel="Dodaj pracę"
+                      saveTreeWork={(request) => treeWorksApi.createTreeWork(projectId, treeId, request)}
+                      onTreeWorkSaved={appendCreatedWork} cancelEditing={() => setIsAddingWork(false)} />
+      )}
+
+      {treeWorkListState.status === 'loaded' && treeWorkListState.treeWorks.length === 0 && !isAddingWork && (
+        <p className="muted">Nie dodano jeszcze żadnych zaleceń ani prac.</p>
+      )}
+
+      {treeWorkListState.status === 'loaded' && treeWorkListState.treeWorks.length > 0 && (
+        <ul className="tree-work-list">
+          {treeWorkListState.treeWorks.map((treeWork) => (
+            <li key={treeWork.id} className="tree-work-item">
+              {editedTreeWorkId === treeWork.id ? (
+                <TreeWorkForm initialFormValues={toTreeWorkFormValues(treeWork)} submitButtonLabel="Zapisz"
+                              saveTreeWork={(request) => treeWorksApi.updateTreeWork(projectId, treeId, treeWork.id, request)}
+                              onTreeWorkSaved={replaceUpdatedWork} cancelEditing={() => setEditedTreeWorkId(null)} />
+              ) : (
+                <>
+                  <div className="tree-work-item-text">
+                    <strong>{treeWork.name}</strong>
+                    {treeWork.description && <p className="tree-work-item-description">{treeWork.description}</p>}
+                  </div>
+                  {!isAnyFormOpen && (
+                    <div className="form-actions">
+                      <button className="btn btn-secondary btn-small" onClick={() => setEditedTreeWorkId(treeWork.id)}>
+                        Edytuj
+                      </button>
+                      <button className="btn btn-danger-outline btn-small" onClick={() => setWorkAwaitingDeletion(treeWork)}>
+                        Usuń
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {workAwaitingDeletion && (
+        <DeleteTreeWorkDialog projectId={projectId} treeId={treeId} treeWork={workAwaitingDeletion}
+                              onTreeWorkDeleted={removeDeletedWork} closeDialog={() => setWorkAwaitingDeletion(null)} />
+      )}
+    </section>
+  );
+}

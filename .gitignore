@@ -43,3 +43,6 @@ frontend/dist/
 src/main/resources/static/index.html
 src/main/resources/static/assets/
 src/main/resources/static/favicon.svg
+
+### Zdjecia drzew - storage V1 na dysku (app.tree-photos.storage-directory) ###
+/storage/

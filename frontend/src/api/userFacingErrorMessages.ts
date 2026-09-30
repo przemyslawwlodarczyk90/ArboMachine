@@ -49,6 +49,14 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Latitude must be between -90 and 90': 'Szerokość geograficzna musi być w zakresie od -90 do 90.',
   'Longitude is mandatory': 'Długość geograficzna jest wymagana.',
   'Longitude must be between -180 and 180': 'Długość geograficzna musi być w zakresie od -180 do 180.',
+  'Tree photo not found': 'To zdjęcie nie istnieje albo nie masz do niego dostępu.',
+  'Photo file is mandatory': 'Wybierz plik zdjęcia.',
+  'Photo file is too large': 'Plik zdjęcia jest za duży.',
+  'Unsupported photo type': 'Nieobsługiwany format pliku. Dodaj zdjęcie JPEG, PNG albo WebP.',
+  'Tree work not found': 'Ta praca nie istnieje albo nie masz do niej dostępu.',
+  'Work name is mandatory': 'Nazwa jest wymagana.',
+  'Work name must have at most 255 characters': 'Nazwa może mieć maksymalnie 255 znaków.',
+  'Work description must have at most 5000 characters': 'Opis może mieć maksymalnie 5000 znaków.',
   'User account owns projects and cannot be deleted':
     'This account owns projects and cannot be deleted yet.',
 };

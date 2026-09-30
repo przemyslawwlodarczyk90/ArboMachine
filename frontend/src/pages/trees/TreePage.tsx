@@ -7,6 +7,8 @@ import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRoutePar
 import { TreeDetailsView } from './TreeDetailsView';
 import { TreeEditForm } from './TreeEditForm';
 import { TreeLocationSection } from './location/TreeLocationSection';
+import { TreePhotosSection } from './photos/TreePhotosSection';
+import { TreeWorksSection } from './works/TreeWorksSection';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
 
@@ -19,8 +21,9 @@ type TreeLoadingState =
 
 /**
  * Karta drzewa (/projects/:projectId/trees/:treeId). Strona tylko orkiestruje: laduje drzewo
- * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm); pod podgladem sekcja lokalizacji
- * (TreeLocationSection). Wlasnosci nie sprawdzamy w React.
+ * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm); pod podgladem sekcje: lokalizacja
+ * (TreeLocationSection), zdjecia (TreePhotosSection) i zalecenia/prace (TreeWorksSection). Kazda sekcja ma wlasny
+ * stan i wlasne operacje zapisu. Wlasnosci nie sprawdzamy w React.
  */
 export function TreePage() {
   const routeParams = useParams();
@@ -85,8 +88,8 @@ export function TreePage() {
     setIsEditingTree(false);
   };
 
-  // Lokalizacja to osobna sekcja z wlasna operacja zapisu - w trybie edycji danych drzewa jest ukryta,
-  // zeby na ekranie byl tylko jeden aktywny formularz.
+  // Lokalizacja, zdjecia i prace to osobne sekcje z wlasnymi operacjami zapisu - w trybie edycji danych drzewa
+  // sa ukryte, zeby na ekranie byl tylko jeden aktywny formularz.
   return (
     <div className="stack">
       {backToTreesLink}
@@ -95,7 +98,11 @@ export function TreePage() {
                         cancelEditing={() => setIsEditingTree(false)} />
         : <TreeDetailsView tree={tree} startEditing={() => setIsEditingTree(true)} />}
       {!isEditingTree && projectId !== null && (
-        <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+        <>
+          <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+          <TreePhotosSection projectId={projectId} treeId={tree.id} />
+          <TreeWorksSection projectId={projectId} treeId={tree.id} />
+        </>
       )}
     </div>
   );

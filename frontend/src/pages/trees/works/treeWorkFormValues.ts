@@ -1,0 +1,45 @@
+import type { TreeWork, TreeWorkFieldsRequest } from './treeWorkDataTypes';
+
+// Wartosci i walidacja formularza pracy (dodawanie i edycja). Walidacja w przegladarce tylko poprawia UX -
+// backend waliduje ponownie. Modul bez importow wartosci - testowany przez node --test.
+
+export interface TreeWorkFormValues {
+  name: string;
+  description: string;
+}
+
+/** Limity jak w backendzie (TreeWork). */
+export const MAXIMUM_TREE_WORK_NAME_LENGTH = 255;
+export const MAXIMUM_TREE_WORK_DESCRIPTION_LENGTH = 5000;
+
+export const emptyTreeWorkFormValues: TreeWorkFormValues = { name: '', description: '' };
+
+export const toTreeWorkFormValues = (treeWork: TreeWork): TreeWorkFormValues => ({
+  name: treeWork.name,
+  description: treeWork.description ?? '',
+});
+
+/** Ta sama normalizacja co w backendzie: nazwa przycieta, pusty opis pominiety. */
+export const toTreeWorkFieldsRequest = (formValues: TreeWorkFormValues): TreeWorkFieldsRequest => ({
+  name: formValues.name.trim(),
+  description: formValues.description.trim() || undefined,
+});
+
+/** Czy dwa stany formularza daja ten sam request (np. dopisanie samych spacji nie jest zmiana). */
+export const areTreeWorkFormValuesEquivalent = (first: TreeWorkFormValues, second: TreeWorkFormValues) =>
+  JSON.stringify(toTreeWorkFieldsRequest(first)) === JSON.stringify(toTreeWorkFieldsRequest(second));
+
+/** Pusty wynik oznacza, ze formularz mozna wyslac. */
+export const validateTreeWorkFormValues = (formValues: TreeWorkFormValues): Record<string, string> => {
+  const errorMessageByFieldName: Record<string, string> = {};
+  const trimmedName = formValues.name.trim();
+  if (!trimmedName) {
+    errorMessageByFieldName.name = 'Nazwa jest wymagana.';
+  } else if (trimmedName.length > MAXIMUM_TREE_WORK_NAME_LENGTH) {
+    errorMessageByFieldName.name = `Nazwa może mieć maksymalnie ${MAXIMUM_TREE_WORK_NAME_LENGTH} znaków.`;
+  }
+  if (formValues.description.trim().length > MAXIMUM_TREE_WORK_DESCRIPTION_LENGTH) {
+    errorMessageByFieldName.description = `Opis może mieć maksymalnie ${MAXIMUM_TREE_WORK_DESCRIPTION_LENGTH} znaków.`;
+  }
+  return errorMessageByFieldName;
+};

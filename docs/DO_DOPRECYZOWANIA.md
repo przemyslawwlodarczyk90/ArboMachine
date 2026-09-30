@@ -159,8 +159,79 @@ Zakres polonizacji w etapach 11–12 obejmował panel arborysty. Pozostałe ekra
 (`userFacingErrorMessages.ts`, część „konta/logowanie”) są nadal po angielsku.
 
 ### Co przyjęto tymczasowo w V1
-Polski UI: panel arborysty (projekty, drzewa, lokalizacja, mapa), górny pasek panelu, nazwy ról, ogólne komunikaty
-błędów HTTP. Bez biblioteki i18n — teksty wprost w komponentach. Kod, endpointy, enumy i pola API po angielsku.
+Polski UI: panel arborysty (projekty, drzewa, lokalizacja, mapa, zdjęcia, zalecenia i prace), górny pasek panelu,
+nazwy ról, ogólne komunikaty błędów HTTP. Bez biblioteki i18n — teksty wprost w komponentach. Kod, endpointy, enumy
+i pola API po angielsku. Ekrany logowania/rejestracji/resetu hasła, „Mój profil” i panele urzędnika/admina są nadal
+po angielsku — do przetłumaczenia w osobnej zmianie (zasada projektu: wszystkie teksty UI po polsku).
 
 ### Czy blokuje dalszy development?
 NIE.
+
+---
+
+## Zdjęcia drzewa (TreePhoto) — etap 13
+
+### Pytania (OPEN)
+1. Kategorie zdjęć (np. ogólne, pień, korona, uszkodzenie) — czy w ogóle potrzebne?
+2. Zdjęcie główne drzewa — czy jest i jak je wybrać?
+3. Kolejność zdjęć — czy ma znaczenie (np. w dokumentacji)?
+4. Podpisy/opisy zdjęć — czy potrzebne, kto je pisze, czy trafiają do dokumentu?
+5. EXIF (data, orientacja, GPS z fotografii) — czy odczytywać i zapisywać?
+6. Zewnętrzny aparat — jak zdjęcia trafiają z aparatu do aplikacji?
+7. Automatyczne przypisanie zdjęcia do Tree (jak w ArboMap) — na jakiej podstawie?
+8. Offline — czy zdjęcia muszą być robione i kolejkowane bez internetu?
+9. Storage produkcyjny — dysk serwera, S3/MinIO, kopie zapasowe, retencja?
+10. Sposób użycia zdjęć w dokumentacji (rozmiar, kadrowanie, miniatury, adnotacje).
+
+### Dlaczego wymaga doprecyzowania
+Brak realnego workflow fotograficznego arborysty (aparat vs tablet, ArboMap, ZWCAD, dokument końcowy).
+
+### Co przyjęto tymczasowo w V1
+- Encja `TreePhoto` = same metadane (nazwa oryginalna, typ, rozmiar, `createdAt`), bez podpisu, kategorii, zdjęcia
+  głównego, kolejności, EXIF i adnotacji. Własność tylko przez `TreePhoto → Tree → Project → owner`.
+- Plik na dysku serwera (`app.tree-photos.storage-directory`, domyślnie `storage/tree-photos`) pod kluczem UUID —
+  za małą abstrakcją `PhotoStorage` (do podmiany na storage obiektowy). Bez BLOB w bazie.
+- Formaty: JPEG, PNG, WebP; typ sprawdzany z zawartości pliku (sygnatura), nie z rozszerzenia. HEIC nieobsługiwany
+  (iPhone przy wyborze z galerii zwykle wysyła JPEG — do sprawdzenia na realnym sprzęcie).
+- Limit **15 MB na zdjęcie** (`app.tree-photos.max-file-size`) — rozsądna wartość developerska, nie wymaganie.
+- Brak miniatur po stronie serwera — galeria wczytuje pełne pliki (przy wielu dużych zdjęciach na słabym łączu
+  w terenie będzie to wolne; miniatury/kompresja do decyzji).
+- Kolejność zapisu: plik → metadane (przy błędzie bazy plik jest usuwany); usuwanie: rekord → plik (błąd usunięcia
+  pliku zostawia osierocony plik w logu, nigdy rekord bez pliku). Brak zadania sprzątającego osierocone pliki.
+- Wybór pliku przez `<input type="file" accept="image/*">` — na tablecie/telefonie przeglądarka może zaproponować
+  aparat; bez natywnej integracji z aparatem i bez zewnętrznego aparatu.
+
+### Czy blokuje dalszy development?
+NIE dla V1. TAK przed wdrożeniem produkcyjnym (storage, kopie zapasowe) i przed modułem dokumentacji.
+
+---
+
+## Zalecenia i prace przy drzewie (TreeWork) — etap 14
+
+### Pytania (OPEN)
+1. Słownik typów prac — rzeczywista lista prac arborysty.
+2. Kody prac (np. oznaczenia używane w tabelach i na mapach).
+3. Czy słownik jest globalny, konfigurowalny per użytkownik, czy per projekt/typ opracowania?
+4. Symbole mapowe prac.
+5. Kolory prac na mapie.
+6. Reguły legendy (automatyczna? ręczna?).
+7. Priorytet pracy.
+8. Terminy wykonania.
+9. Status wykonania (planowana / wykonana / odebrana?).
+10. Parametry konkretnej pracy (np. procent redukcji korony, wysokość cięcia).
+11. Wiele prac na jednym Tree — które ma pierwszeństwo na mapie, czy drzewo może mieć kilka symboli?
+12. Kolejność prac przy drzewie.
+13. Sposób przedstawienia prac w dokumentacji (program prac konserwatorskich, gospodarka drzewostanem, tabele).
+
+### Dlaczego wymaga doprecyzowania
+Arborysta używa zaleceń i symboli prac (część dodaje dziś w ZWCAD), ale nie mamy realnej listy, kodów ani symboli.
+
+### Co przyjęto tymczasowo w V1
+- Encja `TreeWork`: `name` (wymagana, wolny tekst, max 255) + `description` (opcjonalny, max 5000) + daty.
+  Tree może mieć wiele prac. **Świadomie bez enuma `WorkType`**, priorytetu, statusu, terminu, wykonawcy, ceny,
+  symbolu i koloru — String V1 zamiast wymyślonej domeny. Późniejsza migracja: `name` → odwołanie do słownika
+  `WorkType` → symbol mapowy → reprezentacja w raporcie.
+- Mapa nie jest powiązana z pracami (markery bez zmian), generator dokumentów nie istnieje.
+
+### Czy blokuje dalszy development?
+NIE dla V1. TAK przed symbolami prac na mapie, legendą i generowaniem dokumentacji.

@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +85,15 @@ public class ApiExceptionHandler {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<String> handleMalformedRequest(Exception exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Malformed request");
+    }
+
+    /**
+     * Plik ponad limit multipart serwera (app.tree-photos.max-file-size) - odrzucany jeszcze przed kontrolerem,
+     * dlatego tutaj, a nie w TreePhotoApiExceptionHandler. Jedyny endpoint multipart to upload zdjecia drzewa.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<String> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body("Photo file is too large");
     }
 
     @ExceptionHandler(EmailSendingFailedException.class)

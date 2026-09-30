@@ -518,3 +518,26 @@ th.right, td.right { text-align: right; }
   .map-selected-tree .form-actions { justify-content: stretch; }
   .map-selected-tree .form-actions > * { flex: 1; text-align: center; }
 }
+
+/* ---------- Karta drzewa: sekcje zdjec i prac (jak sekcja lokalizacji - oddzielone linia) ---------- */
+.tree-card-section { display: grid; gap: 0.6rem; margin-top: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); min-width: 0; }
+.tree-card-section h3 { margin: 0; }
+.tree-card-section .form { margin-top: 0; }
+.btn-small { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+/* Siatka zdjec - tablet-first: 2-4 kolumny zaleznie od szerokosci, bez poziomego scrolla. */
+.tree-photo-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); }
+.tree-photo-tile { display: grid; gap: 0.4rem; min-width: 0; }
+.tree-photo-thumbnail { display: grid; place-items: center; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface-muted); cursor: zoom-in; }
+.tree-photo-thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tree-photo-thumbnail-placeholder { cursor: default; text-align: center; padding: 0.5rem; }
+.tree-photo-tile-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+.tree-photo-tile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.tree-photo-preview-image { width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius); background: var(--surface-muted); }
+.tree-photo-upload-preview { display: grid; gap: 0.4rem; justify-items: start; overflow-wrap: anywhere; }
+.tree-photo-upload-preview img { max-width: 100%; max-height: 240px; border-radius: var(--radius); border: 1px solid var(--border); }
+.tree-work-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.tree-work-list li + li { border-top: 1px solid var(--border); }
+.tree-work-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; flex-wrap: wrap; }
+.tree-work-item > .form { flex: 1 1 100%; }
+.tree-work-item-text { display: grid; gap: 0.25rem; min-width: 0; flex: 1 1 240px; overflow-wrap: anywhere; }
+.tree-work-item-description { margin: 0; color: var(--text-muted); white-space: pre-line; }

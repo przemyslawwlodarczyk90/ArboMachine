@@ -80,13 +80,17 @@ export interface ApiRequestOptions {
   sendAccessToken?: boolean;
 }
 
-/** Wysyla zadanie JSON; rzuca ApiRequestError przy odpowiedzi innej niz 2xx albo braku polaczenia. */
-export async function sendApiRequest<ResponseType>(
+/**
+ * Wspolna czesc wszystkich zadan: naglowki, token, blad polaczenia, blad HTTP (w tym 401 -> wylogowanie).
+ * Body FormData (upload pliku) idzie bez Content-Type - przegladarka sama ustawia multipart z boundary.
+ */
+async function fetchApiResponse(
   path: string,
-  { httpMethod = 'GET', requestBody, sendAccessToken = false }: ApiRequestOptions = {},
-): Promise<ResponseType> {
+  { httpMethod = 'GET', requestBody, sendAccessToken = false }: ApiRequestOptions,
+): Promise<Response> {
+  const isMultipartBody = requestBody instanceof FormData;
   const requestHeaders: Record<string, string> = {};
-  if (requestBody !== undefined) requestHeaders['Content-Type'] = 'application/json';
+  if (requestBody !== undefined && !isMultipartBody) requestHeaders['Content-Type'] = 'application/json';
   if (sendAccessToken) {
     const storedAccessToken = accessTokenStorage.read();
     if (storedAccessToken) requestHeaders.Authorization = `Bearer ${storedAccessToken}`;
@@ -97,7 +101,7 @@ export async function sendApiRequest<ResponseType>(
     response = await fetch(path, {
       method: httpMethod,
       headers: requestHeaders,
-      body: requestBody !== undefined ? JSON.stringify(requestBody) : undefined,
+      body: isMultipartBody ? requestBody : requestBody !== undefined ? JSON.stringify(requestBody) : undefined,
     });
   } catch {
     throw new ApiRequestError(0, 'Brak połączenia z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie.');
@@ -107,7 +111,23 @@ export async function sendApiRequest<ResponseType>(
     if (response.status === 401 && sendAccessToken) handleUnauthorizedResponse?.();
     throw await convertErrorResponseToApiRequestError(response);
   }
+  return response;
+}
 
+/**
+ * Pobiera plik binarny (np. zdjecie) jako Blob. Potrzebne, bo chronione pliki wymagaja naglowka Authorization,
+ * a zwykly <img src> go nie wysyla.
+ */
+export async function sendApiRequestForBlob(path: string, options: ApiRequestOptions = {}): Promise<Blob> {
+  return (await fetchApiResponse(path, options)).blob();
+}
+
+/**
+ * Wysyla zadanie JSON (albo FormData) i zwraca odpowiedz JSON; rzuca ApiRequestError przy odpowiedzi innej niz 2xx
+ * albo braku polaczenia.
+ */
+export async function sendApiRequest<ResponseType>(path: string, options: ApiRequestOptions = {}): Promise<ResponseType> {
+  const response = await fetchApiResponse(path, options);
   if (response.status === 204) return undefined as ResponseType;
   const responseText = await response.text();
   if (!responseText) return undefined as ResponseType;

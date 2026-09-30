@@ -60,6 +60,12 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   ustawiany w karcie drzewa wskazaniem na mapie albo ręcznym formularzem współrzędnych; można go też usunąć
 - 🗺️ **Mapa projektu** (`/projects/:projectId/map`, OpenLayers + podkład OpenStreetMap) - markery drzew
   z zapisaną lokalizacją; kliknięcie markera pokazuje „Drzewo {numer}”, gatunek i link do karty drzewa
+- 📷 **Zdjęcia drzewa (TreePhoto V1)** - sekcja „Zdjęcia” w karcie drzewa: dodawanie z urządzenia (na tablecie
+  przeglądarka może od razu otworzyć aparat), siatka miniatur, większy podgląd, usuwanie z potwierdzeniem.
+  JPEG/PNG/WebP, typ sprawdzany z zawartości pliku, limit 15 MB (konfigurowalny); pliki na dysku, metadane w bazie
+- 🪚 **Zalecenia i prace (TreeWork V1)** - sekcja „Zalecenia i prace” w karcie drzewa: wiele prac na drzewo,
+  każda z nazwą (wolny tekst, np. „Cięcia redukcyjne”) i opcjonalnym opisem; dodawanie, edycja, usuwanie.
+  Celowo bez słownika typów prac, symboli mapowych i priorytetów (`docs/DO_DOPRECYZOWANIA.md`)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
 
@@ -112,6 +118,27 @@ com.example.arbomachine
 │   │                       FindTreeInProjectOwnedByCurrentUserHandler, TreeEditableAttributesNormalizer
 │   ├── mapper      TreeMapper
 │   └── exception   TreeNotFoundException
+├── domain.treephoto  (zależy od domain.tree; własność = Tree -> Project -> owner)
+│   ├── entity      TreePhoto (tree -> Tree; tylko metadane, plik w PhotoStorage)
+│   ├── config      TreePhotoProperties (app.tree-photos.*: limit rozmiaru, katalog storage)
+│   ├── storage     PhotoStorage (store/load/delete po kluczu) + PhotoStorageException
+│   ├── dto         TreePhotoUpload (wejście bez MultipartFile), TreePhotoResponse, TreePhotoContent
+│   ├── facade      TreePhotoFacade
+│   ├── service.treephotofacade  UploadTreePhotoHandler, GetTreePhotosHandler, GetTreePhotoContentHandler,
+│   │                            DeleteTreePhotoHandler, FindTreePhotoOfTreeInProjectOwnedByCurrentUserHandler,
+│   │                            SupportedTreePhotoType (typ z sygnatury pliku)
+│   ├── mapper      TreePhotoMapper
+│   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
+│                   UnsupportedTreePhotoTypeException
+├── domain.treework   (zależy od domain.tree; własność = Tree -> Project -> owner)
+│   ├── entity      TreeWork (tree -> Tree; name + description)
+│   ├── dto         CreateTreeWorkRequest, UpdateTreeWorkRequest (oba: TreeWorkFieldsRequest), TreeWorkResponse
+│   ├── facade      TreeWorkFacade
+│   ├── service.treeworkfacade  CreateTreeWorkHandler, GetTreeWorksHandler, GetTreeWorkHandler, UpdateTreeWorkHandler,
+│   │                           DeleteTreeWorkHandler, FindTreeWorkOfTreeInProjectOwnedByCurrentUserHandler,
+│   │                           TreeWorkFieldsNormalizer
+│   ├── mapper      TreeWorkMapper
+│   └── exception   TreeWorkNotFoundException
 └── infrastructure
     ├── api         ApiExceptionHandler (wspólny) + podpakiety modułów:
     │   ├── user      UserAccountController
@@ -119,15 +146,20 @@ com.example.arbomachine
     │   ├── arborist  ArboristPanelController
     │   ├── official  OfficialPanelController
     │   ├── project   ProjectController, ProjectApiExceptionHandler
-    │   └── tree      TreeController, TreeApiExceptionHandler
+    │   ├── tree      TreeController, TreeApiExceptionHandler
+    │   ├── treephoto TreePhotoController, TreePhotoApiExceptionHandler
+    │   └── treework  TreeWorkController, TreeWorkApiExceptionHandler
     ├── security    SecurityConfig (reguły dostępu), JwtTokenService, JwtAuthenticationFilter, ...
     ├── repository  repozytoria Spring Data
+    ├── storage     FileSystemPhotoStorage (PhotoStorage na dysku), TreePhotoUploadConfig (limit multipart z limitu zdjęcia)
     └── service     EmailSenderService (maile z szablonów Thymeleaf)
 ```
 
 Każdy moduł ma własne pliki. Moduły projektów i drzew korzystają z modułu użytkowników tylko przez
 `FindUserAccountByEmailHandler`, a moduł drzew sprawdza własność projektu wyłącznie przez
-`FindProjectOwnedByCurrentUserHandler`. Blokadę usuwania kont moduł projektów dostarcza przez interfejs
+`FindProjectOwnedByCurrentUserHandler`. Moduły zdjęć i prac sprawdzają całą hierarchię wyłącznie przez
+`FindTreeInProjectOwnedByCurrentUserHandler` (drzewo z URL w projekcie z URL należącym do zalogowanego), a potem
+szukają zdjęcia/pracy zawężonego do tego drzewa (`findByIdAndTreeId`) - nigdy samym `findById`. Blokadę usuwania kont moduł projektów dostarcza przez interfejs
 `UserAccountDeletionGuard` - moduł użytkowników nie wie nic o projektach.
 
 ## 🗂️ Struktura frontendu
@@ -149,8 +181,12 @@ frontend/src
     │   ├── location  TreeLocationSection (tryby: podgląd / ręczny formularz / wybór na mapie), TreeLocationForm,
     │   │             TreeLocationMap, RemoveTreeLocationDialog, treeLocationMapCoordinates (WGS84 <-> mapa),
     │   │             treeLocationValidRange, treeLocationFormValues
-    │   └── map       ProjectTreeMapSection (trasa /map: dane i stany UI), ProjectTreeMap (OpenLayers),
-    │                 treeMapPoints (drzewa -> punkty mapy)
+    │   ├── map       ProjectTreeMapSection (trasa /map: dane i stany UI), ProjectTreeMap (OpenLayers),
+    │   │             treeMapPoints (drzewa -> punkty mapy)
+    │   ├── photos    TreePhotosSection (galeria), AddTreePhotoDialog, TreePhotoTile, DeleteTreePhotoDialog,
+    │   │             useTreePhotoObjectUrl (treść z tokenem -> blob:), treePhotoFileRules + treePhotosApi
+    │   └── works     TreeWorksSection (lista + edycja w miejscu), TreeWorkForm, DeleteTreeWorkDialog,
+    │                 treeWorkFormValues (walidacja) + treeWorksApi
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -197,6 +233,8 @@ Opcjonalne zmienne środowiskowe:
 | `ARBOMACHINE_PORT` | `8080` | port backendu (na tym komputerze 8080 zajmuje `AgentService.exe` - użyj np. 8081) |
 | `ARBOMACHINE_DB_URL` / `_DB_USER` / `_DB_PASSWORD` | `jdbc:postgresql://localhost:5432/pgDB` / `user` / `password` | baza danych |
 | `ARBOMACHINE_FRONTEND_BASE_URL` | `http://localhost:5173` | adres frontendu wstawiany do linków w mailach |
+| `ARBOMACHINE_TREE_PHOTOS_DIRECTORY` | `storage/tree-photos` | katalog plików zdjęć drzew (względny = od katalogu roboczego; w `.gitignore`) |
+| `ARBOMACHINE_TREE_PHOTO_MAX_FILE_SIZE` | `15MB` | limit jednego zdjęcia (`app.tree-photos.max-file-size`); z niego liczony jest też limit multipart serwera |
 
 Pozostałe ustawienia aplikacji (`application.properties`): `auth.jwt.token-validity-days`,
 `app.password-reset.link-validity-minutes`, `app.mail.sender-display-name`.
@@ -268,9 +306,18 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
 | PUT | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Ustawienie/zamiana punktu `{ latitude, longitude }` (WGS84, oba wymagane) → 200 z drzewem; używają go i mapa, i ręczny formularz |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Usunięcie lokalizacji (`location: null`) → 200 z drzewem |
+| POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, createdAt }` (bez ścieżek plików) |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
+| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik) → 204 |
+| POST | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Nowa praca `{ name, description? }` → 201 |
+| GET | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Prace drzewa w kolejności dodawania |
+| GET | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Pojedyncza praca |
+| PATCH | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Edycja - komplet pól `{ name, description? }` (pominięty opis = wyczyszczenie) → 200 |
+| DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Usunięcie pracy → 204 |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
-że projekt istnieje). Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
+że projekt istnieje). To samo dotyczy drzewa spoza projektu z URL oraz zdjęcia/pracy spoza drzewa z URL. Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
 polityka do czasu ustalenia archiwizacji / przenoszenia własności).
 
 ---
@@ -292,6 +339,12 @@ polityka do czasu ustalenia archiwizacji / przenoszenia własności).
   walidacja, brak dostępu dla niezalogowanych, blokada usuwania konta z projektami).
 - `TreeApiIntegrationTest` - to samo dla drzew, w tym edycja (błędny `projectId`, cudzy projekt,
   czyszczenie pól opcjonalnych, `updatedAt` tylko przy realnej zmianie).
+- `TreePhotoApiIntegrationTest` - zdjęcia: upload/lista/treść/usuwanie, właściciel vs użytkownik B, zdjęcie innego
+  drzewa w URL, zły typ (także plik `.jpg` z inną zawartością), za duży plik, brak pliku, niebezpieczna nazwa pliku.
+  Pliki trafiają do katalogu tymczasowego (`@TempDir`), nigdy do developerskiego storage.
+- `FileSystemPhotoStorageTest` - zapis/odczyt/usuwanie, brak nadpisywania, odrzucanie kluczy typu `../`.
+- `TreeWorkApiIntegrationTest` - prace: CRUD, walidacja nazwy/opisu, użytkownik B, praca innego drzewa w URL,
+  nieistniejący projekt/drzewo/praca.
 - `FacadeHandlerArchitectureTest` - reguły architektury kontroler → fasada → handler.
 
 ## 🗄️ Schemat bazy
@@ -307,6 +360,11 @@ Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (i
 Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
 nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc
 `ddl-auto=update` dodaje je do istniejącej tabeli bez utraty danych.
+Tabela `tree_photo`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks),
+`original_file_name varchar(255) NOT NULL`, `storage_key varchar(64) NOT NULL UNIQUE`, `content_type varchar(100) NOT NULL`,
+`file_size_bytes bigint NOT NULL`, `created_at timestamptz NOT NULL` - sam plik leży poza bazą.
+Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks), `name varchar(255) NOT NULL`,
+`description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`. Obie tabele bez `owner_id`.
 
 ## 🧭 Trasy frontendu projektów
 
@@ -314,7 +372,7 @@ nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą by�
 |---|---|---|
 | `/projects` | ARBORIST | Lista własnych projektów, przycisk „Nowy projekt” (okno tworzenia) |
 | `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
-| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcja „Lokalizacja” z mapą i ręcznym formularzem |
+| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
 | `/projects/:projectId/documentation` | ARBORIST | Sekcja „Zdjęcia i dokumentacja” (placeholder) |
 
