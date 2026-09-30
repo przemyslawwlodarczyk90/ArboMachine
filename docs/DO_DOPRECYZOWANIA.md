@@ -310,3 +310,80 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 7. Czy potrzebne są nagrania audio jako załączniki (ArboMap pracuje z nagraniami).
 8. Czy dyktowanie w opisie prac (TreeWork) jest potrzebne (V1: jest).
 9. Interpunkcja i komendy głosowe („kropka”, „nowa linia”).
+
+---
+
+## Rejestr braków — stan po etapie 18
+
+Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
+Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
+**BRAK** — znana luka funkcjonalna, **DŁUG** — dług techniczny, **DO SPRAWDZENIA** — działa, ale nie zweryfikowane
+w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
+
+### Funkcje produktu
+
+| Obszar | Czego brakuje | Status |
+|---|---|---|
+| Drzewa | Usuwanie drzewa (co ze zdjęciami-plikami i pracami) | BRAK |
+| Projekty | Usuwanie / archiwizacja projektu; konto z projektami nie może być usunięte (409 — polityka tymczasowa) | BRAK / OPEN |
+| Drzewa | Wyszukiwanie, sortowanie i filtrowanie listy drzew (np. „bez lokalizacji”, „bez zdjęć”) | BRAK |
+| Listy | Paginacja list projektów, drzew, zdjęć i prac (dziś zawsze całe listy) | DŁUG |
+| Drzewa | Nawigacja „Poprzednie / Następne drzewo”, „Zapisz i dodaj następne” w jednym kroku (jest tylko „Dodaj następne drzewo”) | OPEN |
+| Drzewa | Autonumeracja i unikalność numeru drzewa w projekcie | OPEN |
+| Drzewa | Słownik gatunków, autocomplete, PL ↔ LAT | BRAK (V1 = wolny tekst) |
+| Drzewa | Model wielopniowości, historia pomiarów, strukturalna ocena stanu / VTA / ryzyko | OPEN |
+| Formularz | Blokada opuszczenia strony z niezapisanymi zmianami (jest tylko komunikat „Masz niezapisane zmiany”) | BRAK |
+| Zdjęcia | Miniatury po stronie serwera / kompresja (galeria ładuje pełne pliki) | BRAK |
+| Zdjęcia | Podpisy, kategorie, zdjęcie główne, kolejność, EXIF, adnotacje (szkice cięć), HEIC | OPEN |
+| Zdjęcia | Zewnętrzny aparat i automatyczne przypisanie zdjęcia do drzewa | OPEN |
+| Zdjęcia | Widok wszystkich zdjęć projektu (zakładka „Zdjęcia i dokumentacja” usunięta w etapie 16) | OPEN |
+| Prace | Słownik typów prac, kody, priorytet, termin, status wykonania, parametry | OPEN |
+| Mapa | Symbole prac, kolory, legenda, etykiety numerów drzew przy markerach | BRAK / OPEN |
+| Mapa | Klastrowanie przy dużej liczbie drzew; korony, strefy ochronne, poligony | BRAK / OPEN |
+| Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
+| Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
+| Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
+| Dokumentacja | Generator dokumentów (PDF/DOCX), tabele zaleceń, mapy do raportu | BRAK |
+| Import/eksport | XLSX, CSV, GeoPackage, SHP, GeoJSON, DXF, QGIS | BRAK |
+| Teren | GNSS/RTK, NTRIP, geolokalizacja urządzenia, praca offline, synchronizacja | OPEN |
+| Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
+| Konto | Zmiana hasła z poziomu „Mój profil” (dziś tylko przez „Nie pamiętasz hasła?”) | BRAK |
+| Konto | Po „Wyloguj” kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) | OPEN |
+| Role | Panel urzędnika — tylko pulpit z zapowiedziami modułów; brak workflow urząd ↔ wykonawca, organizacji | BRAK / FUTURE |
+| Współpraca | Wielu użytkowników w jednym projekcie (ProjectMembership) | FUTURE |
+| Język | Wielojęzyczność (i18n) — dziś tylko polski UI | OPEN |
+
+### Niesprawdzone w realnych warunkach
+
+| Obszar | Czego nie sprawdzono | Status |
+|---|---|---|
+| Dyktowanie | Prawdziwy głos i prawdziwy mikrofon — testy E2E używały podstawionego SpeechRecognition | DO SPRAWDZENIA |
+| Dyktowanie | Docelowe tablety/przeglądarki (Safari na iPadzie, Chrome na Androidzie), jakość polskiego rozpoznawania w terenie | DO SPRAWDZENIA |
+| Dyktowanie | Prywatność: Chrome rozpoznaje mowę przez usługę Google (wymaga internetu, dźwięk opuszcza urządzenie przez przeglądarkę) | OPEN |
+| Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
+| Zdjęcia | Aparat tabletu przez `<input type="file" accept="image/*">`, duże zdjęcia (8–15 MB) na słabym łączu | DO SPRAWDZENIA |
+| Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
+| Maile | Wysyłka maili rejestracji/resetu przez prawdziwy SMTP (lokalnie potwierdzanie maila jest wyłączalne) | DO SPRAWDZENIA |
+
+### Dług techniczny
+
+| Obszar | Opis | Status |
+|---|---|---|
+| Baza | Brak Flyway/Liquibase — schemat aktualizuje `ddl-auto=update` (nowe kolumny tekstowe z etapu 17 dodał Hibernate) | DŁUG |
+| Testy backendu | Testy działają na H2, nie na PostgreSQL (błąd tylko-PostgreSQL wyszedł już w etapie 2); rozważyć Testcontainers | DŁUG |
+| Testy frontendu | Tylko testy logiki (`node --test`); brak testów renderowania komponentów React | DŁUG |
+| Testy E2E | Scenariusze E2E (headless Chrome przez CDP) istnieją tylko lokalnie poza repozytorium — brak E2E w repo i CI | DŁUG |
+| Jakość | Brak lintera (ESLint) i CI uruchamiającego testy przy commitach | DŁUG |
+| Frontend | Paczka JS ~650 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy) | DŁUG |
+| Bezpieczeństwo | Token JWT w `localStorage`, brak odświeżania tokenu (sesja wygasa po czasie ważności) | OPEN |
+| Zdjęcia | Brak zadania sprzątającego osierocone pliki (plik bez rekordu po nieudanym usunięciu) | DŁUG |
+| Zdjęcia | Storage produkcyjny i kopie zapasowe plików (dziś katalog na dysku serwera) | OPEN |
+| Mapa | Publiczne kafelki OpenStreetMap — polityka użycia nie dopuszcza ruchu produkcyjnego | OPEN |
+
+### Sprawy operacyjne (środowisko lokalne)
+
+| Opis | Status |
+|---|---|
+| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–18) — do usunięcia przy okazji | OPERACYJNE |
+| Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
+| Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
