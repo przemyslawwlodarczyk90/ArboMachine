@@ -3,7 +3,7 @@ import type { Tree, TreeEditableFieldsRequest } from './treeDataTypes';
 /**
  * Wartosci formularza drzewa (dodawanie i edycja) - wszystko jako tekst, bo tak dzialaja kontrolowane inputy.
  * Pomiary tez sa tekstem az do wyslania (pozwala to wpisac przecinek i pokazac czytelny blad zamiast NaN).
- * Nowe pole drzewa dodajemy tutaj, w TreeFormFields i w TreeDetailsView.
+ * Nowe pole drzewa dodajemy tutaj i w TreeFieldForm (formularz terenowy karty drzewa).
  */
 export interface TreeFormValues {
   inventoryNumber: string;
@@ -13,6 +13,8 @@ export interface TreeFormValues {
   heightM: string;
   crownDiameterM: string;
   notes: string;
+  conditionNotes: string;
+  hazardNotes: string;
 }
 
 /** Zakresy pomiarow - takie same jak w backendzie (stale w encji Tree). */
@@ -33,17 +35,24 @@ export const emptyTreeFormValues: TreeFormValues = {
   heightM: '',
   crownDiameterM: '',
   notes: '',
+  conditionNotes: '',
+  hazardNotes: '',
 };
 
-/** Wartosci formularza z zapisanego drzewa - brakujace pola jako puste napisy. */
+/** Liczba z API (np. 18.5) -> tekst pola w polskim zapisie (18,5); do API wraca znowu jako liczba. */
+const toPolishDecimalText = (measurement: number | null | undefined) => measurement?.toString().replace('.', ',') ?? '';
+
+/** Wartosci formularza z zapisanego drzewa - brakujace pola jako puste napisy, pomiary z przecinkiem dziesietnym. */
 export const toTreeFormValues = (tree: Tree): TreeFormValues => ({
   inventoryNumber: tree.inventoryNumber,
   speciesLatin: tree.speciesLatin ?? '',
   speciesPolish: tree.speciesPolish ?? '',
   trunkCircumferenceCm: tree.trunkCircumferenceCm?.toString() ?? '',
-  heightM: tree.heightM?.toString() ?? '',
-  crownDiameterM: tree.crownDiameterM?.toString() ?? '',
+  heightM: toPolishDecimalText(tree.heightM),
+  crownDiameterM: toPolishDecimalText(tree.crownDiameterM),
   notes: tree.notes ?? '',
+  conditionNotes: tree.conditionNotes ?? '',
+  hazardNotes: tree.hazardNotes ?? '',
 });
 
 const trimmedOrUndefined = (fieldValue: string) => fieldValue.trim() || undefined;
@@ -63,6 +72,8 @@ export const toTreeEditableFieldsRequest = (formValues: TreeFormValues): TreeEdi
   heightM: numberOrUndefined(formValues.heightM),
   crownDiameterM: numberOrUndefined(formValues.crownDiameterM),
   notes: trimmedOrUndefined(formValues.notes),
+  conditionNotes: trimmedOrUndefined(formValues.conditionNotes),
+  hazardNotes: trimmedOrUndefined(formValues.hazardNotes),
 });
 
 /** Czy dwa stany formularza daja ten sam request (np. dopisanie samych spacji albo 18.50 zamiast 18.5 nie jest zmiana). */
@@ -86,7 +97,7 @@ const errorOfOptionalMeters = (fieldValue: string, measurementName: string, maxi
 export const validateTreeFormValues = (formValues: TreeFormValues): Record<string, string> => {
   const errorMessageByFieldName: Record<string, string> = {};
   if (!formValues.inventoryNumber.trim()) {
-    errorMessageByFieldName.inventoryNumber = 'Numer inwentaryzacyjny jest wymagany.';
+    errorMessageByFieldName.inventoryNumber = 'Numer drzewa jest wymagany.';
   }
 
   const trunkCircumferenceText = formValues.trunkCircumferenceCm.trim();
@@ -99,7 +110,7 @@ export const validateTreeFormValues = (formValues: TreeFormValues): Record<strin
     }
   }
 
-  const heightError = errorOfOptionalMeters(formValues.heightM, 'Wysokość', MAXIMUM_HEIGHT_M);
+  const heightError = errorOfOptionalMeters(formValues.heightM, 'Wysokość drzewa', MAXIMUM_HEIGHT_M);
   if (heightError) errorMessageByFieldName.heightM = heightError;
 
   const crownDiameterError = errorOfOptionalMeters(formValues.crownDiameterM, 'Średnica korony', MAXIMUM_CROWN_DIAMETER_M);

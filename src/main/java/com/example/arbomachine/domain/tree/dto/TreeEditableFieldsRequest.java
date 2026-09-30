@@ -22,4 +22,8 @@ public interface TreeEditableFieldsRequest {
     BigDecimal crownDiameterM();
 
     String notes();
+
+    String conditionNotes();
+
+    String hazardNotes();
 }

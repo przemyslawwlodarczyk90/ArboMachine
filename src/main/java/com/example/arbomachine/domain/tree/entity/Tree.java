@@ -12,7 +12,8 @@ import java.util.Objects;
 
 /**
  * Drzewo w projekcie - model V1: numer, gatunek (LAT/PL), podstawowe pomiary jako proste kolumny, notatka
- * i opcjonalny punkt lokalizacji (TreeLocation). To NIE jest docelowy model arborystyczny: bez oceny stanu/ryzyka,
+ * i opcjonalny punkt lokalizacji (TreeLocation), a od etapu 17 takze opisowe pola formularza terenowego (stan drzewa,
+ * zagrozenia - wolny tekst V1). To NIE jest docelowy model arborystyczny: bez strukturalnej oceny stanu/ryzyka,
  * zdjec; wiele pni i historia
  * pomiarow wymagalyby osobnych encji. Kolejne pola dochodza malymi, osobnymi zmianami.
  * Nie istnieje bez projektu. Nie ma wlasnego wlasciciela: wlasnosc wynika z Tree -> Project -> owner.
@@ -96,6 +97,17 @@ public class Tree {
     private String notes;
 
     /**
+     * Opis stanu drzewa (zdrowotnego/statycznego) - V1: wolny tekst formularza terenowego. Swiadomie bez skali,
+     * enumow i VTA, dopoki arborysta nie potwierdzi sposobu oceny; latwy do zamiany na model strukturalny.
+     */
+    @Column(name = "condition_notes", columnDefinition = "text")
+    private String conditionNotes;
+
+    /** Zagrozenia stwarzane przez drzewo - V1: wolny tekst, bez poziomow ryzyka (docs/DO_DOPRECYZOWANIA.md). */
+    @Column(name = "hazard_notes", columnDefinition = "text")
+    private String hazardNotes;
+
+    /**
      * Opcjonalny punkt drzewa (kolumny latitude/longitude, obie null = brak lokalizacji). Nie jest polem
      * edytowalnym formularza karty drzewa - zmienia sie osobna operacja, bo docelowo punkt bedzie pochodzil
      * z mapy albo GNSS, a nie z edycji danych opisowych.
@@ -121,7 +133,7 @@ public class Tree {
     /** Aktualne wartosci pol edytowalnych - do porownania z wartosciami z requestu. */
     public TreeEditableAttributes editableAttributes() {
         return new TreeEditableAttributes(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, heightM,
-                crownDiameterM, notes);
+                crownDiameterM, notes, conditionNotes, hazardNotes);
     }
 
     /** Zastepuje wszystkie pola edytowalne i przesuwa updatedAt. Projekt i createdAt nigdy sie tu nie zmieniaja. */
@@ -150,5 +162,7 @@ public class Tree {
         this.heightM = attributes.heightM();
         this.crownDiameterM = attributes.crownDiameterM();
         this.notes = attributes.notes();
+        this.conditionNotes = attributes.conditionNotes();
+        this.hazardNotes = attributes.hazardNotes();
     }
 }

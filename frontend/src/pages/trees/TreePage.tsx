@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { formatTimestampForDisplay } from '../../formatting/formatTimestampForDisplay';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
-import { TreeDetailsView } from './TreeDetailsView';
-import { TreeEditForm } from './TreeEditForm';
 import { TreeLocationSection } from './location/TreeLocationSection';
+import { NewTreeDialog } from './NewTreeDialog';
 import { TreePhotosSection } from './photos/TreePhotosSection';
-import { TreeWorksSection } from './works/TreeWorksSection';
 import type { Tree } from './treeDataTypes';
+import { TreeFieldForm } from './TreeFieldForm';
 import { treesApi } from './treesApi';
+import { TreeWorksSection } from './works/TreeWorksSection';
 
 type TreeLoadingState =
   | { status: 'loading' }
@@ -20,17 +21,18 @@ type TreeLoadingState =
   | { status: 'failed'; errorMessage: string };
 
 /**
- * Karta drzewa (/projects/:projectId/trees/:treeId). Strona tylko orkiestruje: laduje drzewo
- * i przelacza tryb podgladu (TreeDetailsView) / edycji (TreeEditForm); pod podgladem sekcje: lokalizacja
- * (TreeLocationSection), zdjecia (TreePhotosSection) i zalecenia/prace (TreeWorksSection). Kazda sekcja ma wlasny
- * stan i wlasne operacje zapisu. Wlasnosci nie sprawdzamy w React.
+ * Karta drzewa (/projects/:projectId/trees/:treeId) - ekran pracy przy jednym drzewie. Strona tylko laduje drzewo
+ * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Zdjecia, Zalecenia i prace.
+ * Kazda sekcja ma wlasny stan i wlasne operacje zapisu; drzewo z odpowiedzi backendu jest jednym zrodlem prawdy
+ * dla formularza i lokalizacji. Wlasnosci nie sprawdzamy w React.
  */
 export function TreePage() {
   const routeParams = useParams();
   const projectId = parsePositiveIdRouteParam(routeParams.projectId);
   const treeId = parsePositiveIdRouteParam(routeParams.treeId);
   const [treeLoadingState, setTreeLoadingState] = useState<TreeLoadingState>({ status: 'loading' });
-  const [isEditingTree, setIsEditingTree] = useState(false);
+  const [hasUnsavedTreeChanges, setHasUnsavedTreeChanges] = useState(false);
+  const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (projectId === null || treeId === null) {
@@ -39,6 +41,7 @@ export function TreePage() {
     }
     let isResponseStillWanted = true;
     setTreeLoadingState({ status: 'loading' });
+    setHasUnsavedTreeChanges(false);
     treesApi.getTreeOfProject(projectId, treeId)
       .then((tree) => {
         if (isResponseStillWanted) setTreeLoadingState({ status: 'loaded', tree });
@@ -53,6 +56,9 @@ export function TreePage() {
       });
     return () => { isResponseStillWanted = false; };
   }, [projectId, treeId]);
+
+  // Stabilna funkcja - formularz zglasza przez nia zmiane stanu "niezapisane zmiany" w efekcie.
+  const replaceTree = useCallback((changedTree: Tree) => setTreeLoadingState({ status: 'loaded', tree: changedTree }), []);
 
   const backToTreesLink = <Link to={`/projects/${projectId ?? ''}/trees`} className="back-link">← Wróć do listy drzew</Link>;
 
@@ -75,34 +81,41 @@ export function TreePage() {
     return (
       <div className="stack">
         {backToTreesLink}
-        <Alert variant="error">Nie udało się wczytać drzewa. {treeLoadingState.errorMessage}</Alert>
+        <Alert variant="error">Nie udało się pobrać drzewa. {treeLoadingState.errorMessage}</Alert>
       </div>
     );
   }
 
   const { tree } = treeLoadingState;
-  // Po zapisie podmieniamy drzewo odpowiedzia PATCH (bez dodatkowego GET) i wracamy do podgladu.
-  const replaceTree = (changedTree: Tree) => setTreeLoadingState({ status: 'loaded', tree: changedTree });
-  const replaceTreeWithSavedOne = (savedTree: Tree) => {
-    replaceTree(savedTree);
-    setIsEditingTree(false);
-  };
+  if (projectId === null) return null;
 
-  // Lokalizacja, zdjecia i prace to osobne sekcje z wlasnymi operacjami zapisu - w trybie edycji danych drzewa
-  // sa ukryte, zeby na ekranie byl tylko jeden aktywny formularz.
   return (
     <div className="stack">
       {backToTreesLink}
-      {isEditingTree && projectId !== null
-        ? <TreeEditForm projectId={projectId} savedTree={tree} onTreeSaved={replaceTreeWithSavedOne}
-                        cancelEditing={() => setIsEditingTree(false)} />
-        : <TreeDetailsView tree={tree} startEditing={() => setIsEditingTree(true)} />}
-      {!isEditingTree && projectId !== null && (
-        <>
-          <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
-          <TreePhotosSection projectId={projectId} treeId={tree.id} />
-          <TreeWorksSection projectId={projectId} treeId={tree.id} />
-        </>
+      <div className="section-header-row">
+        <div className="stack-tight">
+          <h2>Drzewo {tree.inventoryNumber}</h2>
+          <span className="muted small">
+            Dodano {formatTimestampForDisplay(tree.createdAt)} · Ostatnia zmiana {formatTimestampForDisplay(tree.updatedAt)}
+          </span>
+        </div>
+        {/* V1 "nastepnego drzewa": szybkie dodanie kolejnego drzewa bez wracania do listy. Z niezapisanymi zmianami
+            przycisk jest zablokowany, zeby nie zgubic wpisanych danych. */}
+        <button className="btn btn-secondary" onClick={() => setIsNewTreeDialogOpen(true)} disabled={hasUnsavedTreeChanges}
+                title={hasUnsavedTreeChanges ? 'Najpierw zapisz albo anuluj zmiany w danych drzewa.' : undefined}>
+          Dodaj następne drzewo
+        </button>
+      </div>
+
+      {/* key: przejscie na inne drzewo zaczyna formularz od zera (bez resztek poprzedniego drzewa). */}
+      <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree}
+                     onUnsavedChangesChange={setHasUnsavedTreeChanges} />
+      <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+      <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
+      <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} />
+
+      {isNewTreeDialogOpen && (
+        <NewTreeDialog projectId={projectId} closeDialog={() => setIsNewTreeDialogOpen(false)} />
       )}
     </div>
   );

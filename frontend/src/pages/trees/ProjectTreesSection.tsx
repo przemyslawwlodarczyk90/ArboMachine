@@ -43,12 +43,6 @@ export function ProjectTreesSection() {
 
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
 
-  const appendCreatedTreeAndCloseDialog = (createdTree: Tree) => {
-    setTreeListState((currentState) => currentState.status === 'loaded'
-      ? { status: 'loaded', trees: [...currentState.trees, createdTree] }
-      : { status: 'loaded', trees: [createdTree] });
-    setIsNewTreeDialogOpen(false);
-  };
   const openNewTreeDialog = () => setIsNewTreeDialogOpen(true);
 
   return (
@@ -89,8 +83,7 @@ export function ProjectTreesSection() {
       )}
 
       {isNewTreeDialogOpen && (
-        <NewTreeDialog projectId={projectId} onTreeCreated={appendCreatedTreeAndCloseDialog}
-                       closeDialog={() => setIsNewTreeDialogOpen(false)} />
+        <NewTreeDialog projectId={projectId} closeDialog={() => setIsNewTreeDialogOpen(false)} />
       )}
     </div>
   );

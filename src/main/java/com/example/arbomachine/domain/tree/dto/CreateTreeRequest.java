@@ -40,5 +40,11 @@ public record CreateTreeRequest(
         @DecimalMax(value = Tree.MAXIMUM_CROWN_DIAMETER_M, message = "Crown diameter must be at most 200 m")
         BigDecimal crownDiameterM,
 
-        String notes
+        String notes,
+
+        /** Opis stanu drzewa (V1: wolny tekst, bez skali i enumow - do potwierdzenia z arborysta). */
+        String conditionNotes,
+
+        /** Zagrozenia stwarzane przez drzewo (V1: wolny tekst, bez oceny ryzyka). */
+        String hazardNotes
 ) implements TreeEditableFieldsRequest {}

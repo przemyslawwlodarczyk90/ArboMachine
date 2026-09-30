@@ -17,6 +17,8 @@ public record TreeResponse(
         BigDecimal heightM,
         BigDecimal crownDiameterM,
         String notes,
+        String conditionNotes,
+        String hazardNotes,
         TreeLocationResponse location,
         Instant createdAt,
         Instant updatedAt

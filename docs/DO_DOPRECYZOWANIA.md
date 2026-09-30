@@ -1,5 +1,10 @@
 # Do doprecyzowania
 
+**Zasada od etapu 17:** brak potwierdzenia przez arborystę nie zatrzymuje developmentu. Elementy łatwe do zmiany
+implementujemy jako sensowne V1 (i oznaczamy tutaj jako V1), a spotkanie z arborystą będzie testem działającego
+systemu. Zatrzymujemy się tylko przed decyzjami fundamentalnymi, kosztownymi w migracji albo wymagającymi konkretnego
+sprzętu/protokołu (szczegółowy model VTA, algorytmy waloryzacji, synchronizacja offline, konkretny GNSS).
+
 Decyzje biznesowe i techniczne, których nie da się dziś wiarygodnie podjąć. Dla każdej zapisano, co przyjęto
 tymczasowo w V1 i czy blokuje dalszy development. Szersza lista pytań discovery: `konspekty/do doprecyzowania/`.
 
@@ -236,10 +241,72 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 | Temat | Stan V1 | Do ustalenia |
 |---|---|---|
 | Usuwanie drzewa i projektu | Brak (nie ma DELETE Tree/Project) | Czy usuwać fizycznie, archiwizować, co ze zdjęciami (pliki) i pracami? |
-| „Następne drzewo” / „Zapisz i dodaj następne” | Brak | Zależy od numeracji i kolejności pracy w terenie |
+| „Następne drzewo” / „Zapisz i dodaj następne” | Od etapu 17: „Dodaj następne drzewo” na karcie drzewa (numer → nowa karta) | Czy potrzebne „Poprzednie/Następne drzewo” i „Zapisz i dodaj następne”? Zależy od numeracji i kolejności pracy |
 | Miniatury zdjęć | Galeria wczytuje pełne pliki | Generowanie miniatur/kompresja przy słabym łączu w terenie |
 | Podsumowanie projektu | 5 liczb (drzewa, z/bez lokalizacji, zdjęcia, prace) | Czy potrzebne np. „drzewa ze zdjęciami”, „drzewa bez prac”, lista braków do uzupełnienia? |
 | Zakładka projektu „Zdjęcia i dokumentacja” | Usunięta (zdjęcia są w karcie drzewa; stary link → podsumowanie) | Czy potrzebny widok wszystkich zdjęć projektu? Moduł dokumentacji — osobny etap |
 | Powrót po wylogowaniu | Kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) — zawsze na dane zalogowanego | Czy po wylogowaniu zawsze startować z pulpitu? |
 | Ochrona przed opuszczeniem formularza z niezapisanymi zmianami | Brak (tylko „Anuluj” nie zapisuje) | Wymaga ingerencji w routing — do decyzji |
 | Rozmiar paczki frontendu | ~650 kB JS (głównie OpenLayers) | Ewentualny podział na części (lazy loading mapy) przy wolnym internecie w terenie |
+
+---
+
+## Formularz terenowy drzewa (etap 17)
+
+### Co przyjęto w V1
+- Karta drzewa ma zawsze edytowalny formularz „Dane drzewa” w sekcjach: **Identyfikacja** (numer) → **Gatunek**
+  (nazwa polska, łacińska) → **Pomiary** (obwód pnia [cm], wysokość drzewa [m], średnica korony [m]) → **Stan drzewa**
+  → **Zagrożenia** → **Notatki**. Kolejność to UKŁAD V1, nie potwierdzony workflow arborysty.
+- **Stan drzewa** (`conditionNotes`) i **Zagrożenia** (`hazardNotes`) to nowe pola V1 — wolny tekst (nullable `text`),
+  bez skal, enumów, VTA i poziomów ryzyka. Łatwe do zastąpienia modelem strukturalnym po discovery.
+- Dodawanie drzewa: sam numer → od razu karta terenowa. Na karcie „Dodaj następne drzewo” (zablokowane przy
+  niezapisanych zmianach). Brak autonumeracji i nawigacji poprzednie/następne.
+- Zapis tylko przyciskiem „Zapisz zmiany” (bez autozapisu); „Anuluj” przywraca zapisane wartości; komunikat
+  „Masz niezapisane zmiany”. Brak blokady opuszczenia strony z niezapisanymi zmianami (wymaga ingerencji w routing).
+- Pomiary: klawiatura numeryczna (`inputMode`), polski przecinek dziesiętny (12,5) — do API trafia liczba, wartości
+  z API wyświetlane z przecinkiem. Limity zgodne z backendem (obwód 1–5000 cm, wysokość ≤ 150 m, korona ≤ 200 m).
+
+### Nadal OPEN
+1. Rzeczywista kolejność pracy przy jednym drzewie.
+2. Które pola są obowiązkowe.
+3. Które pola zależą od rodzaju projektu/zlecenia.
+4. Numeracja (ręczna/automatyczna, format, unikalność, import numeracji klienta).
+5. Gatunki (słownik, PL ↔ LAT, autocomplete, rodzaj, kultywary).
+6. Wielopniowość (jak mierzony i zapisywany jest każdy pień).
+7. Rzeczywiste pomiary (pierśnica vs obwód, wysokość pomiaru, metoda, dokładność, dwie osie korony).
+8. Stan zdrowotny (tekst czy skala/kategorie).
+9. Statyka.
+10. Uszkodzenia (lista, lokalizacja na drzewie).
+11. Zagrożenia (kategorie, poziomy ryzyka, strefa zagrożenia).
+12. VTA.
+13. Nawigacja „Poprzednie drzewo” / „Następne drzewo”.
+14. „Zapisz i dodaj następne” w jednym kroku.
+
+---
+
+## Dyktowanie / speech-to-text (etap 18)
+
+### Co przyjęto w V1
+- Web Speech API przeglądarki (`SpeechRecognition` / `webkitSpeechRecognition`), język `pl-PL`, tylko wyniki końcowe.
+  Izolacja: `speech/browserSpeechRecognition.ts` (jedyne miejsce znające API przeglądarki), `DictationController`
+  (logika bez Reacta), `useSpeechDictation`, `VoiceInputButton`, `VoiceEnabledTextAreaField`.
+- Przycisk „Dyktuj” przy polach opisowych: Opis stanu, Opis zagrożeń, Notatki drzewa oraz Opis pracy
+  (Zalecenia i prace). Bez dyktowania: numer drzewa, nazwa łacińska, pomiary, współrzędne.
+- Podyktowany tekst jest **dopisywany** na końcu pola (nigdy nie kasuje wpisanego tekstu), można go poprawić;
+  nic nie zapisuje się automatycznie — dopiero „Zapisz zmiany”.
+- Mikrofon startuje tylko po kliknięciu „Dyktuj”; widoczny stan „Słucham…”; jedna sesja naraz; wyłączenie
+  przy opuszczeniu strony. Brak wsparcia przeglądarki (np. Firefox) → przycisk ukryty, formularz działa normalnie.
+- Audio nie jest nagrywane ani wysyłane do backendu; brak AI/LLM i automatycznego wyciągania pomiarów z mowy.
+  Uwaga: Chrome realizuje rozpoznawanie mowy po stronie usługi Google (wymaga internetu) — tekst mowy opuszcza
+  urządzenie przez mechanizm przeglądarki, nie przez ArboMachine.
+
+### Nadal OPEN
+1. Które pola arborysta rzeczywiście dyktuje.
+2. Dyktowanie nazw łacińskich (skuteczność polskiego rozpoznawania dla nazw botanicznych).
+3. Dyktowanie danych strukturalnych (np. „obwód 120, wysokość 18” → pola).
+4. Działanie dyktowania offline.
+5. Kompatybilność docelowych tabletów i przeglądarek (Safari/iPadOS, przeglądarki Android).
+6. Czy potrzebny jest fallback w postaci chmurowego speech-to-text.
+7. Czy potrzebne są nagrania audio jako załączniki (ArboMap pracuje z nagraniami).
+8. Czy dyktowanie w opisie prac (TreeWork) jest potrzebne (V1: jest).
+9. Interpunkcja i komendy głosowe („kropka”, „nowa linia”).

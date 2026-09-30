@@ -1,53 +1,47 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
+import { LabeledInputField } from '../../components/LabeledInputField';
 import { ModalDialog } from '../../components/ModalDialog';
-import type { Tree } from './treeDataTypes';
-import { TreeFormFields } from './TreeFormFields';
-import {
-  emptyTreeFormValues, toTreeEditableFieldsRequest, validateTreeFormValues, type TreeFormValues,
-} from './treeFormValues';
 import { treesApi } from './treesApi';
 
 /**
- * Okno dodawania drzewa do projektu. Po sukcesie oddaje utworzone drzewo wywolujacemu (onTreeCreated),
- * ktory dopisuje je do listy. Przy bledzie okno zostaje otwarte z wpisanymi danymi.
+ * Okno dodawania drzewa - celowo minimalne (sam numer), bo reszte danych uzupelnia sie w formularzu terenowym
+ * karty drzewa: "Dodaj drzewo -> numer -> karta". Po sukcesie przechodzi od razu do karty nowego drzewa.
+ * Przy bledzie okno zostaje otwarte z wpisanym numerem.
  */
-export function NewTreeDialog({ projectId, onTreeCreated, closeDialog }: {
-  projectId: number;
-  onTreeCreated: (createdTree: Tree) => void;
-  closeDialog: () => void;
-}) {
-  const [treeFormValues, setTreeFormValues] = useState<TreeFormValues>(emptyTreeFormValues);
+export function NewTreeDialog({ projectId, closeDialog }: { projectId: number; closeDialog: () => void }) {
+  const navigate = useNavigate();
+  const [inventoryNumber, setInventoryNumber] = useState('');
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isAddingTree, setIsAddingTree] = useState(false);
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isSubmissionInProgress = useRef(false);
 
-  const changeFormField = (fieldName: keyof TreeFormValues, newValue: string) =>
-    setTreeFormValues((previousValues) => ({ ...previousValues, [fieldName]: newValue }));
-
   const submitNewTree = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
     if (isSubmissionInProgress.current) return;
     setFormErrorMessage(null);
-
-    const clientSideErrors = validateTreeFormValues(treeFormValues);
-    setErrorMessageByFieldName(clientSideErrors);
-    if (Object.keys(clientSideErrors).length) return;
+    if (!inventoryNumber.trim()) {
+      setErrorMessageByFieldName({ inventoryNumber: 'Numer drzewa jest wymagany.' });
+      return;
+    }
+    setErrorMessageByFieldName({});
 
     isSubmissionInProgress.current = true;
     setIsAddingTree(true);
     try {
-      const createdTree = await treesApi.createTreeInProject(projectId, toTreeEditableFieldsRequest(treeFormValues));
-      onTreeCreated(createdTree);
+      const createdTree = await treesApi.createTreeInProject(projectId, { inventoryNumber: inventoryNumber.trim() });
+      navigate(`/projects/${projectId}/trees/${createdTree.id}`);
+      closeDialog();
     } catch (creationError) {
       if (creationError instanceof ApiRequestError) {
         setErrorMessageByFieldName(creationError.errorMessageByFieldName);
-        setFormErrorMessage(creationError.message);
+        setFormErrorMessage(`Nie udało się dodać drzewa. ${creationError.message}`);
       } else {
-        setFormErrorMessage('Nieoczekiwany błąd.');
+        setFormErrorMessage('Nie udało się dodać drzewa. Nieoczekiwany błąd.');
       }
       isSubmissionInProgress.current = false;
       setIsAddingTree(false);
@@ -58,14 +52,14 @@ export function NewTreeDialog({ projectId, onTreeCreated, closeDialog }: {
     <ModalDialog title="Dodaj drzewo" closeDialog={closeDialog} isClosingBlocked={isAddingTree}>
       <form onSubmit={submitNewTree} className="form" noValidate>
         {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
-        <TreeFormFields treeFormValues={treeFormValues} errorMessageByFieldName={errorMessageByFieldName}
-                        changeFormField={changeFormField} />
+        <LabeledInputField label="Numer drzewa *" autoFocus autoComplete="off" maxLength={100} value={inventoryNumber}
+                           hintText="Pozostałe dane uzupełnisz w karcie drzewa, która otworzy się po dodaniu."
+                           onChange={(changeEvent) => setInventoryNumber(changeEvent.target.value)}
+                           errorMessage={errorMessageByFieldName.inventoryNumber} />
         <div className="form-actions">
-          <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isAddingTree}>
-            Anuluj
-          </button>
+          <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isAddingTree}>Anuluj</button>
           <button type="submit" className="btn btn-primary" disabled={isAddingTree}>
-            {isAddingTree ? 'Dodawanie…' : 'Dodaj drzewo'}
+            {isAddingTree ? 'Dodawanie…' : 'Dodaj i otwórz kartę'}
           </button>
         </div>
       </form>

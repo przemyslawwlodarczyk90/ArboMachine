@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 - etapy 1-16):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-18 - formularz terenowy i dyktowanie):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -77,10 +77,13 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   projektu z zakładkami **Podsumowanie** / **Drzewa** / **Mapa** i breadcrumbem („Projekty / nazwa projektu”)
 - 📊 **Podsumowanie projektu** (`/projects/:projectId`) - liczba drzew, drzew z lokalizacją i bez, zdjęć oraz
   zaleceń/prac (liczone w bazie jednym zestawem zapytań COUNT) + szybkie akcje „Przejdź do drzew” / „Otwórz mapę”
-- 🌳 **Drzewa projektu** (`/projects/:projectId/trees`) - lista i dodawanie drzew oraz edytowalna karta drzewa
-  (podgląd / edycja z „Zapisz” i „Anuluj”).
+- 🌳 **Drzewa projektu** (`/projects/:projectId/trees`) - lista drzew; „Dodaj drzewo” pyta tylko o numer i od razu
+  otwiera kartę drzewa. Na karcie **formularz terenowy** (tablet-first, zawsze edytowalny): Identyfikacja → Gatunek →
+  Pomiary (klawiatura numeryczna, przecinek dziesiętny, jednostki w etykietach) → Stan drzewa → Zagrożenia → Notatki;
+  „Zapisz zmiany” / „Anuluj”, sygnał niezapisanych zmian, „Dodaj następne drzewo”.
   Model **Tree V1**: numer inwentaryzacyjny, gatunek łaciński i polski, obwód pnia (cm), wysokość (m),
-  średnica korony (m), notatka. To roboczy model do rozwijania małymi krokami, nie docelowy model arborystyczny -
+  średnica korony (m), notatka, opis stanu i opis zagrożeń (wolny tekst V1). To roboczy model do rozwijania
+  małymi krokami, nie docelowy model arborystyczny -
   patrz [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
 - 📍 **Lokalizacja drzewa (TreeLocation V1)** - punkt WGS84 (`latitude`/`longitude` w stopniach dziesiętnych),
   ustawiany w karcie drzewa wskazaniem na mapie albo ręcznym formularzem współrzędnych; można go też usunąć
@@ -94,6 +97,9 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   Celowo bez słownika typów prac, symboli mapowych i priorytetów (`docs/DO_DOPRECYZOWANIA.md`)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:<port>/swagger-ui.html`
+- 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
+  pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
+  autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
 - ♿ **Podstawy dostępności** - etykiety pól, `alt` zdjęć, okna dialogowe z Escape, pułapką fokusu i powrotem fokusu
 
 ---
@@ -203,14 +209,17 @@ frontend/src
 ├── auth         AuthenticationContext (sesja, logowanie), routeGuards, userRoles
 ├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
 ├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera)
+├── speech       dyktowanie: browserSpeechRecognition (jedyne miejsce znające Web Speech API), DictationController
+│                (logika bez Reacta, jedna sesja naraz), useSpeechDictation, VoiceInputButton,
+│                VoiceEnabledTextAreaField, appendTranscription (dopisywanie bez kasowania)
 └── pages
     ├── arborist   ArboristDashboardPage + arboristPanelApi
     ├── projects   ProjectsPage, NewProjectDialog, EditProjectDialog, ProjectPage (workspace: breadcrumb, zakładki,
     │   │          sekcje jako trasy zagnieżdżone), RedirectToProjectSummary + projectsApi, projectDataTypes
     │   └── summary   ProjectSummaryPage, projectSummaryStatistics (kafelki), projectSummaryApi
-    ├── trees      ProjectTreesSection, NewTreeDialog, TreePage (orkiestracja), TreeDetailsView (podgląd),
-    │   │          TreeEditForm (edycja), TreeFormFields + treeFormValues (pola, wartości i walidacja wspólne
-    │   │          dla dodawania i edycji) + treesApi, treeDataTypes
+    ├── trees      ProjectTreesSection, NewTreeDialog (sam numer -> karta), TreePage (karta drzewa: sekcje),
+    │   │          TreeFieldForm (formularz terenowy w sekcjach) + treeFormValues (wartości, przecinek dziesiętny,
+    │   │          walidacja) + treesApi, treeDataTypes
     │   ├── location  TreeLocationSection (tryby: podgląd / ręczny formularz / wybór na mapie), TreeLocationForm,
     │   │             TreeLocationMap, RemoveTreeLocationDialog, treeLocationMapCoordinates (WGS84 <-> mapa),
     │   │             treeLocationValidRange, treeLocationFormValues
@@ -334,7 +343,7 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/projects` | każdy zalogowany | Tylko własne projekty (najnowsze pierwsze) |
 | GET | `/api/projects/{projectId}` | każdy zalogowany | Własny projekt; cudzy albo nieistniejący → 404 |
 | PATCH | `/api/projects/{projectId}` | każdy zalogowany | Zmiana `name` i/lub `description` własnego projektu; cudzy → 404 |
-| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, speciesPolish?, trunkCircumferenceCm?, heightM?, crownDiameterM?, notes? }` → 201; cudzy/nieistniejący projekt → 404 |
+| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, speciesPolish?, trunkCircumferenceCm?, heightM?, crownDiameterM?, notes?, conditionNotes?, hazardNotes? }` → 201; cudzy/nieistniejący projekt → 404 |
 | GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
 | PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
@@ -396,7 +405,8 @@ Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(i
 Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (indeks),
 `inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `species_polish varchar(255) NULL`,
 `trunk_circumference_cm integer NULL` (1-5000), `height_m numeric(5,2) NULL` (>0 do 150),
-`crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+`crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `condition_notes text NULL` (stan drzewa, V1),
+`hazard_notes text NULL` (zagrożenia, V1), `created_at` / `updated_at timestamptz NOT NULL`.
 Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
 nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc
 `ddl-auto=update` dodaje je do istniejącej tabeli bez utraty danych.

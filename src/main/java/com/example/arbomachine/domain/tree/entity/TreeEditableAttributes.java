@@ -14,5 +14,7 @@ public record TreeEditableAttributes(
         Integer trunkCircumferenceCm,
         BigDecimal heightM,
         BigDecimal crownDiameterM,
-        String notes
+        String notes,
+        String conditionNotes,
+        String hazardNotes
 ) {}

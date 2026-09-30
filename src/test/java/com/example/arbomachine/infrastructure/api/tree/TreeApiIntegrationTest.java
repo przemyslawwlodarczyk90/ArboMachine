@@ -440,6 +440,29 @@ class TreeApiIntegrationTest {
     }
 
     @Test
+    void conditionAndHazardNotesAreStoredTrimmedChangedAndCleared() throws Exception {
+        long treeId = readId(postTreeAs(userAccountA, projectIdA1,
+                "{\"inventoryNumber\":\"1\",\"conditionNotes\":\"  Posusz w koronie \",\"hazardNotes\":\"Konar nad chodnikiem\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.conditionNotes").value("Posusz w koronie"))
+                .andExpect(jsonPath("$.hazardNotes").value("Konar nad chodnikiem")));
+
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                "{\"inventoryNumber\":\"1\",\"conditionNotes\":\"Dobry\",\"hazardNotes\":\"  \"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conditionNotes").value("Dobry"))
+                .andExpect(jsonPath("$.hazardNotes").doesNotExist());
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getConditionNotes()).isEqualTo("Dobry");
+        assertThat(storedTree.getHazardNotes()).isNull();
+
+        // Formularz wysyla komplet pol - pominiete pole opisowe czysci wartosc (jak notatka).
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"1\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conditionNotes").doesNotExist());
+    }
+
+    @Test
     void tooLongSpeciesPolishIsRejected() throws Exception {
         String tooLongName = "d".repeat(Tree.MAXIMUM_SPECIES_POLISH_LENGTH + 1);
         postTreeAs(userAccountA, projectIdA1, "{\"inventoryNumber\":\"1\",\"speciesPolish\":\"" + tooLongName + "\"}")

@@ -21,6 +21,8 @@ public class TreeMapper {
                 tree.getHeightM(),
                 tree.getCrownDiameterM(),
                 tree.getNotes(),
+                tree.getConditionNotes(),
+                tree.getHazardNotes(),
                 toTreeLocationResponseOrNull(tree.getLocation()),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()

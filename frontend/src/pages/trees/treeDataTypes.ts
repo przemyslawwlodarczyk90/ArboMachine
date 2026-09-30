@@ -15,6 +15,10 @@ export interface Tree {
   /** srednica korony w metrach (jeden wymiar), max 2 miejsca po przecinku */
   crownDiameterM?: number | null;
   notes?: string | null;
+  /** opis stanu drzewa - V1: wolny tekst */
+  conditionNotes?: string | null;
+  /** zagrozenia stwarzane przez drzewo - V1: wolny tekst */
+  hazardNotes?: string | null;
   /** null = lokalizacja drzewa nie jest jeszcze ustalona (nigdy 0,0 ani jedna wspolrzedna) */
   location?: TreeLocation | null;
   createdAt: string;
@@ -48,6 +52,8 @@ export interface TreeEditableFieldsRequest {
   heightM?: number;
   crownDiameterM?: number;
   notes?: string;
+  conditionNotes?: string;
+  hazardNotes?: string;
 }
 
 /** Body POST /api/projects/{projectId}/trees. */

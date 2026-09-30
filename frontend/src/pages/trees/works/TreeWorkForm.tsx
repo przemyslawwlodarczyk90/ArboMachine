@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LabeledInputField } from '../../../components/LabeledInputField';
-import { LabeledTextAreaField } from '../../../components/LabeledTextAreaField';
+import { VoiceEnabledTextAreaField } from '../../../speech/VoiceEnabledTextAreaField';
 import type { TreeWork, TreeWorkFieldsRequest } from './treeWorkDataTypes';
 import {
   areTreeWorkFormValuesEquivalent, MAXIMUM_TREE_WORK_NAME_LENGTH, toTreeWorkFieldsRequest, validateTreeWorkFormValues,
@@ -68,9 +68,9 @@ export function TreeWorkForm({ initialFormValues, saveTreeWork, onTreeWorkSaved,
                          value={treeWorkFormValues.name}
                          onChange={(changeEvent) => changeFormField('name', changeEvent.target.value)}
                          errorMessage={errorMessageByFieldName.name} />
-      <LabeledTextAreaField label="Opis" value={treeWorkFormValues.description}
-                            onChange={(changeEvent) => changeFormField('description', changeEvent.target.value)}
-                            errorMessage={errorMessageByFieldName.description} />
+      <VoiceEnabledTextAreaField label="Opis" value={treeWorkFormValues.description}
+                                 onValueChange={(newValue) => changeFormField('description', newValue)}
+                                 errorMessage={errorMessageByFieldName.description} />
       <div className="form-actions">
         {/* Anuluj zablokowane w trakcie zapisu - inaczej odpowiedz backendu nadpisalaby porzucona edycje. */}
         <button type="button" className="btn btn-ghost" onClick={cancelEditing} disabled={isSaving}>Anuluj</button>
