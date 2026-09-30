@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-18 - formularz terenowy i dyktowanie):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-19 - formularz terenowy, dyktowanie, symbole mapowe):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -97,6 +97,10 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   Celowo bez słownika typów prac, symboli mapowych i priorytetów (`docs/DO_DOPRECYZOWANIA.md`)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
 - 📄 **Swagger** (opisy po polsku) - `http://localhost:<port>/swagger-ui.html`
+- 🔣 **Symbole mapowe (V1)** - symbol drzewa (sekcja „Symbol drzewa na mapie”) i symbol każdej pracy („Zmień symbol”)
+  z technicznego katalogu 6 kształtów/kolorów (`GET /api/map-symbols`). Na mapie projektu: centralny symbol drzewa,
+  znaczki prac wokół niego (maks. 3 + „+N”), panel drzewa z pracami i automatyczna legenda z nazw prac. Symbole
+  nie oznaczają rodzajów zabiegów - znaczenie nadaje nazwa pracy (docs/DO_DOPRECYZOWANIA.md)
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -176,6 +180,11 @@ com.example.arbomachine
 │   │                           TreeWorkFieldsNormalizer
 │   ├── mapper      TreeWorkMapper
 │   └── exception   TreeWorkNotFoundException
+├── domain.mapsymbol  (katalog symboli w kodzie - bez tabeli)
+│   ├── catalog     MapSymbolCatalog (walidacja kodów dla tree i treework), MapSymbolDefinition, MapSymbolShape
+│   ├── dto         MapSymbolResponse, MapSymbolRequest
+│   ├── facade      MapSymbolFacade
+│   └── service.mapsymbolfacade  GetMapSymbolsHandler
 └── infrastructure
     ├── api         ApiExceptionHandler (wspólny) + podpakiety modułów:
     │   ├── user      UserAccountController
@@ -208,7 +217,9 @@ frontend/src
 │                apiDataTypes, userFacingErrorMessages
 ├── auth         AuthenticationContext (sesja, logowanie), routeGuards, userRoles
 ├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
-├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera)
+├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera);
+│                symbole: mapSymbolShapeSpec (geometria + rozmieszczenie znaczków), mapSymbolStyleFactory (OpenLayers),
+│                MapSymbolSwatch (miniatura SVG), MapSymbolPicker, mapSymbolLegend, useMapSymbolCatalog, mapSymbolsApi
 ├── speech       dyktowanie: browserSpeechRecognition (jedyne miejsce znające Web Speech API), DictationController
 │                (logika bez Reacta, jedna sesja naraz), useSpeechDictation, VoiceInputButton,
 │                VoiceEnabledTextAreaField, appendTranscription (dopisywanie bez kasowania)
@@ -350,6 +361,10 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/projects/{projectId}/summary` | każdy zalogowany | Podsumowanie własnego projektu `{ treeCount, treeWithLocationCount, treeWithoutLocationCount, photoCount, workCount }` (COUNT w bazie); cudzy → 404 |
 | PUT | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Ustawienie/zamiana punktu `{ latitude, longitude }` (WGS84, oba wymagane) → 200 z drzewem; używają go i mapa, i ręczny formularz |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Usunięcie lokalizacji (`location: null`) → 200 z drzewem |
+| GET | `/api/map-symbols` | każdy zalogowany | Katalog symboli V1 `[{ code, displayName, shape, fillColor, strokeColor }]` |
+| PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/map-symbol` | każdy zalogowany | Symbol drzewa `{ symbolCode }` / usunięcie → 200 z drzewem; kod spoza katalogu → 400 |
+| PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}/map-symbol` | każdy zalogowany | Symbol pracy (bez edycji nazwy/opisu) → 200 z pracą |
+| GET | `/api/projects/{projectId}/works` | każdy zalogowany | Prace wszystkich drzew projektu jednym zapytaniem (mapa, legenda) |
 | POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, createdAt }` (bez ścieżek plików) |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
@@ -394,6 +409,8 @@ polityka do czasu ustalenia archiwizacji / przenoszenia własności).
 - `MilestoneOwnershipRegressionIntegrationTest` - użytkownik B próbuje każdego endpointu na danych A
   (projekt, podsumowanie, drzewo, lokalizacja, zdjęcie i jego treść, praca) → zawsze 404, dane A bez zmian;
   bez tokenu → 401.
+- `MapSymbolApiIntegrationTest` - katalog, symbol drzewa i pracy (ustawienie, zmiana, usunięcie, niedozwolone kody
+  w tym SVG/URL/ścieżki), użytkownik B, praca innego drzewa w URL, lista prac projektu bez przecieków.
 - `FacadeHandlerArchitectureTest` - reguły architektury kontroler → fasada → handler.
 
 ## 🗄️ Schemat bazy
@@ -406,7 +423,8 @@ Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (i
 `inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `species_polish varchar(255) NULL`,
 `trunk_circumference_cm integer NULL` (1-5000), `height_m numeric(5,2) NULL` (>0 do 150),
 `crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `condition_notes text NULL` (stan drzewa, V1),
-`hazard_notes text NULL` (zagrożenia, V1), `created_at` / `updated_at timestamptz NOT NULL`.
+`hazard_notes text NULL` (zagrożenia, V1), `map_symbol_code varchar(64) NULL` (symbol na mapie, etap 19),
+`created_at` / `updated_at timestamptz NOT NULL`.
 Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
 nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc
 `ddl-auto=update` dodaje je do istniejącej tabeli bez utraty danych.
@@ -414,7 +432,8 @@ Tabela `tree_photo`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (i
 `original_file_name varchar(255) NOT NULL`, `storage_key varchar(64) NOT NULL UNIQUE`, `content_type varchar(100) NOT NULL`,
 `file_size_bytes bigint NOT NULL`, `created_at timestamptz NOT NULL` - sam plik leży poza bazą.
 Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks), `name varchar(255) NOT NULL`,
-`description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`. Obie tabele bez `owner_id`.
+`description text NULL`, `map_symbol_code varchar(64) NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+Obie tabele bez `owner_id`.
 
 ## 🧭 Trasy frontendu projektów
 

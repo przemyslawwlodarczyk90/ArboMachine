@@ -28,6 +28,18 @@ export const treesApi = {
       httpMethod: 'PUT', requestBody: treeLocationRequest, sendAccessToken: true,
     }),
 
+  /** Ustawia albo zmienia symbol drzewa na mapie; zwraca zaktualizowane drzewo. */
+  setTreeMapSymbol: (projectId: number, treeId: number, symbolCode: string) =>
+    sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}/map-symbol`, {
+      httpMethod: 'PUT', requestBody: { symbolCode }, sendAccessToken: true,
+    }),
+
+  /** Usuwa symbol drzewa (neutralny marker); zwraca zaktualizowane drzewo. */
+  clearTreeMapSymbol: (projectId: number, treeId: number) =>
+    sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}/map-symbol`, {
+      httpMethod: 'DELETE', sendAccessToken: true,
+    }),
+
   /** Usuwa lokalizacje (drzewo wraca do stanu "nie ustalono"); zwraca zaktualizowane drzewo. */
   clearTreeLocation: (projectId: number, treeId: number) =>
     sendApiRequest<Tree>(`/api/projects/${projectId}/trees/${treeId}/location`, {

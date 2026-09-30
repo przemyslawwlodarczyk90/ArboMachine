@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/official/**").hasRole("OFFICIAL")
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/projects", "/api/projects/**").authenticated()
+                        .requestMatchers("/api/map-symbols").authenticated()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session

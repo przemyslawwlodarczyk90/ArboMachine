@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.api;
 
+import com.example.arbomachine.domain.mapsymbol.exception.UnsupportedMapSymbolException;
 import com.example.arbomachine.domain.user.exception.*;
 import com.example.arbomachine.infrastructure.service.EmailSendingFailedException;
 import org.springframework.http.HttpStatus;
@@ -94,6 +95,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<String> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body("Photo file is too large");
+    }
+
+    /** Kod symbolu mapowego spoza katalogu (drzewa i prace uzywaja tego samego katalogu). */
+    @ExceptionHandler(UnsupportedMapSymbolException.class)
+    public ResponseEntity<String> handleUnsupportedMapSymbol(UnsupportedMapSymbolException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
     }
 
     @ExceptionHandler(EmailSendingFailedException.class)

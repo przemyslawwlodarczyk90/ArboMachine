@@ -39,3 +39,20 @@ test('pomija punkt spoza zakresu WGS84 zamiast wysylac go na mape', () => {
 test('pusty projekt daje pusta liste punktow', () => {
   assert.deepEqual(toTreeMapPoints([]), []);
 });
+
+test('laczy drzewa z pracami po treeId: symbol drzewa i symbole prac (tylko prace z symbolem)', () => {
+  const [pointOfTree1, pointOfTree2] = toTreeMapPoints(
+    [{ ...treeWith(1, { latitude: 52.1, longitude: 21.1 }), mapSymbolCode: 'GREEN_CIRCLE' }, treeWith(2, { latitude: 52.2, longitude: 21.2 })],
+    [{ treeId: 1, mapSymbolCode: 'RED_CROSS' }, { treeId: 1, mapSymbolCode: null }, { treeId: 2, mapSymbolCode: 'BLUE_SQUARE' },
+      { treeId: 1, mapSymbolCode: 'ORANGE_TRIANGLE' }, { treeId: 99, mapSymbolCode: 'BLACK_X' }]);
+  assert.equal(pointOfTree1.treeSymbolCode, 'GREEN_CIRCLE');
+  assert.deepEqual(pointOfTree1.workSymbolCodes, ['RED_CROSS', 'ORANGE_TRIANGLE']);
+  assert.equal(pointOfTree2.treeSymbolCode, null);
+  assert.deepEqual(pointOfTree2.workSymbolCodes, ['BLUE_SQUARE']);
+});
+
+test('drzewo bez symbolu i bez prac -> neutralny punkt bez znaczkow', () => {
+  const [treeMapPoint] = toTreeMapPoints([treeWith(3, { latitude: 50, longitude: 20 })]);
+  assert.equal(treeMapPoint.treeSymbolCode, null);
+  assert.deepEqual(treeMapPoint.workSymbolCodes, []);
+});

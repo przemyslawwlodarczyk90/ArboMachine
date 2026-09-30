@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  * i praca spoza drzewa daja to samo 404 (API nie zdradza istnienia cudzych danych).
  * Bledy walidacji obsluguje wspolny ApiExceptionHandler.
  */
-@ControllerAdvice(assignableTypes = TreeWorkController.class)
+@ControllerAdvice(assignableTypes = {TreeWorkController.class, ProjectTreeWorksController.class})
 public class TreeWorkApiExceptionHandler {
 
     @ExceptionHandler(ProjectNotFoundException.class)

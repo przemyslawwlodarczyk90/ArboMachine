@@ -8,6 +8,7 @@ public record TreeWorkResponse(
         Long treeId,
         String name,
         String description,
+        String mapSymbolCode,
         Instant createdAt,
         Instant updatedAt
 ) {}

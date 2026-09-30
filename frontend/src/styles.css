@@ -580,3 +580,21 @@ th.right, td.right { text-align: right; }
 @media (prefers-reduced-motion: reduce) { .voice-input-recording-dot { animation: none; } }
 .field:has(.voice-input-listening) textarea { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
 .voice-input-error { color: var(--danger); }
+
+/* ---------- Symbole mapowe (etap 19) ---------- */
+.map-symbol-swatch { display: inline-block; vertical-align: middle; flex: none; }
+.map-symbol-inline { display: inline-flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+.map-symbol-none { display: inline-block; width: 16px; height: 16px; border: 2px dashed var(--border); border-radius: 50%; vertical-align: middle; }
+.map-symbol-picker { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); }
+.map-symbol-option { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.4rem 0.7rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.map-symbol-option:hover { background: var(--surface-muted); }
+.map-symbol-option.selected { border-color: var(--brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent); font-weight: 600; }
+.map-symbol-option:disabled { opacity: 0.6; cursor: default; }
+.tree-work-symbol-editor { flex: 1 1 100%; }
+.map-legend { display: grid; gap: 0.4rem; padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.map-legend h3 { margin: 0; font-size: 1rem; }
+.map-legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+.map-legend li { display: flex; align-items: center; gap: 0.45rem; overflow-wrap: anywhere; }
+.map-legend-neutral { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #2f6b3c; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); }
+.map-selected-tree-works { list-style: none; margin: 0.25rem 0 0; padding: 0; display: grid; gap: 0.2rem; font-size: 0.9rem; }
+.map-selected-tree-works li { display: flex; align-items: center; gap: 0.35rem; }

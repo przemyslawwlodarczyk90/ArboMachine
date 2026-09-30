@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 18
+## Rejestr braków — stan po etapie 19
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -338,7 +338,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Zdjęcia | Zewnętrzny aparat i automatyczne przypisanie zdjęcia do drzewa | OPEN |
 | Zdjęcia | Widok wszystkich zdjęć projektu (zakładka „Zdjęcia i dokumentacja” usunięta w etapie 16) | OPEN |
 | Prace | Słownik typów prac, kody, priorytet, termin, status wykonania, parametry | OPEN |
-| Mapa | Symbole prac, kolory, legenda, etykiety numerów drzew przy markerach | BRAK / OPEN |
+| Mapa | Symbole prac i drzew, legenda — V1 od etapu 19 (katalog techniczny); właściwe symbole arborysty, etykiety numerów drzew przy markerach | OPEN |
 | Mapa | Klastrowanie przy dużej liczbie drzew; korony, strefy ochronne, poligony | BRAK / OPEN |
 | Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
 | Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
@@ -363,6 +363,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
 | Zdjęcia | Aparat tabletu przez `<input type="file" accept="image/*">`, duże zdjęcia (8–15 MB) na słabym łączu | DO SPRAWDZENIA |
 | Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
+| Mapa | Czytelność symboli i znaczków prac na gęstym podkładzie OSM, na ortofotomapie i w wydruku | DO SPRAWDZENIA |
 | Maile | Wysyłka maili rejestracji/resetu przez prawdziwy SMTP (lokalnie potwierdzanie maila jest wyłączalne) | DO SPRAWDZENIA |
 
 ### Dług techniczny
@@ -387,3 +388,51 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–18) — do usunięcia przy okazji | OPERACYJNE |
 | Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
 | Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
+
+---
+
+## Symbole mapowe — etap 19
+
+**Status:** V1 DECISION / DISCOVERY REQUIRED
+
+### Decyzje V1
+- `Tree.mapSymbolCode` i `TreeWork.mapSymbolCode` — opcjonalny kod (nullable `varchar(64)`), nie enum w bazie.
+  Istniejące rekordy mają `null` i wyglądają jak dotąd (neutralny punkt).
+- Katalog symboli jest **w kodzie** (`MapSymbolCatalog`), nie w bazie; `GET /api/map-symbols`. Backend przyjmuje
+  tylko kody z katalogu (bez CSS, SVG, ścieżek, URL). Symbole to techniczne style (kształt + kolor), a nie typy zabiegów.
+- Renderer V1: OpenLayers `CircleStyle` / `RegularShape`; opis kształtu wspólny dla mapy i miniatur SVG w UI
+  (`mapSymbolShapeSpec.ts`), więc później można przejść na `ol/style/Icon` + pliki SVG bez zmiany danych.
+- Symbol drzewa = centralny marker; symbole prac = małe znaczki wokół drzewa (przesunięcie tylko wizualne — współrzędne
+  TreeLocation bez zmian). Brak reguły „pierwsza/ostatnia praca wygrywa”.
+- Legenda wyliczana z danych, niezapisywana. Tekst wpisu pracy = `TreeWork.name` (nie znaczenie koloru).
+- Symbol zmienia się osobnymi operacjami `PUT/DELETE .../map-symbol` (drzewo i praca), niezależnie od formularza danych.
+- Mapa pobiera prace całego projektu jednym zapytaniem `GET /api/projects/{projectId}/works` (bez N+1).
+
+### Założenia przyjęte bez potwierdzenia (NIEWIADOME — do sprawdzenia z arborystą)
+| Założenie V1 | Dlaczego niepewne |
+|---|---|
+| Katalog 6 symboli: Zielone koło, Niebieski kwadrat, Pomarańczowy trójkąt, Czerwony krzyż, Fioletowy romb, Czarny iks | Wymyślony zestaw techniczny — prawdziwa biblioteka symboli arborysty (ArboMap/ZWCAD) nieznana |
+| Kolory: `#7CB342`, `#1565C0`, `#EF6C00`, `#C62828`, `#6A1B9A`, `#212121`, biała obwódka | Dobrane „na oko”; nie sprawdzone na ortofotomapie, w druku ani dla osób z zaburzeniami widzenia barw |
+| Zielone koło rozjaśnione (`#7CB342`), bo pierwotny odcień był nie do odróżnienia od neutralnego markera (`#2f6b3c`) | Neutralny marker też jest zielony — czy drzewo bez symbolu ma w ogóle być zielone? |
+| Rozmiary: symbol drzewa 8 px, znaczek pracy 6 px | Na gęstym podkładzie OSM znaczki są małe i konkurują z ikonami POI |
+| Maks. 3 znaczki prac przy drzewie + „+N” (pozycje: góra-prawo, góra-lewo, dół-prawo; „+N” dół-lewo) | Nie wiadomo, ile symboli arborysta chce widzieć i który ma pierwszeństwo |
+| Kolejność znaczków = kolejność dodania prac | Brak zasad priorytetu symboli |
+| Zmiana symbolu przesuwa `updatedAt` drzewa/pracy | Symbol to prezentacja — czy ma liczyć się jako zmiana danych drzewa? |
+| Przy cudzym drzewie najpierw 404 (własność), dopiero potem 400 (zły kod) | Świadoma decyzja bezpieczeństwa — do potwierdzenia jako reguła ogólna |
+| Symbol pracy nie jest częścią formularza dodawania/edycji pracy (tylko osobny edytor „Zmień symbol”) | Może arborysta woli wybierać symbol od razu przy dodawaniu pracy |
+| Legenda: zawsze „Drzewo bez symbolu” + symbole drzew jako „Symbol drzewa — nazwa symbolu”; prace deduplikowane po (nazwa bez rozróżniania wielkości liter, kod) | Nie wiadomo, jak ma wyglądać legenda końcowa w dokumentacji |
+| Legenda i znaczki uwzględniają tylko drzewa z lokalizacją | Drzewa bez punktu nie mają na mapie żadnej reprezentacji |
+| Panel wybranego drzewa pokazuje wszystkie jego prace (także bez symbolu) | — |
+| Katalog symboli wymaga zalogowania | Nie jest poufny; decyzja porządkowa |
+| Mapa i symbole mają stałe kolory także w ciemnym motywie | Nie sprawdzano czytelności w trybie ciemnym |
+
+### Nadal OPEN
+- Rzeczywiste znaczenie symboli używanych przez arborystę i biblioteka symboli z ArboMap/ZWCAD.
+- Powiązanie rodzaju pracy (przyszły WorkType) → domyślny symbol, z możliwością nadpisania.
+- Czy drzewo potrzebuje własnego symbolu, czy wystarczą symbole prac.
+- Priorytet symboli, maksymalna liczba symboli przy drzewie, symbolika wielu zaleceń.
+- Sposób legendy końcowej (mapa w dokumentacji, druk).
+- Kolorystyka na ortofotomapie i na białym tle (wydruk), kontrast, daltonizm.
+- Format eksportu stylu do QGIS (SVG Tiny 1.2, QML/SLD) i DXF.
+- Własne symbole użytkownika (upload SVG — wymaga osobnego projektu bezpieczeństwa i sanityzacji).
+- Etykiety numerów drzew przy markerach (dziś brak).

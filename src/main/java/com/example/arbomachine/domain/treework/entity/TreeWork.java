@@ -46,6 +46,13 @@ public class TreeWork {
     @Column(columnDefinition = "text")
     private String description;
 
+    /**
+     * Symbol na mapie projektu - kod z MapSymbolCatalog (np. RED_CROSS), null = neutralny wyglad. To dane prezentacji
+     * mapy, a nie dane arborystyczne; nie jest czescia formularza edycji i zmienia sie osobna operacja (.../map-symbol).
+     */
+    @Column(name = "map_symbol_code", length = 64)
+    private String mapSymbolCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -65,6 +72,18 @@ public class TreeWork {
     /** Czy podane (znormalizowane) wartosci roznia sie od zapisanych - edycja bez zmian nie przesuwa updatedAt. */
     public boolean differsFrom(String otherName, String otherDescription) {
         return !Objects.equals(name, otherName) || !Objects.equals(description, otherDescription);
+    }
+
+    /** Ustawia albo zmienia symbol na mapie (kod juz sprawdzony w MapSymbolCatalog) i przesuwa updatedAt. */
+    public void assignMapSymbol(String symbolCode, Instant updateTime) {
+        this.mapSymbolCode = Objects.requireNonNull(symbolCode, "Use clearMapSymbol to remove the map symbol");
+        this.updatedAt = updateTime;
+    }
+
+    /** Powrot do neutralnego wygladu na mapie i przesuniecie updatedAt. */
+    public void clearMapSymbol(Instant updateTime) {
+        this.mapSymbolCode = null;
+        this.updatedAt = updateTime;
     }
 
     /** Zastepuje nazwe i opis. Drzewo i createdAt nigdy sie tu nie zmieniaja. */

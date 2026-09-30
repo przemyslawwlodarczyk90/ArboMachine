@@ -9,6 +9,8 @@ export interface TreeWork {
   treeId: number;
   name: string;
   description?: string | null;
+  /** symbol pracy na mapie (kod z GET /api/map-symbols); null = praca bez znaczka na mapie */
+  mapSymbolCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }

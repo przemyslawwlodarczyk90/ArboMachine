@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.api.treework;
 
+import com.example.arbomachine.domain.mapsymbol.dto.MapSymbolRequest;
 import com.example.arbomachine.domain.treework.dto.CreateTreeWorkRequest;
 import com.example.arbomachine.domain.treework.dto.TreeWorkResponse;
 import com.example.arbomachine.domain.treework.dto.UpdateTreeWorkRequest;
@@ -83,5 +84,26 @@ public class TreeWorkController {
                                                @PathVariable Long workId) {
         treeWorkFacade.deleteWorkOfTreeOfCurrentUser(authenticatedUser.getUsername(), projectId, treeId, workId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Ustawienie albo zmiana symbolu pracy na mapie (bez edycji nazwy/opisu); zwraca prace")
+    @PutMapping("/{workId}/map-symbol")
+    public ResponseEntity<TreeWorkResponse> setTreeWorkMapSymbol(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                                 @PathVariable Long projectId,
+                                                                 @PathVariable Long treeId,
+                                                                 @PathVariable Long workId,
+                                                                 @Valid @RequestBody MapSymbolRequest mapSymbolRequest) {
+        return ResponseEntity.ok(treeWorkFacade.setMapSymbolOfWorkOfTreeOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId, workId, mapSymbolRequest));
+    }
+
+    @Operation(summary = "Usuniecie symbolu pracy z mapy; zwraca prace")
+    @DeleteMapping("/{workId}/map-symbol")
+    public ResponseEntity<TreeWorkResponse> clearTreeWorkMapSymbol(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                                   @PathVariable Long projectId,
+                                                                   @PathVariable Long treeId,
+                                                                   @PathVariable Long workId) {
+        return ResponseEntity.ok(treeWorkFacade.clearMapSymbolOfWorkOfTreeOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId, workId));
     }
 }

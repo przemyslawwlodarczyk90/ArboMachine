@@ -24,6 +24,7 @@ public class TreeMapper {
                 tree.getConditionNotes(),
                 tree.getHazardNotes(),
                 toTreeLocationResponseOrNull(tree.getLocation()),
+                tree.getMapSymbolCode(),
                 tree.getCreatedAt(),
                 tree.getUpdatedAt()
         );

@@ -21,6 +21,8 @@ export interface Tree {
   hazardNotes?: string | null;
   /** null = lokalizacja drzewa nie jest jeszcze ustalona (nigdy 0,0 ani jedna wspolrzedna) */
   location?: TreeLocation | null;
+  /** symbol drzewa na mapie (kod z GET /api/map-symbols); null = neutralny marker */
+  mapSymbolCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }

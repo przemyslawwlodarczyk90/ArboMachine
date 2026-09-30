@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { MapSymbolSwatch } from '../../../map/MapSymbolSwatch';
+import { useMapSymbolCatalog } from '../../../map/useMapSymbolCatalog';
 import { DeleteTreeWorkDialog } from './DeleteTreeWorkDialog';
 import type { TreeWork } from './treeWorkDataTypes';
 import { TreeWorkForm } from './TreeWorkForm';
 import { emptyTreeWorkFormValues, toTreeWorkFormValues } from './treeWorkFormValues';
+import { TreeWorkMapSymbolEditor } from './TreeWorkMapSymbolEditor';
 import { treeWorksApi } from './treeWorksApi';
 
 type TreeWorkListState =
@@ -22,6 +25,8 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
   const [treeWorkListState, setTreeWorkListState] = useState<TreeWorkListState>({ status: 'loading' });
   const [isAddingWork, setIsAddingWork] = useState(false);
   const [editedTreeWorkId, setEditedTreeWorkId] = useState<number | null>(null);
+  const [symbolEditedTreeWorkId, setSymbolEditedTreeWorkId] = useState<number | null>(null);
+  const { catalogState, symbolByCode } = useMapSymbolCatalog();
   const [workAwaitingDeletion, setWorkAwaitingDeletion] = useState<TreeWork | null>(null);
 
   useEffect(() => {
@@ -55,6 +60,7 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
     updateLoadedWorks((treeWorks) => treeWorks.map((treeWork) =>
       treeWork.id === updatedTreeWork.id ? updatedTreeWork : treeWork));
     setEditedTreeWorkId(null);
+    setSymbolEditedTreeWorkId(null);
   };
 
   const removeDeletedWork = (deletedTreeWorkId: number) => {
@@ -67,8 +73,8 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
     setIsAddingWork(true);
   };
 
-  // Jeden aktywny formularz naraz: dodawanie albo edycja jednej pracy.
-  const isAnyFormOpen = isAddingWork || editedTreeWorkId !== null;
+  // Jeden aktywny formularz naraz: dodawanie, edycja jednej pracy albo zmiana jej symbolu.
+  const isAnyFormOpen = isAddingWork || editedTreeWorkId !== null || symbolEditedTreeWorkId !== null;
 
   return (
     <section className="tree-card-section" aria-labelledby="tree-works-heading">
@@ -108,12 +114,27 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
                   <div className="tree-work-item-text">
                     <strong>{treeWork.name}</strong>
                     {treeWork.description && <p className="tree-work-item-description">{treeWork.description}</p>}
+                    <span className="muted small map-symbol-inline">
+                      Symbol na mapie: {treeWork.mapSymbolCode && symbolByCode.get(treeWork.mapSymbolCode)
+                        ? <><MapSymbolSwatch symbol={symbolByCode.get(treeWork.mapSymbolCode)!} size={16} /> {symbolByCode.get(treeWork.mapSymbolCode)!.displayName}</>
+                        : 'brak'}
+                    </span>
                   </div>
+                  {symbolEditedTreeWorkId === treeWork.id && catalogState.status === 'loaded' && (
+                    <TreeWorkMapSymbolEditor projectId={projectId} treeId={treeId} treeWork={treeWork}
+                                             symbols={catalogState.symbols} onTreeWorkChanged={replaceUpdatedWork}
+                                             closeEditor={() => setSymbolEditedTreeWorkId(null)} />
+                  )}
                   {!isAnyFormOpen && (
                     <div className="form-actions">
                       <button className="btn btn-secondary btn-small" onClick={() => setEditedTreeWorkId(treeWork.id)}>
                         Edytuj
                       </button>
+                      {catalogState.status === 'loaded' && (
+                        <button className="btn btn-secondary btn-small" onClick={() => setSymbolEditedTreeWorkId(treeWork.id)}>
+                          Zmień symbol
+                        </button>
+                      )}
                       <button className="btn btn-danger-outline btn-small" onClick={() => setWorkAwaitingDeletion(treeWork)}>
                         Usuń
                       </button>

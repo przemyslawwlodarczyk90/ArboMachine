@@ -115,6 +115,13 @@ public class Tree {
     @Embedded
     private TreeLocation location;
 
+    /**
+     * Symbol na mapie projektu - kod z MapSymbolCatalog (np. RED_CROSS), null = neutralny wyglad. To dane prezentacji
+     * mapy, a nie dane arborystyczne; nie jest czescia formularza edycji i zmienia sie osobna operacja (.../map-symbol).
+     */
+    @Column(name = "map_symbol_code", length = 64)
+    private String mapSymbolCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -151,6 +158,18 @@ public class Tree {
     /** Drzewo wraca do stanu "lokalizacja nie ustalona" i przesuwa updatedAt. */
     public void clearLocation(Instant updateTime) {
         this.location = null;
+        this.updatedAt = updateTime;
+    }
+
+    /** Ustawia albo zmienia symbol na mapie (kod juz sprawdzony w MapSymbolCatalog) i przesuwa updatedAt. */
+    public void assignMapSymbol(String symbolCode, Instant updateTime) {
+        this.mapSymbolCode = Objects.requireNonNull(symbolCode, "Use clearMapSymbol to remove the map symbol");
+        this.updatedAt = updateTime;
+    }
+
+    /** Powrot do neutralnego wygladu na mapie i przesuniecie updatedAt. */
+    public void clearMapSymbol(Instant updateTime) {
+        this.mapSymbolCode = null;
         this.updatedAt = updateTime;
     }
 

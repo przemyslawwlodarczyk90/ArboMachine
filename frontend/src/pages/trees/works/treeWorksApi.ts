@@ -21,6 +21,21 @@ export const treeWorksApi = {
       httpMethod: 'PATCH', requestBody: updateTreeWorkRequest, sendAccessToken: true,
     }),
 
+  /** Prace wszystkich drzew projektu jednym zapytaniem (mapa projektu: symbole prac i legenda). */
+  listProjectWorks: (projectId: number) =>
+    sendApiRequest<TreeWork[]>(`/api/projects/${projectId}/works`, { sendAccessToken: true }),
+
+  /** Ustawia albo zmienia symbol pracy na mapie - bez edycji nazwy i opisu. */
+  setTreeWorkMapSymbol: (projectId: number, treeId: number, workId: number, symbolCode: string) =>
+    sendApiRequest<TreeWork>(`${treeWorksPath(projectId, treeId)}/${workId}/map-symbol`, {
+      httpMethod: 'PUT', requestBody: { symbolCode }, sendAccessToken: true,
+    }),
+
+  clearTreeWorkMapSymbol: (projectId: number, treeId: number, workId: number) =>
+    sendApiRequest<TreeWork>(`${treeWorksPath(projectId, treeId)}/${workId}/map-symbol`, {
+      httpMethod: 'DELETE', sendAccessToken: true,
+    }),
+
   deleteTreeWork: (projectId: number, treeId: number, workId: number) =>
     sendApiRequest<void>(`${treeWorksPath(projectId, treeId)}/${workId}`, {
       httpMethod: 'DELETE', sendAccessToken: true,

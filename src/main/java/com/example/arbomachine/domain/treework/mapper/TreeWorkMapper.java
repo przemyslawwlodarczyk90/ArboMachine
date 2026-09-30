@@ -14,6 +14,7 @@ public class TreeWorkMapper {
                 treeWork.getTree().getId(),
                 treeWork.getName(),
                 treeWork.getDescription(),
+                treeWork.getMapSymbolCode(),
                 treeWork.getCreatedAt(),
                 treeWork.getUpdatedAt()
         );

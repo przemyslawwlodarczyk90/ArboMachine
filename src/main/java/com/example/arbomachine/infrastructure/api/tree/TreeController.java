@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.api.tree;
 
+import com.example.arbomachine.domain.mapsymbol.dto.MapSymbolRequest;
 import com.example.arbomachine.domain.tree.dto.CreateTreeRequest;
 import com.example.arbomachine.domain.tree.dto.TreeLocationRequest;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
@@ -88,6 +89,25 @@ public class TreeController {
                                                           @PathVariable Long projectId,
                                                           @PathVariable Long treeId) {
         return ResponseEntity.ok(treeFacade.clearLocationOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId));
+    }
+
+    @Operation(summary = "Ustawienie albo zmiana symbolu drzewa na mapie (kod z GET /api/map-symbols); zwraca drzewo")
+    @PutMapping("/{treeId}/map-symbol")
+    public ResponseEntity<TreeResponse> setTreeMapSymbol(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                         @PathVariable Long projectId,
+                                                         @PathVariable Long treeId,
+                                                         @Valid @RequestBody MapSymbolRequest mapSymbolRequest) {
+        return ResponseEntity.ok(treeFacade.setMapSymbolOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
+                projectId, treeId, mapSymbolRequest));
+    }
+
+    @Operation(summary = "Usuniecie symbolu drzewa (neutralny marker); zwraca drzewo")
+    @DeleteMapping("/{treeId}/map-symbol")
+    public ResponseEntity<TreeResponse> clearTreeMapSymbol(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                           @PathVariable Long projectId,
+                                                           @PathVariable Long treeId) {
+        return ResponseEntity.ok(treeFacade.clearMapSymbolOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, treeId));
     }
 }

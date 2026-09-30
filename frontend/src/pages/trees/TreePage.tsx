@@ -10,6 +10,7 @@ import { NewTreeDialog } from './NewTreeDialog';
 import { TreePhotosSection } from './photos/TreePhotosSection';
 import type { Tree } from './treeDataTypes';
 import { TreeFieldForm } from './TreeFieldForm';
+import { TreeMapSymbolSection } from './TreeMapSymbolSection';
 import { treesApi } from './treesApi';
 import { TreeWorksSection } from './works/TreeWorksSection';
 
@@ -22,7 +23,8 @@ type TreeLoadingState =
 
 /**
  * Karta drzewa (/projects/:projectId/trees/:treeId) - ekran pracy przy jednym drzewie. Strona tylko laduje drzewo
- * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Zdjecia, Zalecenia i prace.
+ * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Symbol drzewa na mapie, Zdjecia,
+ * Zalecenia i prace.
  * Kazda sekcja ma wlasny stan i wlasne operacje zapisu; drzewo z odpowiedzi backendu jest jednym zrodlem prawdy
  * dla formularza i lokalizacji. Wlasnosci nie sprawdzamy w React.
  */
@@ -111,6 +113,7 @@ export function TreePage() {
       <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree}
                      onUnsavedChangesChange={setHasUnsavedTreeChanges} />
       <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+      <TreeMapSymbolSection key={`symbol-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
       <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
       <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} />
 
