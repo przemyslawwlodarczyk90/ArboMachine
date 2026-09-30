@@ -148,25 +148,16 @@ NIE teraz. TAK przed pierwszą zmianą, której `ddl-auto=update` nie wykona (zm
 
 ---
 
-## Język interfejsu poza panelem arborysty
+## Język interfejsu — ROZSTRZYGNIĘTE w etapie 16 (V1)
 
-### Pytanie
-Czy ekrany logowania/rejestracji/resetu hasła oraz panele urzędnika i administratora też mają być po polsku
-(i kiedy)? Czy potrzebna będzie wielojęzyczność (biblioteka i18n)?
+### Decyzja
+Cały interfejs użytkownika jest po polsku: wszystkie ekrany (także logowanie, rejestracja, reset hasła, „Mój profil”,
+panele urzędnika i administratora, strona 404), powitania paneli z backendu i maile (rejestracja, reset hasła).
+Kod, endpointy, enumy, pola API i surowe komunikaty błędów API pozostają po angielsku — frontend tłumaczy komunikaty
+w `userFacingErrorMessages.ts`. Bez biblioteki i18n.
 
-### Dlaczego wymaga doprecyzowania
-Zakres polonizacji w etapach 11–12 obejmował panel arborysty. Pozostałe ekrany i komunikaty kont
-(`userFacingErrorMessages.ts`, część „konta/logowanie”) są nadal po angielsku.
-
-### Co przyjęto tymczasowo w V1
-Polski UI: panel arborysty (projekty, drzewa, lokalizacja, mapa, zdjęcia, zalecenia i prace), górny pasek panelu,
-nazwy ról, ogólne komunikaty błędów HTTP. Bez biblioteki i18n — teksty wprost w komponentach. Kod, endpointy, enumy
-i pola API po angielsku. Ekrany logowania/rejestracji/resetu hasła, „Mój profil” i panele urzędnika/admina są nadal
-po angielsku — do przetłumaczenia w osobnej zmianie (zasada projektu: wszystkie teksty UI po polsku).
-
-### Czy blokuje dalszy development?
-NIE.
-
+### Nadal otwarte
+Czy kiedykolwiek potrzebna będzie wielojęzyczność (np. dla wykonawców spoza Polski)? Jeśli tak — wtedy i18n.
 ---
 
 ## Zdjęcia drzewa (TreePhoto) — etap 13
@@ -235,3 +226,20 @@ Arborysta używa zaleceń i symboli prac (część dodaje dziś w ZWCAD), ale ni
 
 ### Czy blokuje dalszy development?
 NIE dla V1. TAK przed symbolami prac na mapie, legendą i generowaniem dokumentacji.
+
+---
+
+## Przegląd Milestone 1 (etap 16) — braki zauważone, świadomie NIEzaimplementowane
+
+Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (etap 16 nie dodaje funkcji domenowych).
+
+| Temat | Stan V1 | Do ustalenia |
+|---|---|---|
+| Usuwanie drzewa i projektu | Brak (nie ma DELETE Tree/Project) | Czy usuwać fizycznie, archiwizować, co ze zdjęciami (pliki) i pracami? |
+| „Następne drzewo” / „Zapisz i dodaj następne” | Brak | Zależy od numeracji i kolejności pracy w terenie |
+| Miniatury zdjęć | Galeria wczytuje pełne pliki | Generowanie miniatur/kompresja przy słabym łączu w terenie |
+| Podsumowanie projektu | 5 liczb (drzewa, z/bez lokalizacji, zdjęcia, prace) | Czy potrzebne np. „drzewa ze zdjęciami”, „drzewa bez prac”, lista braków do uzupełnienia? |
+| Zakładka projektu „Zdjęcia i dokumentacja” | Usunięta (zdjęcia są w karcie drzewa; stary link → podsumowanie) | Czy potrzebny widok wszystkich zdjęć projektu? Moduł dokumentacji — osobny etap |
+| Powrót po wylogowaniu | Kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) — zawsze na dane zalogowanego | Czy po wylogowaniu zawsze startować z pulpitu? |
+| Ochrona przed opuszczeniem formularza z niezapisanymi zmianami | Brak (tylko „Anuluj” nie zapisuje) | Wymaga ingerencji w routing — do decyzji |
+| Rozmiar paczki frontendu | ~650 kB JS (głównie OpenLayers) | Ewentualny podział na części (lazy loading mapy) przy wolnym internecie w terenie |

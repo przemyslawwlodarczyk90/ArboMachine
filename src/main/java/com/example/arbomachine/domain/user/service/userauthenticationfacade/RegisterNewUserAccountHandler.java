@@ -19,7 +19,7 @@ import java.util.UUID;
 /** Zakladanie nowego konta (arborysta / urzednik) i wysylka maila z linkiem aktywacyjnym. */
 @Component
 public class RegisterNewUserAccountHandler {
-    private static final String CONFIRMATION_EMAIL_SUBJECT = "Confirm your registration";
+    private static final String CONFIRMATION_EMAIL_SUBJECT = "Potwierdź rejestrację w ArboMachine";
     private static final int CONFIRMATION_LINK_VALIDITY_DAYS = 1;
 
     private final UserAccountRepository userAccountRepository;

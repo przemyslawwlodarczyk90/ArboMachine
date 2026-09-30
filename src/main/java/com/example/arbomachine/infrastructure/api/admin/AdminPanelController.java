@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 @Tag(name = "Panel admina", description = "Endpointy panelu admina (rola ADMIN)")
 public class AdminPanelController {
-    private static final String ADMIN_PANEL_WELCOME_MESSAGE = "Welcome to the admin panel";
+    private static final String ADMIN_PANEL_WELCOME_MESSAGE = "Witaj w panelu administratora.";
 
     private final RolePanelWelcomeFacade rolePanelWelcomeFacade;
 

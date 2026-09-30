@@ -31,9 +31,9 @@ export function MyProfilePage() {
     try {
       await currentUserAccountApi.deleteCurrentUserAccount();
       signOut();
-      navigate('/login', { replace: true, state: { noticeMessage: 'Your account has been deleted.' } });
+      navigate('/login', { replace: true, state: { noticeMessage: 'Konto zostało usunięte.' } });
     } catch (deletionError) {
-      setAccountDeletionErrorMessage(deletionError instanceof ApiRequestError ? deletionError.message : 'Unexpected error.');
+      setAccountDeletionErrorMessage(deletionError instanceof ApiRequestError ? deletionError.message : 'Nieoczekiwany błąd.');
       setIsDeletingAccount(false);
     }
   };
@@ -41,37 +41,37 @@ export function MyProfilePage() {
   return (
     <div className="stack-lg">
       <header className="page-header">
-        <h1>My profile</h1>
+        <h1>Mój profil</h1>
         <p className="muted">
-          Signed in as <strong>{currentUserAccount.email}</strong> · {USER_ROLE_DISPLAY_NAMES[currentUserAccount.role]} account
+          Zalogowano jako <strong>{currentUserAccount.email}</strong> · konto: {USER_ROLE_DISPLAY_NAMES[currentUserAccount.role]}
         </p>
       </header>
 
       <section className="card">
-        <h2>Personal details</h2>
+        <h2>Dane osobowe</h2>
         <UserProfileForm editedAccount={currentUserAccount} saveProfile={saveOwnProfile} />
       </section>
 
       <section className="card">
-        <h2>Password</h2>
+        <h2>Hasło</h2>
         <p className="muted">
-          To change your password, sign out and use “Forgot your password?” on the sign-in page -
-          we will e-mail you a link to set a new one.
+          Aby zmienić hasło, wyloguj się i użyj opcji „Nie pamiętasz hasła?” na stronie logowania -
+          wyślemy e-mailem link do ustawienia nowego.
         </p>
       </section>
 
       <section className="card card-danger">
-        <h2>Delete account</h2>
-        <p className="muted">Your account and all related data will be permanently removed. This cannot be undone.</p>
+        <h2>Usuń konto</h2>
+        <p className="muted">Konto i wszystkie powiązane dane zostaną trwale usunięte. Tej operacji nie można cofnąć.</p>
         {accountDeletionErrorMessage && <Alert variant="error">{accountDeletionErrorMessage}</Alert>}
         {isAccountDeletionConfirmationVisible ? (
           <div className="form-actions">
             <button className="btn btn-ghost" onClick={() => setIsAccountDeletionConfirmationVisible(false)}
                     disabled={isDeletingAccount}>
-              Cancel
+              Anuluj
             </button>
             <button className="btn btn-danger" onClick={deleteOwnAccountAndSignOut} disabled={isDeletingAccount}>
-              {isDeletingAccount ? 'Deleting…' : 'Yes, delete my account'}
+              {isDeletingAccount ? 'Usuwanie…' : 'Tak, usuń moje konto'}
             </button>
           </div>
         ) : (

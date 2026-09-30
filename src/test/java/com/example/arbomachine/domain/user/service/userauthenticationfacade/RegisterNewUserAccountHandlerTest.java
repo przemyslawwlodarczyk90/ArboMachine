@@ -71,7 +71,7 @@ class RegisterNewUserAccountHandlerTest {
         assertEquals(newUserProfile.email(), savedToken.getUserAccount().getEmail());
 
         verify(emailSenderService).sendRegistrationConfirmationEmail(eq(newUserProfile.email()),
-                eq("Confirm your registration"), eq("Jan"), eq("Kowalski"),
+                eq("Potwierdź rejestrację w ArboMachine"), eq("Jan"), eq("Kowalski"),
                 contains("/confirm?token=" + savedToken.getToken()));
     }
 

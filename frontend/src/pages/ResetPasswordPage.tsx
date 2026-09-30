@@ -17,7 +17,7 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
 
   const [tokenValidationStatus, setTokenValidationStatus] = useState<ResetTokenValidationStatus>(resetToken ? 'checking' : 'invalid');
-  const [invalidTokenMessage, setInvalidTokenMessage] = useState(resetToken ? '' : 'The link is missing its token.');
+  const [invalidTokenMessage, setInvalidTokenMessage] = useState(resetToken ? '' : 'W linku brakuje tokenu.');
   const [newPassword, setNewPassword] = useState('');
   const [repeatedPassword, setRepeatedPassword] = useState('');
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
@@ -30,7 +30,7 @@ export function ResetPasswordPage() {
       .then(() => setTokenValidationStatus('valid'))
       .catch((validationError) => {
         setTokenValidationStatus('invalid');
-        setInvalidTokenMessage(validationError instanceof ApiRequestError ? validationError.message : 'Unexpected error.');
+        setInvalidTokenMessage(validationError instanceof ApiRequestError ? validationError.message : 'Nieoczekiwany błąd.');
       });
   }, [resetToken]);
 
@@ -46,14 +46,14 @@ export function ResetPasswordPage() {
       await authenticationApi.resetPasswordUsingToken(resetToken, newPassword);
       navigate('/login', {
         replace: true,
-        state: { noticeMessage: 'Your password has been changed. Sign in with the new password.' },
+        state: { noticeMessage: 'Hasło zostało zmienione. Zaloguj się nowym hasłem.' },
       });
     } catch (resetError) {
       if (resetError instanceof ApiRequestError) {
         setErrorMessageByFieldName(resetError.errorMessageByFieldName);
         setFormErrorMessage(resetError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
     } finally {
       setIsSaving(false);
@@ -61,26 +61,26 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <AuthCardPageLayout title="Set a new password" footer={<Link to="/login">Back to sign in</Link>}>
+    <AuthCardPageLayout title="Ustaw nowe hasło" footer={<Link to="/login">Wróć do logowania</Link>}>
       {tokenValidationStatus === 'checking' && <div className="center"><LoadingSpinner /></div>}
       {tokenValidationStatus === 'invalid' && (
         <>
           <Alert variant="error">{invalidTokenMessage}</Alert>
-          <Link to="/forgot-password" className="btn btn-secondary btn-block">Send a new link</Link>
+          <Link to="/forgot-password" className="btn btn-secondary btn-block">Wyślij nowy link</Link>
         </>
       )}
       {tokenValidationStatus === 'valid' && (
         <form onSubmit={submitNewPassword} className="form" noValidate>
           {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
-          <LabeledInputField label="New password" type="password" autoComplete="new-password" autoFocus value={newPassword}
+          <LabeledInputField label="Nowe hasło" type="password" autoComplete="new-password" autoFocus value={newPassword}
                              onChange={(changeEvent) => setNewPassword(changeEvent.target.value)}
                              errorMessage={errorMessageByFieldName.newPassword}
-                             hintText={`At least ${MINIMUM_PASSWORD_LENGTH} characters.`} />
-          <LabeledInputField label="Repeat new password" type="password" autoComplete="new-password" value={repeatedPassword}
+                             hintText={`Co najmniej ${MINIMUM_PASSWORD_LENGTH} znaków.`} />
+          <LabeledInputField label="Powtórz nowe hasło" type="password" autoComplete="new-password" value={repeatedPassword}
                              onChange={(changeEvent) => setRepeatedPassword(changeEvent.target.value)}
                              errorMessage={errorMessageByFieldName.repeatedPassword} />
           <button type="submit" className="btn btn-primary btn-block" disabled={isSaving}>
-            {isSaving ? 'Saving…' : 'Change password'}
+            {isSaving ? 'Zapisywanie…' : 'Zmień hasło'}
           </button>
         </form>
       )}

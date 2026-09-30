@@ -21,7 +21,7 @@ export function ForgotPasswordPage() {
       await authenticationApi.requestPasswordResetLink(email.trim());
       setEmailLinkWasSentTo(email.trim());
     } catch (sendingError) {
-      setRequestError(sendingError instanceof ApiRequestError ? sendingError : new ApiRequestError(0, 'Unexpected error.'));
+      setRequestError(sendingError instanceof ApiRequestError ? sendingError : new ApiRequestError(0, 'Nieoczekiwany błąd.'));
     } finally {
       setIsSending(false);
     }
@@ -29,17 +29,17 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthCardPageLayout
-      title="Reset your password"
-      subtitle="Enter your account's e-mail and we'll send you a link to set a new password."
-      footer={<Link to="/login">Back to sign in</Link>}
+      title="Reset hasła"
+      subtitle="Podaj e-mail konta - wyślemy link do ustawienia nowego hasła."
+      footer={<Link to="/login">Wróć do logowania</Link>}
     >
       {emailLinkWasSentTo ? (
         <>
           <Alert variant="success">
-            If an active account exists for <strong>{emailLinkWasSentTo}</strong>, we've sent a password reset link to it.
+            Jeśli istnieje aktywne konto dla <strong>{emailLinkWasSentTo}</strong>, wysłaliśmy na nie link do resetu hasła.
           </Alert>
-          <p className="muted small">The link is valid for 30 minutes. Check your spam folder too.</p>
-          <button className="btn btn-secondary btn-block" onClick={() => setEmailLinkWasSentTo(null)}>Send again</button>
+          <p className="muted small">Link jest ważny 30 minut. Sprawdź też folder spam.</p>
+          <button className="btn btn-secondary btn-block" onClick={() => setEmailLinkWasSentTo(null)}>Wyślij ponownie</button>
         </>
       ) : (
         <form onSubmit={submitResetLinkRequest} className="form" noValidate>
@@ -48,7 +48,7 @@ export function ForgotPasswordPage() {
                              onChange={(changeEvent) => setEmail(changeEvent.target.value)}
                              errorMessage={requestError?.errorMessageByFieldName.email} />
           <button type="submit" className="btn btn-primary btn-block" disabled={isSending || !email}>
-            {isSending ? 'Sending…' : 'Send reset link'}
+            {isSending ? 'Wysyłanie…' : 'Wyślij link'}
           </button>
         </form>
       )}

@@ -20,23 +20,23 @@ export function AdminDashboardPage() {
         setAccountStatistics(loadedStatistics);
       })
       .catch((requestError) =>
-        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Unexpected error.'));
+        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Nieoczekiwany błąd.'));
   }, []);
 
   const statisticTiles = accountStatistics && [
-    { label: 'All accounts', count: accountStatistics.totalAccounts, userListPath: '/admin/users' },
-    { label: 'Arborists', count: accountStatistics.arboristAccounts, userListPath: '/admin/users?role=ARBORIST' },
-    { label: 'Officials', count: accountStatistics.officialAccounts, userListPath: '/admin/users?role=OFFICIAL' },
-    { label: 'Administrators', count: accountStatistics.adminAccounts, userListPath: '/admin/users?role=ADMIN' },
-    { label: 'Awaiting e-mail confirmation', count: accountStatistics.accountsAwaitingEmailConfirmation, userListPath: '/admin/users?status=unconfirmed' },
-    { label: 'Locked', count: accountStatistics.accountsLockedByAdmin, userListPath: '/admin/users?status=locked' },
+    { label: 'Wszystkie konta', count: accountStatistics.totalAccounts, userListPath: '/admin/users' },
+    { label: 'Arboryści', count: accountStatistics.arboristAccounts, userListPath: '/admin/users?role=ARBORIST' },
+    { label: 'Urzędnicy', count: accountStatistics.officialAccounts, userListPath: '/admin/users?role=OFFICIAL' },
+    { label: 'Administratorzy', count: accountStatistics.adminAccounts, userListPath: '/admin/users?role=ADMIN' },
+    { label: 'Czekają na potwierdzenie e-maila', count: accountStatistics.accountsAwaitingEmailConfirmation, userListPath: '/admin/users?status=unconfirmed' },
+    { label: 'Zablokowane', count: accountStatistics.accountsLockedByAdmin, userListPath: '/admin/users?status=locked' },
   ];
 
   return (
     <div className="stack-lg">
       <header className="page-header">
-        <h1>{panelWelcome ? `Hello, ${panelWelcome.firstName}` : 'Dashboard'}</h1>
-        <p className="muted">{panelWelcome?.welcomeMessage ?? 'Administration overview.'}</p>
+        <h1>{panelWelcome ? `Witaj, ${panelWelcome.firstName}` : 'Pulpit'}</h1>
+        <p className="muted">{panelWelcome?.welcomeMessage ?? 'Przegląd administracyjny.'}</p>
       </header>
 
       {loadingErrorMessage && <Alert variant="error">{loadingErrorMessage}</Alert>}
@@ -54,19 +54,19 @@ export function AdminDashboardPage() {
       )}
 
       <section className="card">
-        <h2>Account management</h2>
+        <h2>Zarządzanie kontami</h2>
         <p className="muted">
-          Only administrators can view or change other accounts: edit profile data, switch between the
-          arborist and official role, lock or unlock access, confirm an e-mail on the user's behalf and delete accounts.
+          Tylko administratorzy mogą przeglądać i zmieniać cudze konta: edytować dane profilu, przełączać rolę
+          arborysty i urzędnika, blokować i odblokowywać dostęp, potwierdzać e-mail w imieniu użytkownika i usuwać konta.
         </p>
-        <Link to="/admin/users" className="btn btn-primary">Manage users</Link>
+        <Link to="/admin/users" className="btn btn-primary">Zarządzaj użytkownikami</Link>
       </section>
 
       <section className="card">
-        <h2>Administrator accounts</h2>
+        <h2>Konta administratorów</h2>
         <p className="muted">
-          Administrator access cannot be requested at registration or granted from this panel. To make an
-          existing account an administrator, update it directly in the database:
+          Dostępu administratora nie można uzyskać przy rejestracji ani nadać w tym panelu. Aby istniejące konto
+          stało się kontem administratora, zmień je bezpośrednio w bazie danych:
         </p>
         <pre className="code-block">UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'someone@example.com';</pre>
       </section>

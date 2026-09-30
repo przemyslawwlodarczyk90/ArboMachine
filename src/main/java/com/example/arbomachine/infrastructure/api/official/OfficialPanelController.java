@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/official")
 @Tag(name = "Panel urzednika", description = "Endpointy panelu urzednika (rola OFFICIAL)")
 public class OfficialPanelController {
-    private static final String OFFICIAL_PANEL_WELCOME_MESSAGE = "Welcome to the official panel";
+    private static final String OFFICIAL_PANEL_WELCOME_MESSAGE = "Witaj w panelu urzędnika.";
 
     private final RolePanelWelcomeFacade rolePanelWelcomeFacade;
 

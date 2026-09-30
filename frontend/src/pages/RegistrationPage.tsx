@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiRequestError } from '../api/httpClient';
 import { authenticationApi } from '../api/authenticationApi';
@@ -23,24 +23,28 @@ export function RegistrationPage() {
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
+  const isSubmissionInProgress = useRef(false);
 
   const updateProfileField = (fieldName: keyof UserProfile) => (changeEvent: ChangeEvent<HTMLInputElement>) =>
     setProfileFormValues((previousValues) => ({ ...previousValues, [fieldName]: changeEvent.target.value }));
 
   const submitRegistration = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
+    if (isSubmissionInProgress.current) return;
     setFormErrorMessage(null);
 
     // Najpierw walidacja po stronie przegladarki - szybka informacja bez wysylania zadania.
     const clientSideErrors: Record<string, string> = {};
-    if (!selectedAccountType) clientSideErrors.accountType = 'Choose an account type.';
-    if (!profileFormValues.firstName.trim()) clientSideErrors.firstName = 'First name is required.';
-    if (!profileFormValues.lastName.trim()) clientSideErrors.lastName = 'Last name is required.';
-    if (!profileFormValues.email.trim()) clientSideErrors.email = 'E-mail is required.';
+    if (!selectedAccountType) clientSideErrors.accountType = 'Wybierz typ konta.';
+    if (!profileFormValues.firstName.trim()) clientSideErrors.firstName = 'Imię jest wymagane.';
+    if (!profileFormValues.lastName.trim()) clientSideErrors.lastName = 'Nazwisko jest wymagane.';
+    if (!profileFormValues.email.trim()) clientSideErrors.email = 'E-mail jest wymagany.';
     Object.assign(clientSideErrors, validateNewPasswordAndRepetition(password, repeatedPassword, 'password'));
     setErrorMessageByFieldName(clientSideErrors);
     if (Object.keys(clientSideErrors).length || !selectedAccountType) return;
 
+    isSubmissionInProgress.current = true;
     setIsSubmitting(true);
     try {
       await authenticationApi.registerNewUserAccount({
@@ -54,23 +58,24 @@ export function RegistrationPage() {
         setErrorMessageByFieldName(registrationError.errorMessageByFieldName);
         setFormErrorMessage(registrationError.message);
       } else {
-        setFormErrorMessage('Unexpected error.');
+        setFormErrorMessage('Nieoczekiwany błąd.');
       }
     } finally {
+      isSubmissionInProgress.current = false;
       setIsSubmitting(false);
     }
   };
 
   if (registeredEmail) {
     return (
-      <AuthCardPageLayout title="Check your inbox" footer={<Link to="/login">Go to sign in</Link>}>
+      <AuthCardPageLayout title="Sprawdź skrzynkę e-mail" footer={<Link to="/login">Przejdź do logowania</Link>}>
         <Alert variant="success">
-          Your account has been created. We sent an activation link to <strong>{registeredEmail}</strong>.
+          Konto zostało utworzone. Link aktywacyjny wysłaliśmy na adres <strong>{registeredEmail}</strong>.
         </Alert>
         <p className="muted small">
-          The link is valid for 24 hours. If the message doesn't arrive, check your spam folder or register
-          again with the same address and we'll send a new link. If e-mail confirmation is disabled in the
-          backend configuration, you can sign in right away.
+          Link jest ważny 24 godziny. Jeśli wiadomość nie dotrze, sprawdź folder spam albo zarejestruj się ponownie
+          na ten sam adres - wyślemy nowy link. Jeśli potwierdzanie e-maila jest wyłączone w konfiguracji serwera,
+          możesz zalogować się od razu.
         </p>
       </AuthCardPageLayout>
     );
@@ -78,14 +83,14 @@ export function RegistrationPage() {
 
   return (
     <AuthCardPageLayout
-      title="Create an account"
-      subtitle="We'll send an activation link to your e-mail address."
-      footer={<>Already have an account? <Link to="/login">Sign in</Link></>}
+      title="Załóż konto"
+      subtitle="Wyślemy link aktywacyjny na Twój adres e-mail."
+      footer={<>Masz już konto? <Link to="/login">Zaloguj się</Link></>}
     >
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
       <form onSubmit={submitRegistration} className="form" noValidate>
         <fieldset className="choice-group">
-          <legend>Account type *</legend>
+          <legend>Typ konta *</legend>
           <div className="choice-grid">
             {REGISTRATION_ACCOUNT_TYPE_OPTIONS.map((accountTypeOption) => (
               <label key={accountTypeOption.role}
@@ -102,36 +107,36 @@ export function RegistrationPage() {
         </fieldset>
 
         <div className="grid-2">
-          <LabeledInputField label="First name *" autoComplete="given-name" value={profileFormValues.firstName}
+          <LabeledInputField label="Imię *" autoComplete="given-name" value={profileFormValues.firstName}
                              onChange={updateProfileField('firstName')} errorMessage={errorMessageByFieldName.firstName} />
-          <LabeledInputField label="Last name *" autoComplete="family-name" value={profileFormValues.lastName}
+          <LabeledInputField label="Nazwisko *" autoComplete="family-name" value={profileFormValues.lastName}
                              onChange={updateProfileField('lastName')} errorMessage={errorMessageByFieldName.lastName} />
         </div>
         <LabeledInputField label="E-mail *" type="email" autoComplete="email" value={profileFormValues.email}
                            onChange={updateProfileField('email')} errorMessage={errorMessageByFieldName.email} />
-        <LabeledInputField label="Phone" type="tel" autoComplete="tel" value={profileFormValues.phoneNumber ?? ''}
+        <LabeledInputField label="Telefon" type="tel" autoComplete="tel" value={profileFormValues.phoneNumber ?? ''}
                            onChange={updateProfileField('phoneNumber')} errorMessage={errorMessageByFieldName.phoneNumber}
                            placeholder="+48 123 456 789" />
-        <LabeledInputField label="Street" autoComplete="street-address" value={profileFormValues.street ?? ''}
+        <LabeledInputField label="Ulica" autoComplete="street-address" value={profileFormValues.street ?? ''}
                            onChange={updateProfileField('street')} errorMessage={errorMessageByFieldName.street} />
         <div className="grid-2">
-          <LabeledInputField label="Postal code" autoComplete="postal-code" value={profileFormValues.postalCode ?? ''}
+          <LabeledInputField label="Kod pocztowy" autoComplete="postal-code" value={profileFormValues.postalCode ?? ''}
                              onChange={updateProfileField('postalCode')} errorMessage={errorMessageByFieldName.postalCode}
                              placeholder="00-000" />
-          <LabeledInputField label="City" autoComplete="address-level2" value={profileFormValues.city ?? ''}
+          <LabeledInputField label="Miejscowość" autoComplete="address-level2" value={profileFormValues.city ?? ''}
                              onChange={updateProfileField('city')} errorMessage={errorMessageByFieldName.city} />
         </div>
         <div className="grid-2">
-          <LabeledInputField label="Password *" type="password" autoComplete="new-password" value={password}
+          <LabeledInputField label="Hasło *" type="password" autoComplete="new-password" value={password}
                              onChange={(changeEvent) => setPassword(changeEvent.target.value)}
                              errorMessage={errorMessageByFieldName.password}
-                             hintText={`At least ${MINIMUM_PASSWORD_LENGTH} characters.`} />
-          <LabeledInputField label="Repeat password *" type="password" autoComplete="new-password" value={repeatedPassword}
+                             hintText={`Co najmniej ${MINIMUM_PASSWORD_LENGTH} znaków.`} />
+          <LabeledInputField label="Powtórz hasło *" type="password" autoComplete="new-password" value={repeatedPassword}
                              onChange={(changeEvent) => setRepeatedPassword(changeEvent.target.value)}
                              errorMessage={errorMessageByFieldName.repeatedPassword} />
         </div>
         <button type="submit" className="btn btn-primary btn-block" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating account…' : 'Create account'}
+          {isSubmitting ? 'Zakładanie konta…' : 'Załóż konto'}
         </button>
       </form>
     </AuthCardPageLayout>

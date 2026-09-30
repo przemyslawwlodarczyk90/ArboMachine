@@ -15,7 +15,7 @@ type TreeListState =
   | { status: 'loaded'; trees: Tree[] };
 
 /**
- * Sekcja "Drzewa" workspace projektu (/projects/:projectId). Renderuje sie wewnatrz ProjectPage dopiero
+ * Sekcja "Drzewa" workspace projektu (/projects/:projectId/trees). Renderuje sie wewnatrz ProjectPage dopiero
  * po udanym pobraniu projektu, wiec nie pobiera projektu ponownie - bierze tylko projectId z trasy.
  */
 export function ProjectTreesSection() {
@@ -75,7 +75,7 @@ export function ProjectTreesSection() {
         <ul className="tree-list">
           {treeListState.trees.map((tree) => (
             <li key={tree.id}>
-              <Link to={`trees/${tree.id}`} className="tree-list-item">
+              <Link to={`/projects/${projectId}/trees/${tree.id}`} className="tree-list-item">
                 <span className="tree-list-item-number">Drzewo {tree.inventoryNumber}</span>
                 {tree.speciesLatin && <span className="tree-list-item-species">{tree.speciesLatin}</span>}
                 {!tree.speciesLatin && tree.speciesPolish && <span>{tree.speciesPolish}</span>}

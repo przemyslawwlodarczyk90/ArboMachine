@@ -15,12 +15,14 @@ type ProjectLoadingState =
   | { status: 'notFoundOrNoAccess' }
   | { status: 'failed'; errorMessage: string };
 
-/** Sekcje workspace - kazda to osobna trasa zagniezdzona, pod ktora pozniej wejdzie jej modul. */
+/**
+ * Sekcje workspace - kazda to osobna trasa zagniezdzona. Podsumowanie to strona glowna projektu; zakladka "Drzewa"
+ * (trees) jest aktywna takze na karcie drzewa (trees/:treeId), bo NavLink dopasowuje prefiks sciezki.
+ */
 const WORKSPACE_SECTION_LINKS = [
-  // Lista drzew to strona glowna projektu, ale zakladka ma byc aktywna takze na stronie drzewa (trees/:treeId).
-  { relativePath: '', label: 'Drzewa', matchExactPathOnly: true, alsoActiveOnTreeDetailRoute: true },
+  { relativePath: '', label: 'Podsumowanie', matchExactPathOnly: true },
+  { relativePath: 'trees', label: 'Drzewa', matchExactPathOnly: false },
   { relativePath: 'map', label: 'Mapa', matchExactPathOnly: false },
-  { relativePath: 'documentation', label: 'Zdjęcia i dokumentacja', matchExactPathOnly: false },
 ];
 
 /**
@@ -30,8 +32,9 @@ const WORKSPACE_SECTION_LINKS = [
 export function ProjectPage() {
   const { projectId: projectIdRouteParam } = useParams();
   const projectId = parsePositiveIdRouteParam(projectIdRouteParam);
-  // Hook wywolywany przed wczesnymi returnami ponizej (zasady hookow Reacta).
-  const isTreeDetailRoute = useMatch('/projects/:projectId/trees/*') !== null;
+  // Hook wywolywany przed wczesnymi returnami ponizej (zasady hookow Reacta). Na karcie drzewa breadcrumb
+  // prowadzi dodatkowo do listy drzew; numer drzewa jest w naglowku karty.
+  const isTreeDetailRoute = useMatch('/projects/:projectId/trees/:treeId') !== null;
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
   const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
 
@@ -89,7 +92,18 @@ export function ProjectPage() {
   return (
     <div className="stack-lg">
       <header className="page-header">
-        {backToProjectsLink}
+        {/* Prosty breadcrumb: zawsze widac, w jakim projekcie jestesmy i jak wrocic do listy projektow. */}
+        <nav className="breadcrumb" aria-label="Ścieżka nawigacji">
+          <Link to="/projects">Projekty</Link>
+          <span aria-hidden="true">/</span>
+          <Link to={`/projects/${project.id}`}>{project.name}</Link>
+          {isTreeDetailRoute && (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link to={`/projects/${project.id}/trees`}>Drzewa</Link>
+            </>
+          )}
+        </nav>
         <div className="page-header-row">
           <h1>{project.name}</h1>
           <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edytuj projekt</button>
@@ -100,8 +114,7 @@ export function ProjectPage() {
       <nav className="workspace-tabs" aria-label="Sekcje projektu">
         {WORKSPACE_SECTION_LINKS.map((sectionLink) => (
           <NavLink key={sectionLink.label} to={sectionLink.relativePath} end={sectionLink.matchExactPathOnly}
-                   className={({ isActive }) =>
-                     isActive || (sectionLink.alsoActiveOnTreeDetailRoute && isTreeDetailRoute) ? 'active' : undefined}>
+                   className={({ isActive }) => (isActive ? 'active' : undefined)}>
             {sectionLink.label}
           </NavLink>
         ))}

@@ -12,10 +12,10 @@ export function validateNewPasswordAndRepetition(
 ): Record<string, string> {
   const errorMessageByFieldName: Record<string, string> = {};
   if (newPassword.length < MINIMUM_PASSWORD_LENGTH) {
-    errorMessageByFieldName[passwordFieldName] = `Password must have at least ${MINIMUM_PASSWORD_LENGTH} characters.`;
+    errorMessageByFieldName[passwordFieldName] = `Hasło musi mieć co najmniej ${MINIMUM_PASSWORD_LENGTH} znaków.`;
   }
   if (newPassword !== repeatedPassword) {
-    errorMessageByFieldName.repeatedPassword = 'Passwords do not match.';
+    errorMessageByFieldName.repeatedPassword = 'Hasła nie są takie same.';
   }
   return errorMessageByFieldName;
 }

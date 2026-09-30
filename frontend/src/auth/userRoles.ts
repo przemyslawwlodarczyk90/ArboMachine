@@ -17,13 +17,13 @@ export const PANEL_HOME_PATH_BY_ROLE: Record<UserRole, string> = {
 export const REGISTRATION_ACCOUNT_TYPE_OPTIONS: { role: AssignableUserRole; displayName: string; description: string }[] = [
   {
     role: 'ARBORIST',
-    displayName: 'Arborist',
-    description: 'Tree care professional - inspections, assessments and work reports.',
+    displayName: 'Arborysta',
+    description: 'Specjalista od drzew - inwentaryzacje, oceny i dokumentacja prac.',
   },
   {
     role: 'OFFICIAL',
-    displayName: 'Official',
-    description: 'Public office employee - reviewing applications and issuing decisions.',
+    displayName: 'Urzędnik',
+    description: 'Pracownik urzędu - rozpatrywanie wniosków i wydawanie decyzji.',
   },
 ];
 

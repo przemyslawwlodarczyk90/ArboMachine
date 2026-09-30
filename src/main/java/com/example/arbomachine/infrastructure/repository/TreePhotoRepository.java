@@ -19,4 +19,7 @@ public interface TreePhotoRepository extends JpaRepository<TreePhoto, Long> {
 
     /** Pusty wynik takze dla zdjecia, ktore istnieje, ale nalezy do innego drzewa. */
     Optional<TreePhoto> findByIdAndTreeId(Long treePhotoId, Long treeId);
+
+    /** Liczba zdjec (rekordow metadanych) wszystkich drzew projektu - COUNT w bazie, bez czytania plikow. */
+    long countByTreeProjectId(Long projectId);
 }

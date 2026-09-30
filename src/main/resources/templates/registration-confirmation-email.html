@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Confirm Your Registration</title>
+    <title>Potwierdź rejestrację</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,15 +50,15 @@
 <body>
 <div class="email-container">
     <div class="email-header">
-        <h1>Welcome to ArboMachine</h1>
+        <h1>Witamy w ArboMachine</h1>
     </div>
     <div class="email-body">
-        <p>Dear <span th:text="${firstName} + ' ' + ${lastName}"></span>,</p>
-        <p>Thank you for registering with us. Please click the link below to confirm your registration:</p>
-        <a th:href="${confirmationLink}" class="btn-confirm">Confirm Registration</a>
+        <p>Dzień dobry, <span th:text="${firstName} + ' ' + ${lastName}"></span>,</p>
+        <p>Dziękujemy za rejestrację. Kliknij link poniżej, aby potwierdzić konto:</p>
+        <a th:href="${confirmationLink}" class="btn-confirm">Potwierdź rejestrację</a>
     </div>
     <div class="email-footer">
-        <p>If you did not register for this account, please ignore this email.</p>
+        <p>Jeśli to nie Ty zakładałeś konto, zignoruj tę wiadomość.</p>
     </div>
 </div>
 </body>

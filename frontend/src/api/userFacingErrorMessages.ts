@@ -1,31 +1,31 @@
-// Surowe komunikaty z backendu -> przyjazniejsze teksty pokazywane uzytkownikowi. Panel arborysty (projekty, drzewa)
-// ma polski UI; komunikaty kont/logowania i paneli urzednika/admina sa na razie po angielsku (docs/DO_DOPRECYZOWANIA.md).
+// Surowe komunikaty z backendu (celowo po angielsku - kontrakt API) -> teksty pokazywane uzytkownikowi (po polsku).
+// Komunikat spoza slownika jest pokazywany bez zmian - nowe komunikaty backendu trzeba tu dopisac.
 const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
-  'Invalid email or password': 'Invalid e-mail or password.',
-  'User is not activated': 'Your account is not active yet. Click the link in the confirmation e-mail.',
-  'Account is locked': 'Your account has been locked by an administrator.',
-  'Email is already in use by an active user': 'An account with this e-mail already exists.',
-  'Token not found': 'This link is invalid or has already been used.',
-  'Token has expired': 'This link has expired.',
-  'Failed to send email': 'We could not send the e-mail. Please try again in a moment.',
-  'Email cannot be changed': 'The e-mail address cannot be changed.',
-  'User not found': 'User not found.',
+  'Invalid email or password': 'Nieprawidłowy e-mail lub hasło.',
+  'User is not activated': 'Konto nie jest jeszcze aktywne. Kliknij link w e-mailu aktywacyjnym.',
+  'Account is locked': 'Konto zostało zablokowane przez administratora.',
+  'Email is already in use by an active user': 'Konto z tym adresem e-mail już istnieje.',
+  'Token not found': 'Ten link jest nieprawidłowy albo został już użyty.',
+  'Token has expired': 'Ten link wygasł.',
+  'Failed to send email': 'Nie udało się wysłać e-maila. Spróbuj ponownie za chwilę.',
+  'Email cannot be changed': 'Adresu e-mail nie można zmienić.',
+  'User not found': 'Nie znaleziono użytkownika.',
   'Unauthorized': 'Sesja wygasła. Zaloguj się ponownie.',
   'Forbidden': 'Nie masz uprawnień do wykonania tej operacji.',
   'Malformed request': 'Nieprawidłowe żądanie.',
   'Admin accounts can only be managed directly in the database':
-    'Admin accounts can only be managed directly in the database.',
-  'Email should be valid': 'Enter a valid e-mail address.',
-  'Email is mandatory': 'E-mail is required.',
-  'Password is mandatory': 'Password is required.',
-  'Password must have at least 8 characters': 'Password must have at least 8 characters.',
-  'First name is mandatory': 'First name is required.',
-  'Last name is mandatory': 'Last name is required.',
-  'Phone number is invalid': 'Invalid phone number.',
-  'Postal code is invalid': 'Postal code must look like 00-000.',
-  'Token is mandatory': 'The link is missing its token.',
-  'User data is mandatory': 'Fill in your details.',
-  'Account type is mandatory': 'Choose an account type.',
+    'Kontami administratorów można zarządzać wyłącznie bezpośrednio w bazie danych.',
+  'Email should be valid': 'Podaj prawidłowy adres e-mail.',
+  'Email is mandatory': 'E-mail jest wymagany.',
+  'Password is mandatory': 'Hasło jest wymagane.',
+  'Password must have at least 8 characters': 'Hasło musi mieć co najmniej 8 znaków.',
+  'First name is mandatory': 'Imię jest wymagane.',
+  'Last name is mandatory': 'Nazwisko jest wymagane.',
+  'Phone number is invalid': 'Nieprawidłowy numer telefonu.',
+  'Postal code is invalid': 'Kod pocztowy musi mieć format 00-000.',
+  'Token is mandatory': 'W linku brakuje tokenu.',
+  'User data is mandatory': 'Uzupełnij swoje dane.',
+  'Account type is mandatory': 'Wybierz typ konta.',
   // Komunikaty modulow projektow i drzew - po polsku (panel arborysty ma polski UI).
   'Project name is mandatory': 'Nazwa projektu jest wymagana.',
   'Project name must not be blank': 'Nazwa projektu jest wymagana.',
@@ -58,7 +58,7 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Work name must have at most 255 characters': 'Nazwa może mieć maksymalnie 255 znaków.',
   'Work description must have at most 5000 characters': 'Opis może mieć maksymalnie 5000 znaków.',
   'User account owns projects and cannot be deleted':
-    'This account owns projects and cannot be deleted yet.',
+    'To konto ma projekty i nie można go jeszcze usunąć.',
 };
 
 /** Zwraca przyjazny tekst albo oryginalny komunikat, jesli nie ma go w slowniku. */

@@ -13,19 +13,18 @@ interface PanelNavigationLink {
 
 const NAVIGATION_LINKS_BY_ROLE: Record<UserRole, PanelNavigationLink[]> = {
   ARBORIST: [
-    // Panel arborysty ma polski UI; panele urzednika i admina - na razie bez zmian (docs/DO_DOPRECYZOWANIA.md).
     { path: '/arborist', label: 'Pulpit', matchExactPathOnly: true },
     { path: '/projects', label: 'Projekty' },
     { path: '/arborist/profile', label: 'Mój profil' },
   ],
   OFFICIAL: [
-    { path: '/official', label: 'Dashboard', matchExactPathOnly: true },
-    { path: '/official/profile', label: 'My profile' },
+    { path: '/official', label: 'Pulpit', matchExactPathOnly: true },
+    { path: '/official/profile', label: 'Mój profil' },
   ],
   ADMIN: [
-    { path: '/admin', label: 'Dashboard', matchExactPathOnly: true },
-    { path: '/admin/users', label: 'Users' },
-    { path: '/admin/profile', label: 'My profile' },
+    { path: '/admin', label: 'Pulpit', matchExactPathOnly: true },
+    { path: '/admin/users', label: 'Użytkownicy' },
+    { path: '/admin/profile', label: 'Mój profil' },
   ],
 };
 
@@ -48,7 +47,7 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
           <ArboMachineLogo /> <span>ArboMachine</span>
         </NavLink>
         <span className={`role-pill role-${roleCssSuffix}`}>{USER_ROLE_DISPLAY_NAMES[panelRole]}</span>
-        <nav className="nav">
+        <nav className="nav" aria-label="Menu główne">
           {NAVIGATION_LINKS_BY_ROLE[panelRole].map((navigationLink) => (
             <NavLink key={navigationLink.path} to={navigationLink.path} end={navigationLink.matchExactPathOnly}>
               {navigationLink.label}

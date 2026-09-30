@@ -7,22 +7,23 @@ import { useAuthentication } from '../../auth/AuthenticationContext';
 import { USER_ROLE_DISPLAY_NAMES } from '../../auth/userRoles';
 import { Alert, type AlertVariant } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { ModalDialog } from '../../components/ModalDialog';
 import { UserProfileForm } from '../../components/UserProfileForm';
 
 type AccountStatus = 'active' | 'unconfirmed' | 'locked';
 type AccountStatusFilter = 'all' | AccountStatus;
 
 const ROLE_FILTER_OPTIONS: { role: UserRole | ''; label: string }[] = [
-  { role: '', label: 'All roles' },
-  { role: 'ARBORIST', label: 'Arborists' },
-  { role: 'OFFICIAL', label: 'Officials' },
-  { role: 'ADMIN', label: 'Administrators' },
+  { role: '', label: 'Wszystkie role' },
+  { role: 'ARBORIST', label: 'Arboryści' },
+  { role: 'OFFICIAL', label: 'Urzędnicy' },
+  { role: 'ADMIN', label: 'Administratorzy' },
 ];
 
 const ACCOUNT_STATUS_LABELS: Record<AccountStatus, string> = {
-  active: 'Active',
-  unconfirmed: 'Unconfirmed',
-  locked: 'Locked',
+  active: 'Aktywne',
+  unconfirmed: 'Niepotwierdzone',
+  locked: 'Zablokowane',
 };
 
 /** Blokada admina ma pierwszenstwo przed brakiem potwierdzenia e-maila. */
@@ -58,7 +59,7 @@ export function AdminUserAccountsPage() {
     adminUserAccountsApi.listUserAccounts(selectedRoleFilter || undefined)
       .then(setLoadedUserAccounts)
       .catch((requestError) =>
-        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Unexpected error.'));
+        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Nieoczekiwany błąd.'));
   }, [selectedRoleFilter]);
 
   useEffect(loadUserAccounts, [loadUserAccounts]);
@@ -104,7 +105,7 @@ export function AdminUserAccountsPage() {
       else removeAccountFromList(targetAccount.id);
       setActionResultMessage({ variant: 'success', text: successMessage });
     } catch (actionError) {
-      setActionResultMessage({ variant: 'error', text: actionError instanceof ApiRequestError ? actionError.message : 'Unexpected error.' });
+      setActionResultMessage({ variant: 'error', text: actionError instanceof ApiRequestError ? actionError.message : 'Nieoczekiwany błąd.' });
     } finally {
       setAccountIdWithActionInProgress(null);
       setAccountIdAwaitingDeletionConfirmation(null);
@@ -115,17 +116,17 @@ export function AdminUserAccountsPage() {
     <div className="stack-lg">
       <header className="page-header page-header-row">
         <div>
-          <h1>Users</h1>
-          <p className="muted">Manage arborist and official accounts.</p>
+          <h1>Użytkownicy</h1>
+          <p className="muted">Zarządzanie kontami arborystów i urzędników.</p>
         </div>
-        <button className="btn btn-secondary" onClick={loadUserAccounts}>Refresh</button>
+        <button className="btn btn-secondary" onClick={loadUserAccounts}>Odśwież</button>
       </header>
 
       {actionResultMessage && <Alert variant={actionResultMessage.variant}>{actionResultMessage.text}</Alert>}
 
       <section className="card card-flush">
         <div className="table-toolbar">
-          <div className="segmented" role="group" aria-label="Filter by role">
+          <div className="segmented" role="group" aria-label="Filtr roli">
             {ROLE_FILTER_OPTIONS.map((roleFilterOption) => (
               <button key={roleFilterOption.role}
                       className={selectedRoleFilter === roleFilterOption.role ? 'active' : undefined}
@@ -134,17 +135,17 @@ export function AdminUserAccountsPage() {
               </button>
             ))}
           </div>
-          <select className="select" value={selectedStatusFilter} aria-label="Filter by status"
+          <select className="select" value={selectedStatusFilter} aria-label="Filtr statusu"
                   onChange={(changeEvent) => changeFilterInUrl('status', changeEvent.target.value)}>
-            <option value="all">Any status</option>
-            <option value="active">Active</option>
-            <option value="unconfirmed">Unconfirmed</option>
-            <option value="locked">Locked</option>
+            <option value="all">Dowolny status</option>
+            <option value="active">Aktywne</option>
+            <option value="unconfirmed">Niepotwierdzone</option>
+            <option value="locked">Zablokowane</option>
           </select>
-          <input className="search" type="search" placeholder="Search name, e-mail, city…" aria-label="Search users"
+          <input className="search" type="search" placeholder="Szukaj: imię, e-mail, miejscowość…" aria-label="Szukaj użytkowników"
                  value={searchText} onChange={(changeEvent) => setSearchText(changeEvent.target.value)} />
           {loadedUserAccounts && visibleUserAccounts && (
-            <span className="muted small toolbar-count">{visibleUserAccounts.length} of {loadedUserAccounts.length}</span>
+            <span className="muted small toolbar-count">{visibleUserAccounts.length} z {loadedUserAccounts.length}</span>
           )}
         </div>
 
@@ -157,11 +158,11 @@ export function AdminUserAccountsPage() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Name</th>
+                  <th>Imię i nazwisko</th>
                   <th>E-mail</th>
-                  <th>Role</th>
+                  <th>Rola</th>
                   <th>Status</th>
-                  <th className="right">Actions</th>
+                  <th className="right">Akcje</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,66 +174,66 @@ export function AdminUserAccountsPage() {
                   return (
                     <tr key={userAccount.id} className={isCurrentUser ? 'row-me' : undefined}>
                       <td className="num">{userAccount.id}</td>
-                      <td>{fullNameOf(userAccount)} {isCurrentUser && <span className="badge">You</span>}</td>
+                      <td>{fullNameOf(userAccount)} {isCurrentUser && <span className="badge">Ty</span>}</td>
                       <td>{userAccount.email}</td>
                       <td>
                         {isAdminAccount ? (
                           <span className="role-pill role-admin">Administrator</span>
                         ) : (
                           <select className="select select-sm" value={userAccount.role} disabled={isActionInProgress}
-                                  aria-label={`Role of ${fullNameOf(userAccount)}`}
+                                  aria-label={`Rola: ${fullNameOf(userAccount)}`}
                                   onChange={(changeEvent) => {
                                     const newRole = changeEvent.target.value as AssignableUserRole;
                                     runAdminActionOnAccount(userAccount,
                                       () => adminUserAccountsApi.changeUserRole(userAccount.id, newRole),
-                                      `${fullNameOf(userAccount)} is now ${USER_ROLE_DISPLAY_NAMES[newRole].toLowerCase()}.`);
+                                      `${fullNameOf(userAccount)} ma teraz rolę: ${USER_ROLE_DISPLAY_NAMES[newRole].toLowerCase()}.`);
                                   }}>
-                            <option value="ARBORIST">Arborist</option>
-                            <option value="OFFICIAL">Official</option>
+                            <option value="ARBORIST">Arborysta</option>
+                            <option value="OFFICIAL">Urzędnik</option>
                           </select>
                         )}
                       </td>
                       <td><span className={`status status-${accountStatus}`}>{ACCOUNT_STATUS_LABELS[accountStatus]}</span></td>
                       <td className="right">
                         {isAdminAccount ? (
-                          <span className="muted small">Managed in database</span>
+                          <span className="muted small">Zarządzane w bazie danych</span>
                         ) : accountIdAwaitingDeletionConfirmation === userAccount.id ? (
                           <div className="row-actions">
-                            <span className="small">Delete {userAccount.firstName}?</span>
+                            <span className="small">Usunąć: {userAccount.firstName}?</span>
                             <button className="btn btn-sm btn-ghost" disabled={isActionInProgress}
                                     onClick={() => setAccountIdAwaitingDeletionConfirmation(null)}>
-                              No
+                              Nie
                             </button>
                             <button className="btn btn-sm btn-danger" disabled={isActionInProgress}
                                     onClick={() => runAdminActionOnAccount(userAccount,
                                       () => adminUserAccountsApi.deleteUserAccount(userAccount.id),
-                                      `${fullNameOf(userAccount)} has been deleted.`)}>
-                              Yes, delete
+                                      `Konto ${fullNameOf(userAccount)} zostało usunięte.`)}>
+                              Tak, usuń
                             </button>
                           </div>
                         ) : (
                           <div className="row-actions">
                             <button className="btn btn-sm btn-secondary" disabled={isActionInProgress}
                                     onClick={() => setAccountBeingEdited(userAccount)}>
-                              Edit
+                              Edytuj
                             </button>
                             {!userAccount.emailConfirmed && (
                               <button className="btn btn-sm btn-secondary" disabled={isActionInProgress}
                                       onClick={() => runAdminActionOnAccount(userAccount,
                                         () => adminUserAccountsApi.confirmEmailOnUsersBehalf(userAccount.id),
-                                        `${fullNameOf(userAccount)}'s e-mail has been confirmed.`)}>
-                                Confirm e-mail
+                                        `E-mail użytkownika ${fullNameOf(userAccount)} został potwierdzony.`)}>
+                                Potwierdź e-mail
                               </button>
                             )}
                             <button className="btn btn-sm btn-secondary" disabled={isActionInProgress}
                                     onClick={() => runAdminActionOnAccount(userAccount,
                                       () => adminUserAccountsApi.setAccountLockedByAdmin(userAccount.id, !userAccount.lockedByAdmin),
-                                      `${fullNameOf(userAccount)} has been ${userAccount.lockedByAdmin ? 'unlocked' : 'locked'}.`)}>
-                              {userAccount.lockedByAdmin ? 'Unlock' : 'Lock'}
+                                      `Konto ${fullNameOf(userAccount)} zostało ${userAccount.lockedByAdmin ? 'odblokowane' : 'zablokowane'}.`)}>
+                              {userAccount.lockedByAdmin ? 'Odblokuj' : 'Zablokuj'}
                             </button>
                             <button className="btn btn-sm btn-danger-outline" disabled={isActionInProgress}
                                     onClick={() => setAccountIdAwaitingDeletionConfirmation(userAccount.id)}>
-                              Delete
+                              Usuń
                             </button>
                           </div>
                         )}
@@ -241,7 +242,7 @@ export function AdminUserAccountsPage() {
                   );
                 })}
                 {visibleUserAccounts.length === 0 && (
-                  <tr><td colSpan={6} className="center muted">No users match the filters.</td></tr>
+                  <tr><td colSpan={6} className="center muted">Brak użytkowników pasujących do filtrów.</td></tr>
                 )}
               </tbody>
             </table>
@@ -250,23 +251,19 @@ export function AdminUserAccountsPage() {
       </section>
 
       {accountBeingEdited && (
-        <div className="modal-backdrop" onClick={() => setAccountBeingEdited(null)}>
-          <div className="card modal" role="dialog" aria-modal="true" aria-labelledby="edit-account-dialog-title"
-               onClick={(clickEvent) => clickEvent.stopPropagation()}>
-            <h2 id="edit-account-dialog-title">Edit {fullNameOf(accountBeingEdited)}</h2>
-            <p className="muted small">{USER_ROLE_DISPLAY_NAMES[accountBeingEdited.role]} · {accountBeingEdited.email}</p>
-            <UserProfileForm
-              editedAccount={accountBeingEdited}
-              closeForm={() => setAccountBeingEdited(null)}
-              saveProfile={async (updatedProfile) => {
-                const savedAccount = await adminUserAccountsApi.updateUserProfile(accountBeingEdited.id, updatedProfile);
-                replaceAccountInList(savedAccount);
-                setAccountBeingEdited(savedAccount);
-                return savedAccount;
-              }}
-            />
-          </div>
-        </div>
+        <ModalDialog title={`Edycja: ${fullNameOf(accountBeingEdited)}`} closeDialog={() => setAccountBeingEdited(null)}>
+          <p className="muted small">{USER_ROLE_DISPLAY_NAMES[accountBeingEdited.role]} · {accountBeingEdited.email}</p>
+          <UserProfileForm
+            editedAccount={accountBeingEdited}
+            closeForm={() => setAccountBeingEdited(null)}
+            saveProfile={async (updatedProfile) => {
+              const savedAccount = await adminUserAccountsApi.updateUserProfile(accountBeingEdited.id, updatedProfile);
+              replaceAccountInList(savedAccount);
+              setAccountBeingEdited(savedAccount);
+              return savedAccount;
+            }}
+          />
+        </ModalDialog>
       )}
     </div>
   );

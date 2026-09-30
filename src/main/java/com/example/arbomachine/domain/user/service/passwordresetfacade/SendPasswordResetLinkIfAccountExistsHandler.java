@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 @Component
 public class SendPasswordResetLinkIfAccountExistsHandler {
-    private static final String PASSWORD_RESET_EMAIL_SUBJECT = "Reset your password";
+    private static final String PASSWORD_RESET_EMAIL_SUBJECT = "Reset hasła w ArboMachine";
 
     private final UserAccountRepository userAccountRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;

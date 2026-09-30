@@ -54,7 +54,7 @@ export function TreePage() {
     return () => { isResponseStillWanted = false; };
   }, [projectId, treeId]);
 
-  const backToTreesLink = <Link to={`/projects/${projectId ?? ''}`} className="back-link">← Wróć do listy drzew</Link>;
+  const backToTreesLink = <Link to={`/projects/${projectId ?? ''}/trees`} className="back-link">← Wróć do listy drzew</Link>;
 
   if (treeLoadingState.status === 'loading') {
     return <div className="center"><LoadingSpinner /></div>;

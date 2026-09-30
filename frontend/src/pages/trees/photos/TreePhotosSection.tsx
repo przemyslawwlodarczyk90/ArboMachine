@@ -104,6 +104,9 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
             <div className="form-actions">
               <button type="button" className="btn btn-danger-outline"
                       onClick={() => setPhotoAwaitingDeletion(previewedPhoto.treePhoto)}>Usuń</button>
+              {/* Pobranie z juz wczytanego adresu blob: - bez ponownego zapytania i bez tokenu w URL. */}
+              <a className="btn btn-secondary" href={previewedPhoto.objectUrl}
+                 download={previewedPhoto.treePhoto.originalFileName}>Pobierz</a>
               <button type="button" className="btn btn-primary" onClick={() => setPreviewedPhoto(null)}>Zamknij</button>
             </div>
           </div>

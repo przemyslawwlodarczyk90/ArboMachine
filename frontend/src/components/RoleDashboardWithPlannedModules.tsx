@@ -27,13 +27,13 @@ export function RoleDashboardWithPlannedModules({ loadPanelWelcome, introduction
     loadPanelWelcome()
       .then(setPanelWelcome)
       .catch((requestError) =>
-        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Unexpected error.'));
+        setLoadingErrorMessage(requestError instanceof ApiRequestError ? requestError.message : 'Nieoczekiwany błąd.'));
   }, [loadPanelWelcome]);
 
   return (
     <div className="stack-lg">
       <header className="page-header">
-        {panelWelcome ? <h1>Hello, {panelWelcome.firstName}</h1> : <h1>Dashboard</h1>}
+        {panelWelcome ? <h1>Witaj, {panelWelcome.firstName}</h1> : <h1>Pulpit</h1>}
         <p className="muted">{panelWelcome?.welcomeMessage ?? introductionText}</p>
       </header>
 
@@ -43,12 +43,12 @@ export function RoleDashboardWithPlannedModules({ loadPanelWelcome, introduction
       {children}
 
       <section>
-        <h2 className="section-title">Coming soon</h2>
+        <h2 className="section-title">Wkrótce</h2>
         <p className="muted small">{introductionText}</p>
         <div className="module-grid">
           {plannedModules.map((plannedModule) => (
             <article key={plannedModule.title} className="card module-card">
-              <span className="badge badge-muted">Planned</span>
+              <span className="badge badge-muted">Planowane</span>
               <h3>{plannedModule.title}</h3>
               <p className="muted small">{plannedModule.description}</p>
             </article>

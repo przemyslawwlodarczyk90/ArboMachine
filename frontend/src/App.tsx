@@ -12,7 +12,8 @@ import { MyProfilePage } from './pages/MyProfilePage';
 import { OfficialDashboardPage } from './pages/official/OfficialDashboardPage';
 import { ProjectPage } from './pages/projects/ProjectPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
-import { ProjectWorkspaceSectionPlaceholder } from './pages/projects/ProjectWorkspaceSectionPlaceholder';
+import { RedirectToProjectSummary } from './pages/projects/RedirectToProjectSummary';
+import { ProjectSummaryPage } from './pages/projects/summary/ProjectSummaryPage';
 import { ProjectTreeMapSection } from './pages/trees/map/ProjectTreeMapSection';
 import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
 import { TreePage } from './pages/trees/TreePage';
@@ -50,11 +51,13 @@ export default function App() {
             <Route element={<RolePanelLayout panelRole="ARBORIST" />}>
               <Route index element={<ProjectsPage />} />
               <Route path=":projectId" element={<ProjectPage />}>
-                <Route index element={<ProjectTreesSection />} />
+                <Route index element={<ProjectSummaryPage />} />
+                <Route path="trees" element={<ProjectTreesSection />} />
                 <Route path="trees/:treeId" element={<TreePage />} />
                 <Route path="map" element={<ProjectTreeMapSection />} />
-                <Route path="documentation" element={<ProjectWorkspaceSectionPlaceholder sectionTitle="Zdjęcia i dokumentacja"
-                  plannedModuleMessage="Zdjęcia i dokumentacja zostaną dodane w kolejnym etapie." />} />
+                {/* Dawna zakladka-placeholder "Zdjecia i dokumentacja" (zdjecia sa w karcie drzewa) - stary link
+                    prowadzi do podsumowania zamiast do pustej strony. */}
+                <Route path="documentation" element={<RedirectToProjectSummary />} />
               </Route>
             </Route>
           </Route>
@@ -75,8 +78,8 @@ export default function App() {
           </Route>
 
           <Route path="*" element={
-            <AuthCardPageLayout title="Page not found" footer={<Link to="/">Home</Link>}>
-              <p className="muted">This page does not exist.</p>
+            <AuthCardPageLayout title="Nie znaleziono strony" footer={<Link to="/">Strona główna</Link>}>
+              <p className="muted">Ta strona nie istnieje.</p>
             </AuthCardPageLayout>
           } />
         </Routes>

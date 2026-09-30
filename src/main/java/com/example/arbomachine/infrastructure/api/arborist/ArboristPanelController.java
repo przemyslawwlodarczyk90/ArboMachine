@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/arborist")
 @Tag(name = "Panel arborysty", description = "Endpointy panelu arborysty (rola ARBORIST)")
 public class ArboristPanelController {
-    private static final String ARBORIST_PANEL_WELCOME_MESSAGE = "Welcome to the arborist panel";
+    private static final String ARBORIST_PANEL_WELCOME_MESSAGE = "Witaj w panelu arborysty.";
 
     private final RolePanelWelcomeFacade rolePanelWelcomeFacade;
 

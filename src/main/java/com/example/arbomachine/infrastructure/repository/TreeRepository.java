@@ -19,4 +19,10 @@ public interface TreeRepository extends JpaRepository<Tree, Long> {
 
     /** Pusty wynik takze dla drzewa, ktore istnieje, ale nalezy do innego projektu. */
     Optional<Tree> findByIdAndProjectId(Long treeId, Long projectId);
+
+    /** Liczba drzew projektu - COUNT w bazie (podsumowanie projektu). */
+    long countByProjectId(Long projectId);
+
+    /** Liczba drzew projektu z lokalizacja (lokalizacja to zawsze komplet pary, wiec wystarczy latitude). */
+    long countByProjectIdAndLocationLatitudeIsNotNull(Long projectId);
 }

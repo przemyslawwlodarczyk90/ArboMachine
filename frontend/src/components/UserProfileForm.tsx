@@ -20,7 +20,7 @@ const toProfileFormValues = (userAccount: UserAccount): UserProfile => ({
  * Formularz danych profilu - uzywany w "My profile" (wlasne konto) i w oknie edycji admina (cudze konto).
  * Sam zapis robi przekazany `saveProfile`, wiec formularz nie wie, ktory endpoint jest wolany.
  */
-export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitButtonLabel = 'Save changes' }: {
+export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitButtonLabel = 'Zapisz zmiany' }: {
   editedAccount: UserAccount;
   saveProfile: (updatedProfile: UserProfile) => Promise<UserAccount>;
   /** podane = formularz w oknie dialogowym, przycisk "Close" zamiast "Discard changes" */
@@ -46,13 +46,13 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
       const savedAccount = await saveProfile(
         toUserProfileRequestPayload({ ...profileFormValues, email: editedAccount.email }));
       setProfileFormValues(toProfileFormValues(savedAccount));
-      setResultMessage({ variant: 'success', text: 'Changes saved.' });
+      setResultMessage({ variant: 'success', text: 'Zmiany zostały zapisane.' });
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
         setResultMessage({ variant: 'error', text: savingError.message });
       } else {
-        setResultMessage({ variant: 'error', text: 'Unexpected error.' });
+        setResultMessage({ variant: 'error', text: 'Nieoczekiwany błąd.' });
       }
     } finally {
       setIsSaving(false);
@@ -70,34 +70,34 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
     <form onSubmit={submitProfileChanges} className="form" noValidate>
       {resultMessage && <Alert variant={resultMessage.variant}>{resultMessage.text}</Alert>}
       <div className="grid-2">
-        <LabeledInputField label="First name *" autoComplete="given-name" value={profileFormValues.firstName}
+        <LabeledInputField label="Imię *" autoComplete="given-name" value={profileFormValues.firstName}
                            onChange={updateFormField('firstName')} errorMessage={errorMessageByFieldName.firstName} />
-        <LabeledInputField label="Last name *" autoComplete="family-name" value={profileFormValues.lastName}
+        <LabeledInputField label="Nazwisko *" autoComplete="family-name" value={profileFormValues.lastName}
                            onChange={updateFormField('lastName')} errorMessage={errorMessageByFieldName.lastName} />
       </div>
       <div className="grid-2">
         <LabeledInputField label="E-mail" type="email" value={editedAccount.email} readOnly disabled
-                           hintText="The e-mail address cannot be changed." />
-        <LabeledInputField label="Phone" type="tel" autoComplete="tel" value={profileFormValues.phoneNumber ?? ''}
+                           hintText="Adresu e-mail nie można zmienić." />
+        <LabeledInputField label="Telefon" type="tel" autoComplete="tel" value={profileFormValues.phoneNumber ?? ''}
                            onChange={updateFormField('phoneNumber')} errorMessage={errorMessageByFieldName.phoneNumber}
                            placeholder="+48 123 456 789" />
       </div>
-      <LabeledInputField label="Street" autoComplete="street-address" value={profileFormValues.street ?? ''}
+      <LabeledInputField label="Ulica" autoComplete="street-address" value={profileFormValues.street ?? ''}
                          onChange={updateFormField('street')} errorMessage={errorMessageByFieldName.street} />
       <div className="grid-2">
-        <LabeledInputField label="Postal code" autoComplete="postal-code" value={profileFormValues.postalCode ?? ''}
+        <LabeledInputField label="Kod pocztowy" autoComplete="postal-code" value={profileFormValues.postalCode ?? ''}
                            onChange={updateFormField('postalCode')} errorMessage={errorMessageByFieldName.postalCode}
                            placeholder="00-000" />
-        <LabeledInputField label="City" autoComplete="address-level2" value={profileFormValues.city ?? ''}
+        <LabeledInputField label="Miejscowość" autoComplete="address-level2" value={profileFormValues.city ?? ''}
                            onChange={updateFormField('city')} errorMessage={errorMessageByFieldName.city} />
       </div>
       <div className="form-actions">
         <button type="button" className="btn btn-ghost" disabled={isSaving || (!hasUnsavedChanges && !closeForm)}
                 onClick={discardChangesOrCloseForm}>
-          {closeForm ? 'Close' : 'Discard changes'}
+          {closeForm ? 'Zamknij' : 'Odrzuć zmiany'}
         </button>
         <button type="submit" className="btn btn-primary" disabled={!hasUnsavedChanges || isSaving}>
-          {isSaving ? 'Saving…' : submitButtonLabel}
+          {isSaving ? 'Zapisywanie…' : submitButtonLabel}
         </button>
       </div>
     </form>

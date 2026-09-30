@@ -78,7 +78,7 @@ export function ProjectTreeMapSection() {
 
       {treeCount === 0 && (
         <Alert variant="info">
-          W tym projekcie nie ma jeszcze drzew. <Link to={`/projects/${projectId}`}>Przejdź do listy drzew</Link>
+          W tym projekcie nie ma jeszcze drzew. <Link to={`/projects/${projectId}/trees`}>Przejdź do listy drzew</Link>
         </Alert>
       )}
       {treeCount > 0 && treeMapPoints.length === 0 && (

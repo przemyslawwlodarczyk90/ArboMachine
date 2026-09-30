@@ -541,3 +541,16 @@ th.right, td.right { text-align: right; }
 .tree-work-item > .form { flex: 1 1 100%; }
 .tree-work-item-text { display: grid; gap: 0.25rem; min-width: 0; flex: 1 1 240px; overflow-wrap: anywhere; }
 .tree-work-item-description { margin: 0; color: var(--text-muted); white-space: pre-line; }
+
+/* ---------- Workspace projektu: breadcrumb i podsumowanie ---------- */
+.breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: var(--text-muted); min-width: 0; }
+.breadcrumb a { color: var(--text-muted); overflow-wrap: anywhere; }
+.breadcrumb a:hover { color: var(--brand); }
+/* Kafelki liczb - naturalnie przechodza do kolejnych wierszy (tablet/telefon), bez sztywnych szerokosci. */
+.summary-statistics { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); }
+.summary-statistic { display: grid; gap: 0.2rem; padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.summary-statistic-value { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.summary-statistic-label { color: var(--text-muted); }
+.quick-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+/* Okno dialogowe dostaje fokus przy otwarciu (ModalDialog) - bez obrysu calej karty. */
+.modal:focus { outline: none; }

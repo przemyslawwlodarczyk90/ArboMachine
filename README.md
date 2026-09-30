@@ -1,17 +1,40 @@
 # 🌳 ArboMachine
 
-Backend Spring Boot 3.5 (**Java 25**) z pełną obsługą kont użytkowników, projektów i drzew oraz frontend React
-(Vite, TypeScript) w katalogu [`frontend/`](frontend).
+**Czym jest (stan: Milestone 1 - etapy 1-16):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
+drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
+podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
+**nie** kompletny system arborystyczny (patrz „Czego jeszcze nie ma”).
+
+**Stack:** backend Spring Boot 3.5 (**Java 25**, Spring Security + JWT, JPA/Hibernate, PostgreSQL, Thymeleaf dla maili),
+frontend React 19 + TypeScript + Vite w katalogu [`frontend/`](frontend), mapa OpenLayers (podkład OpenStreetMap).
+Zbudowany frontend serwuje Spring Boot (jeden proces, jeden port).
 
 Konwencja językowa:
 - **kod i identyfikatory techniczne po angielsku** - klasy, encje, metody, zmienne, DTO, komponenty React, typy
   TypeScript, pliki, endpointy REST, enumy i pola API (możliwie samoopisujące się, np. `UserAccount`,
   `ProjectTreeMap`, `setTreeLocation`);
-- **interfejs użytkownika po polsku** - panel arborysty (projekty, drzewa, lokalizacja, mapa) i wspólne elementy
-  (górny pasek, komunikaty błędów HTTP). Bez biblioteki i18n - teksty są wprost w komponentach;
-- **komentarze i dokumentacja po polsku**. Surowe komunikaty walidacji API są po angielsku - frontend tłumaczy je
-  w `userFacingErrorMessages.ts`. Ekrany logowania/rejestracji i panele urzędnika/admina nie są jeszcze
-  przetłumaczone (patrz `docs/DO_DOPRECYZOWANIA.md`).
+- **cały interfejs użytkownika po polsku** - wszystkie ekrany, komunikaty błędów, powitania paneli i maile
+  (rejestracja, reset hasła). Bez biblioteki i18n - teksty są wprost w komponentach;
+- **komentarze i dokumentacja po polsku**. Surowe komunikaty błędów API są celowo po angielsku (kontrakt API) -
+  frontend tłumaczy je w `userFacingErrorMessages.ts`.
+
+## ✅ Milestone 1 - co działa
+
+Rejestracja / logowanie → **Projekty** → nowy projekt → **Podsumowanie** projektu (liczby drzew, lokalizacji,
+zdjęć, prac + szybkie akcje) → **Drzewa** → nowe drzewo → **karta drzewa** (dane Tree V1, **Lokalizacja** na mapie
+albo ręcznie, **Zdjęcia**, **Zalecenia i prace**) → **Mapa** projektu (markery, przejście do karty) → powrót do
+podsumowania. Cały flow działa przez UI (bez wpisywania adresów), po odświeżeniu (F5) każdej trasy, na desktopie,
+tablecie i telefonie. Własność danych egzekwuje backend (`Tree → Project → owner`) - cudze dane dają 404.
+
+## 🚫 Czego jeszcze nie ma
+
+Świadomie **niezaimplementowane** (otwarte pytania w [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md)):
+ocena stanu drzewa / VTA / ryzyko, waloryzacja, gospodarka drzewostanem, słownik gatunków i typów prac, symbole prac
+na mapie i legenda, adnotacje na zdjęciach, generator dokumentacji (PDF/DOCX), import/eksport (QGIS, GeoPackage, SHP,
+XLSX), WMS/Geoportal, układy PL-2000/PL-1992, PostGIS, GNSS/RTK, praca offline, usuwanie drzew i projektów,
+współpraca wielu użytkowników nad projektem (organizacje, urząd ↔ wykonawca). Panel urzędnika ma na razie tylko
+pulpit z zapowiedziami modułów.
 
 ---
 
@@ -50,9 +73,12 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 🔐 **Logowanie JWT**
 - 🔁 **Reset hasła** - jednorazowy link mailem, ważny 30 min
 - 🧭 **Trzy panele ról** z osobnym prefiksem ścieżek backendu dla każdej roli
-- 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie projektu i workspace projektu
-  (`/projects/:projectId`) z miejscem na moduły Drzewa / Mapa / Zdjęcia i dokumentacja
-- 🌳 **Drzewa projektu** - lista i dodawanie drzew oraz edytowalna karta drzewa (podgląd / edycja z Save i Cancel).
+- 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie i edycja projektu, workspace
+  projektu z zakładkami **Podsumowanie** / **Drzewa** / **Mapa** i breadcrumbem („Projekty / nazwa projektu”)
+- 📊 **Podsumowanie projektu** (`/projects/:projectId`) - liczba drzew, drzew z lokalizacją i bez, zdjęć oraz
+  zaleceń/prac (liczone w bazie jednym zestawem zapytań COUNT) + szybkie akcje „Przejdź do drzew” / „Otwórz mapę”
+- 🌳 **Drzewa projektu** (`/projects/:projectId/trees`) - lista i dodawanie drzew oraz edytowalna karta drzewa
+  (podgląd / edycja z „Zapisz” i „Anuluj”).
   Model **Tree V1**: numer inwentaryzacyjny, gatunek łaciński i polski, obwód pnia (cm), wysokość (m),
   średnica korony (m), notatka. To roboczy model do rozwijania małymi krokami, nie docelowy model arborystyczny -
   patrz [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
@@ -61,13 +87,14 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 🗺️ **Mapa projektu** (`/projects/:projectId/map`, OpenLayers + podkład OpenStreetMap) - markery drzew
   z zapisaną lokalizacją; kliknięcie markera pokazuje „Drzewo {numer}”, gatunek i link do karty drzewa
 - 📷 **Zdjęcia drzewa (TreePhoto V1)** - sekcja „Zdjęcia” w karcie drzewa: dodawanie z urządzenia (na tablecie
-  przeglądarka może od razu otworzyć aparat), siatka miniatur, większy podgląd, usuwanie z potwierdzeniem.
+  przeglądarka może od razu otworzyć aparat), siatka miniatur, większy podgląd z pobraniem, usuwanie z potwierdzeniem.
   JPEG/PNG/WebP, typ sprawdzany z zawartości pliku, limit 15 MB (konfigurowalny); pliki na dysku, metadane w bazie
 - 🪚 **Zalecenia i prace (TreeWork V1)** - sekcja „Zalecenia i prace” w karcie drzewa: wiele prac na drzewo,
   każda z nazwą (wolny tekst, np. „Cięcia redukcyjne”) i opcjonalnym opisem; dodawanie, edycja, usuwanie.
   Celowo bez słownika typów prac, symboli mapowych i priorytetów (`docs/DO_DOPRECYZOWANIA.md`)
 - 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
-- 📄 **Swagger** (opisy po polsku) - `http://localhost:8080/swagger-ui.html`
+- 📄 **Swagger** (opisy po polsku) - `http://localhost:<port>/swagger-ui.html`
+- ♿ **Podstawy dostępności** - etykiety pól, `alt` zdjęć, okna dialogowe z Escape, pułapką fokusu i powrotem fokusu
 
 ---
 
@@ -130,6 +157,10 @@ com.example.arbomachine
 │   ├── mapper      TreePhotoMapper
 │   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
 │                   UnsupportedTreePhotoTypeException
+├── domain.projectsummary  (read-model; zależy od project, tree, treephoto, treework - tylko przez COUNT w repozytoriach)
+│   ├── dto         ProjectSummaryResponse
+│   ├── facade      ProjectSummaryFacade
+│   └── service.projectsummaryfacade  GetProjectSummaryHandler (własność przez FindProjectOwnedByCurrentUserHandler)
 ├── domain.treework   (zależy od domain.tree; własność = Tree -> Project -> owner)
 │   ├── entity      TreeWork (tree -> Tree; name + description)
 │   ├── dto         CreateTreeWorkRequest, UpdateTreeWorkRequest (oba: TreeWorkFieldsRequest), TreeWorkResponse
@@ -146,6 +177,7 @@ com.example.arbomachine
     │   ├── arborist  ArboristPanelController
     │   ├── official  OfficialPanelController
     │   ├── project   ProjectController, ProjectApiExceptionHandler
+    │   ├── projectsummary ProjectSummaryController, ProjectSummaryApiExceptionHandler
     │   ├── tree      TreeController, TreeApiExceptionHandler
     │   ├── treephoto TreePhotoController, TreePhotoApiExceptionHandler
     │   └── treework  TreeWorkController, TreeWorkApiExceptionHandler
@@ -173,8 +205,9 @@ frontend/src
 ├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera)
 └── pages
     ├── arborist   ArboristDashboardPage + arboristPanelApi
-    ├── projects   ProjectsPage, NewProjectDialog, ProjectPage (workspace + sekcje jako trasy zagnieżdżone),
-    │              ProjectWorkspaceSectionPlaceholder + projectsApi, projectDataTypes
+    ├── projects   ProjectsPage, NewProjectDialog, EditProjectDialog, ProjectPage (workspace: breadcrumb, zakładki,
+    │   │          sekcje jako trasy zagnieżdżone), RedirectToProjectSummary + projectsApi, projectDataTypes
+    │   └── summary   ProjectSummaryPage, projectSummaryStatistics (kafelki), projectSummaryApi
     ├── trees      ProjectTreesSection, NewTreeDialog, TreePage (orkiestracja), TreeDetailsView (podgląd),
     │   │          TreeEditForm (edycja), TreeFormFields + treeFormValues (pola, wartości i walidacja wspólne
     │   │          dla dodawania i edycji) + treesApi, treeDataTypes
@@ -223,8 +256,9 @@ Wymaga **JDK 25** (w IntelliJ: Project SDK = 25).
 ./mvnw spring-boot:run
 ```
 
-Backend to samo REST API - wejście na jego główny adres (`http://localhost:<port>/`) przekierowuje do Swagger UI.
-Aplikację (UI) otwiera się przez frontend - patrz punkt 4.
+Po `npm run build` w `frontend/` backend serwuje też aplikację: `http://localhost:<port>/` (logowanie, projekty,
+wszystkie trasy React - także po F5). Bez zbudowanego frontendu główny adres przekierowuje do Swagger UI.
+Do pracy nad frontendem z hot reload służy `npm run dev` (punkt 4).
 
 Opcjonalne zmienne środowiskowe:
 
@@ -304,6 +338,7 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
 | PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
+| GET | `/api/projects/{projectId}/summary` | każdy zalogowany | Podsumowanie własnego projektu `{ treeCount, treeWithLocationCount, treeWithoutLocationCount, photoCount, workCount }` (COUNT w bazie); cudzy → 404 |
 | PUT | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Ustawienie/zamiana punktu `{ latitude, longitude }` (WGS84, oba wymagane) → 200 z drzewem; używają go i mapa, i ręczny formularz |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Usunięcie lokalizacji (`location: null`) → 200 z drzewem |
 | POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
@@ -345,6 +380,11 @@ polityka do czasu ustalenia archiwizacji / przenoszenia własności).
 - `FileSystemPhotoStorageTest` - zapis/odczyt/usuwanie, brak nadpisywania, odrzucanie kluczy typu `../`.
 - `TreeWorkApiIntegrationTest` - prace: CRUD, walidacja nazwy/opisu, użytkownik B, praca innego drzewa w URL,
   nieistniejący projekt/drzewo/praca.
+- `ProjectSummaryApiIntegrationTest` - podsumowanie: pusty projekt, przykład milestone'u (3 drzewa → 3/2/1/3/3),
+  suma lokalizacji = liczba drzew, brak wpływu innych projektów, stała liczba zapytań SQL (brak N+1), własność.
+- `MilestoneOwnershipRegressionIntegrationTest` - użytkownik B próbuje każdego endpointu na danych A
+  (projekt, podsumowanie, drzewo, lokalizacja, zdjęcie i jego treść, praca) → zawsze 404, dane A bez zmian;
+  bez tokenu → 401.
 - `FacadeHandlerArchitectureTest` - reguły architektury kontroler → fasada → handler.
 
 ## 🗄️ Schemat bazy
@@ -371,10 +411,11 @@ Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (in
 | Trasa | Dostęp | Zawartość |
 |---|---|---|
 | `/projects` | ARBORIST | Lista własnych projektów, przycisk „Nowy projekt” (okno tworzenia) |
-| `/projects/:projectId` | ARBORIST | Workspace projektu - sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
+| `/projects/:projectId` | ARBORIST | **Podsumowanie projektu** (strona główna projektu): liczby i szybkie akcje |
+| `/projects/:projectId/trees` | ARBORIST | Sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
 | `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
-| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Zdjęcia i dokumentacja” (placeholder) |
+| `/projects/:projectId/documentation` | ARBORIST | Dawna zakładka-placeholder - przekierowuje na podsumowanie (stare linki działają) |
 
 Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
 Kolejny moduł projektu dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -

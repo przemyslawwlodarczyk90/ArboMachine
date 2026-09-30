@@ -19,4 +19,7 @@ public interface TreeWorkRepository extends JpaRepository<TreeWork, Long> {
 
     /** Pusty wynik takze dla pracy, ktora istnieje, ale nalezy do innego drzewa. */
     Optional<TreeWork> findByIdAndTreeId(Long treeWorkId, Long treeId);
+
+    /** Liczba prac wszystkich drzew projektu - COUNT w bazie. */
+    long countByTreeProjectId(Long projectId);
 }
