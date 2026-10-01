@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-22 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-24 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -110,6 +110,12 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   informacje o projekcie, podsumowanie, zestawienie drzew, karty drzew z pomiarami, lokalizacją, pracami i zdjęciami
   (wersja z adnotacją). Generowany na żądanie z aktualnych danych; dane autora/zleceniodawcy to jawne placeholdery.
   Szablon: `src/main/resources/templates/documents/project-report.html` (`docs/discovery/etap-21-dokumentacja-discovery.md`)
+- 🔁 **Import i eksport (V1)** - zakładka „Import i eksport”: eksport drzew do CSV („;”, UTF-8, przecinek dziesiętny),
+  XLSX, GeoJSON i GeoPackage; import drzew z CSV / XLSX / GeoJSON: „Sprawdź plik” (błędy po polsku z numerem
+  wiersza) → „Importuj drzewa” (wszystko albo nic, każdy wiersz = nowe drzewo). Schemat pól: `TreeExchangeField`
+  (`docs/discovery/etap-23-import-export.md`)
+- 🗺️ **QGIS (V1)** - GeoPackage (warstwa `trees`, POINT, EPSG:4326) i GeoJSON do otwarcia w QGIS; powrót przez
+  GeoJSON jako nowe drzewa. Instrukcja: `docs/integrations/qgis.md` (pliki sprawdzone GDAL-em, nie w samym QGIS)
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -184,6 +190,17 @@ com.example.arbomachine
 │   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
 │                   UnsupportedTreePhotoTypeException, TreePhotoAnnotationNotFoundException,
 │                   InvalidPhotoAnnotationException, InvalidRenderedAnnotationImageException
+├── domain.dataexchange  (import/eksport drzew; czyta tree i treework - etapy 23-24)
+│   ├── schema      TreeExchangeField - JEDYNE mapowanie: nazwa techniczna / GIS / polski naglowek, SCHEMA_VERSION
+│   ├── export      ProjectExportData, TreeExportData, ProjectExportDataAssembler, TreeCsvExporter,
+│   │               TreeXlsxExporter, TreeGeoJsonExporter, TreeGeoPackageExporter, ExportedFile
+│   ├── imports     TreeImportParser (Csv/Xlsx/GeoJson), TabularTreeImportRows, TreeImportRowValidator,
+│   │               TreeImportAnalyzer, TreeImportIssue(+Code), ValidatedTreeRow
+│   ├── crs         CoordinateTransformer (V1: Wgs84CoordinateTransformer - EPSG:4326 bez zmian)
+│   ├── dto         TreeImportValidationResponse, TreeImportPreviewRowResponse, TreeImportResultResponse, TreeImportUpload
+│   ├── facade      DataExchangeFacade
+│   └── service.dataexchangefacade  ExportTreesAsCsv/Xlsx/GeoJson/GeoPackageHandler, ValidateTreeImportHandler,
+│                                   ImportTreesHandler
 ├── domain.projectdocument  (dokumenty projektu; czyta tree, treework, treephoto - etap 22)
 │   ├── data        ProjectDocumentData (+ Tree/Location/Work/PhotoData, DocumentImageContent) - model bez JPA
 │   ├── assembler   ProjectDocumentDataAssembler (4 zapytania na projekt, leniwe zdjęcia)
@@ -395,6 +412,9 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, hasAnnotation, annotationUpdatedAt, createdAt }` (bez ścieżek plików) |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik, także adnotacja i jej PNG) → 204 |
+| GET | `/api/projects/{projectId}/exports/trees.csv` / `.xlsx` / `.geojson` / `.gpkg` | każdy zalogowany | Eksport drzew (CSV, XLSX, GeoJSON i GeoPackage - tylko drzewa z lokalizacją, EPSG:4326) |
+| POST | `/api/projects/{projectId}/imports/trees/validate` | każdy zalogowany | Sprawdzenie pliku importu (multipart `file`: CSV/XLSX/GeoJSON) - nic nie zapisuje |
+| POST | `/api/projects/{projectId}/imports/trees` | każdy zalogowany | Import drzew - wszystko albo nic: 201 `{ importedTreeCount }` albo 400 z wynikiem sprawdzenia |
 | GET | `/api/projects/{projectId}/documents/project-report` | każdy zalogowany | „Dokument projektu” - PDF generowany na żądanie (`attachment; filename="arbomachine-projekt-{id}.pdf"`); cudzy projekt → 404 |
 | GET | `/api/projects/{projectId}/photos` | każdy zalogowany | Zdjęcia wszystkich drzew projektu jednym zapytaniem `{ photoId, treeId, inventoryNumber, …, hasAnnotation, annotationUpdatedAt }` |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Dokument adnotacji `{ photoId, schemaVersion, elements, createdAt, updatedAt }`; brak adnotacji → 404 |
@@ -481,6 +501,7 @@ Tabele bez `owner_id`.
 | `/projects/:projectId/trees` | ARBORIST | Sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
 | `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
+| `/projects/:projectId/import-export` | ARBORIST | Sekcja „Import i eksport”: eksport CSV/XLSX/GeoJSON/GeoPackage, blok QGIS, import drzew z pliku |
 | `/projects/:projectId/documentation` | ARBORIST | Sekcja „Dokumentacja”: „Generuj dokument PDF” (Dokument projektu) oraz materiały do dokumentacji - zdjęcia projektu pogrupowane po drzewie (wersja z adnotacją, jeśli istnieje) |
 
 Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.

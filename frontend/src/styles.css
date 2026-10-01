@@ -567,6 +567,25 @@ th.right, td.right { text-align: right; }
 .documentation-tree-group-header h3 { margin: 0; }
 .documentation-photo-card { display: grid; gap: 0.35rem; min-width: 0; }
 .documentation-photo-card .tree-photo-thumbnail { cursor: default; }
+
+/* ---------- Import i eksport danych projektu (etapy 23-24) ---------- */
+.data-exchange-card { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+.data-exchange-card h3, .data-exchange-card h4, .data-exchange-card p { margin: 0; }
+.data-exchange-actions { justify-content: flex-start; flex-wrap: wrap; }
+.data-exchange-gis { padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.data-exchange-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; font-size: 0.9rem; }
+.data-exchange-facts dt { font-weight: 600; color: var(--text-muted); }
+.data-exchange-facts dd { margin: 0; overflow-wrap: anywhere; }
+.data-exchange-help summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+.data-exchange-help ol { margin: 0.5rem 0 0; padding-left: 1.25rem; display: grid; gap: 0.3rem; }
+.data-exchange-issues { margin: 0; padding-left: 1.25rem; display: grid; gap: 0.25rem; overflow-wrap: anywhere; }
+.data-exchange-warnings { color: var(--text-muted); }
+.table-wrapper { overflow-x: auto; max-width: 100%; }
+.data-exchange-validation caption { text-align: left; padding-bottom: 0.25rem; }
+@media (max-width: 560px) {
+  .data-exchange-facts { grid-template-columns: 1fr; }
+  .data-exchange-actions > .btn { flex: 1 1 100%; }
+}
 .tree-photo-preview-image { width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius); background: var(--surface-muted); }
 .tree-photo-upload-preview { display: grid; gap: 0.4rem; justify-items: start; overflow-wrap: anywhere; }
 .tree-photo-upload-preview img { max-width: 100%; max-height: 240px; border-radius: var(--radius); border: 1px solid var(--border); }

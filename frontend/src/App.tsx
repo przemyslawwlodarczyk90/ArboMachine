@@ -10,6 +10,7 @@ import { EmailConfirmationPage } from './pages/EmailConfirmationPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { MyProfilePage } from './pages/MyProfilePage';
 import { OfficialDashboardPage } from './pages/official/OfficialDashboardPage';
+import { ProjectDataExchangePage } from './pages/projects/dataexchange/ProjectDataExchangePage';
 import { ProjectDocumentationPage } from './pages/projects/documentation/ProjectDocumentationPage';
 import { ProjectPage } from './pages/projects/ProjectPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
@@ -55,8 +56,9 @@ export default function App() {
                 <Route path="trees" element={<ProjectTreesSection />} />
                 <Route path="trees/:treeId" element={<TreePage />} />
                 <Route path="map" element={<ProjectTreeMapSection />} />
-                {/* Materialy do dokumentacji (zdjecia projektu w wersji z adnotacja) - nie generator dokumentu. */}
+                {/* Dokument projektu (PDF) i materialy do dokumentacji (zdjecia projektu w wersji z adnotacja). */}
                 <Route path="documentation" element={<ProjectDocumentationPage />} />
+                <Route path="import-export" element={<ProjectDataExchangePage />} />
               </Route>
             </Route>
           </Route>

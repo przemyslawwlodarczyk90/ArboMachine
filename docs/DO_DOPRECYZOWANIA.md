@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 22
+## Rejestr braków — stan po etapie 24
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -345,7 +345,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
 | Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon, placeholdery autora/zleceniodawcy); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
-| Import/eksport | XLSX, CSV, GeoPackage, SHP, GeoJSON, DXF, QGIS | BRAK |
+| Import/eksport | CSV, XLSX, GeoJSON (eksport i import), GeoPackage (eksport) — V1 od etapów 23–24; brak SHP, DXF, QGZ, QML, aktualizacji drzew przy imporcie, importu prac i zdjęć, wyboru układu współrzędnych | OPEN / BRAK |
 | Teren | GNSS/RTK, NTRIP, geolokalizacja urządzenia, praca offline, synchronizacja | OPEN |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
 | Konto | Zmiana hasła z poziomu „Mój profil” (dziś tylko przez „Nie pamiętasz hasła?”) | BRAK |
@@ -367,6 +367,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dokument PDF | Czas i pamięć generowania przy dużym projekcie (setki drzew i zdjęć) — generowanie synchroniczne, cały PDF w pamięci; jakość wydruku zdjęć (1600 px) i czytelność na papierze | DO SPRAWDZENIA |
 | Zdjęcia | Aparat tabletu przez `<input type="file" accept="image/*">`, duże zdjęcia (8–15 MB) na słabym łączu | DO SPRAWDZENIA |
 | Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
+| QGIS | Otwarcie eksportów GeoJSON / GeoPackage w PRAWDZIWYM QGIS i import pliku zapisanego przez QGIS — sprawdzone tylko GDAL 3.12.4 (checklista: `docs/integrations/qgis.md`) | DO SPRAWDZENIA |
 | Mapa | Czytelność symboli i znaczków prac na gęstym podkładzie OSM, na ortofotomapie i w wydruku | DO SPRAWDZENIA |
 | Maile | Wysyłka maili rejestracji/resetu przez prawdziwy SMTP (lokalnie potwierdzanie maila jest wyłączalne) | DO SPRAWDZENIA |
 
@@ -379,7 +380,8 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Testy frontendu | Tylko testy logiki (`node --test`); brak testów renderowania komponentów React | DŁUG |
 | Testy E2E | Scenariusze E2E (headless Chrome przez CDP) istnieją tylko lokalnie poza repozytorium — brak E2E w repo i CI | DŁUG |
 | Jakość | Brak lintera (ESLint) i CI uruchamiającego testy przy commitach | DŁUG |
-| Frontend | Paczka JS ~690 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy i edytora adnotacji) | DŁUG |
+| Frontend | Paczka JS ~700 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy i edytora adnotacji) | DŁUG |
+| Build | Jar ma ~100 MB: `target/classes/static` zachowuje stare paczki frontendu z poprzednich buildów (czyszczone tylko `src/main/resources/static`); GeoPackage dokłada ~16 MB natywnego SQLite | DŁUG |
 | Bezpieczeństwo | Token JWT w `localStorage`, brak odświeżania tokenu (sesja wygasa po czasie ważności) | OPEN |
 | Zdjęcia | Brak zadania sprzątającego osierocone pliki (plik bez rekordu po nieudanym usunięciu; od etapu 20 także stare PNG adnotacji) | DŁUG |
 | Adnotacje | PNG adnotacji sprawdzany tylko po sygnaturze i rozmiarze — backend nie dekoduje obrazu ani nie sprawdza wymiarów | DŁUG |
@@ -391,7 +393,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 
 | Opis | Status |
 |---|---|
-| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–22) — do usunięcia przy okazji | OPERACYJNE |
+| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–24) — do usunięcia przy okazji | OPERACYJNE |
 | Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
 | Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
 
@@ -549,3 +551,55 @@ Statusy w tej sekcji: **V1 IMPLEMENTED** — działa w V1; **OPEN DOMAIN QUESTIO
 | Kolejność drzew, prac i zdjęć = kolejność dodania | Brak sortowania po numerze drzewa (numery są tekstem) |
 | Placeholdery tylko w szablonie (bez nowych pól domenowych) | Kursywa, kolor — nigdy fikcyjne dane |
 | A4, marginesy 20/18 mm, numer strony „Strona N z M”, stopka „ArboMachine - Dokument projektu (wersja MVP)” | — |
+
+---
+
+## Import, eksport i QGIS — etapy 23–24
+
+**Status:** V1 IMPLEMENTED / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-23-import-export.md`,
+`docs/discovery/etap-24-qgis.md`, instrukcja użytkownika: `docs/integrations/qgis.md`.
+
+| Temat | Stan |
+|---|---|
+| Formaty wymagane przez klientów | OPEN DOMAIN QUESTION: jakie pliki arborysta dostaje i oddaje (od projektantów, geodetów, zarządców)? |
+| Formaty wymagane przez urzędy | OPEN DOMAIN QUESTION: czy urzędy wymagają konkretnych formatów / schematów atrybutów? V1 NIE udaje zgodności z żadnym formatem urzędowym. |
+| XLS / XLSX | V1 IMPLEMENTED: eksport i import XLSX (arkusz „Drzewa”, liczby jako liczby). Stary `.xls` nieobsługiwany. OPEN: układ arkuszy używanych dziś przez arborystę. |
+| CSV | V1 IMPLEMENTED: `;`, UTF-8 (eksport z BOM), przecinek dziesiętny; import wykrywa `;` `,` tab, wymaga UTF-8. |
+| GeoJSON | V1 IMPLEMENTED: eksport (FeatureCollection, Point, WGS 84, schemat V1) i import (Point, CRS84/EPSG:4326). |
+| GeoPackage | V1 IMPLEMENTED: eksport `.gpkg` (warstwa `trees`, POINT, EPSG:4326; biblioteka NGA). DEFERRED: import GeoPackage. OPEN: czy arborysta potrzebuje GPKG. |
+| SHP | DEFERRED / OPEN: czy legacy SHP jest wymagany (ograniczenia DBF: nazwy pól do 10 znaków, kodowanie, typy). Nazwy GIS są już krótkie. |
+| DXF / DWG | DEFERRED / OPEN: CAD (ZWCAD / ArboMap) — format, warstwy, bloki symboli. |
+| QGZ (projekt QGIS) | DEFERRED: generowanie projektu QGIS z warstwami, stylem, podkładem, etykietami, układem wydruku. |
+| QML (styl QGIS) | DEFERRED: styl po `map_symbol` / pracach. Symbole eksportowane jako dane (kody), nie jako style. |
+| Etykiety, układ wydruku, podkłady w QGIS | OPEN DOMAIN QUESTION: jak wygląda mapa końcowa. |
+| Nazwy kolumn | V1 IMPLEMENTED: jedno źródło `TreeExchangeField` — nazwa techniczna (GeoJSON), krótka GIS (GPKG), polska etykieta (CSV/XLSX). Import akceptuje każdą z nich. OPEN: nazwy kolumn w plikach arborysty / ArboMap. |
+| Obowiązkowe pola | V1 IMPLEMENTED: tylko numer inwentaryzacyjny. OPEN: czy import ma wymagać gatunku / lokalizacji. |
+| Duplikaty numerów | V1 IMPLEMENTED: każdy wiersz = nowe drzewo; duplikaty (w pliku i z projektem) tylko jako ostrzeżenia. OPEN DOMAIN QUESTION: odrzucić / utworzyć duplikat / zaktualizować / zapytać / scalić? |
+| Aktualizacja istniejących drzew | NOT SUPPORTED IN V1. OPEN: strategia identyfikacji (numer? `tree_id`? z kontrolą własności i konfliktów). `treeId` z pliku jest ignorowany. |
+| Round-trip QGIS | V1 IMPLEMENTED: QGIS → GeoJSON → import jako NOWE drzewa (sprawdzone przez GDAL, nie w samym QGIS). OPEN: update vs create vs merge. |
+| Import częściowy | OPEN: „importuj poprawne wiersze mimo błędów” — V1 wszystko albo nic. |
+| CRS | V1 IMPLEMENTED: EPSG:4326 w eksporcie i imporcie (`CoordinateTransformer` jako miejsce na transformację). OPEN: PL-2000 (która strefa?), PL-1992, inne lokalne; wybór układu przy eksporcie; import plików w PL-1992/PL-2000. |
+| Jednostki | V1 IMPLEMENTED: cm (obwód), m (wysokość, korona), stopnie dziesiętne. OPEN: czy pliki klientów używają innych jednostek (np. obwód w m, pierśnica zamiast obwodu). |
+| Kodowanie | V1 IMPLEMENTED: UTF-8. OPEN: czy trzeba przyjmować Windows-1250 (stare pliki z Excela). |
+| Eksport TreeWork | V1 IMPLEMENTED: nazwy prac w kolumnie / atrybucie (`work_names`), w GeoJSON pełna lista `works`. OPEN: osobna tabela prac (jeden wiersz = jedna praca)? Import prac — DEFERRED. |
+| Eksport zdjęć | DEFERRED: zdjęcia i adnotacje nie są eksportowane (bez Base64). OPEN: ZIP ze zdjęciami? linki? |
+| Import zdjęć | DEFERRED: import zdjęć (ZIP, zewnętrzny aparat). |
+| Mapowanie kolumn w UI | DEFERRED: nagłówki muszą odpowiadać schematowi. |
+| Synchronizacja / WFS / WMS | DEFERRED. |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Limity importu: plik do 5 MB, do 2000 drzew | Ochrona serwera; do weryfikacji na realnych projektach |
+| Plik importu wysyłany dwa razy („Sprawdź” i „Importuj”), bez stanu na serwerze | Prosto i bezpiecznie; przy dużych plikach podwójny transfer |
+| Biblioteki: Commons CSV, fastexcel (XLSX), NGA GeoPackage (sqlite-jdbc z natywnym SQLite, ~16 MB) | GeoPackage tworzony w pliku tymczasowym (zawsze usuwany) |
+| Liczby w CSV z przecinkiem dziesiętnym | Wygodne w polskim Excelu; QGIS wymaga ustawienia „przecinek dziesiętny” przy wczytywaniu CSV |
+| Eksport bez symbolu drzewa w CSV/XLSX (tylko w GIS) | Symbol to dane prezentacji mapy |
+| Nazwa warstwy `trees` i pola GIS po angielsku | Stabilne nazwy techniczne; UI po polsku |
+| Kolejność drzew w eksporcie = kolejność dodania | — |
+
+### Niesprawdzone
+- **Otwarcie plików w prawdziwym QGIS** — sprawdzone tylko GDAL 3.12.4 (ten sam silnik odczytu); checklista
+  ręcznego testu w `docs/integrations/qgis.md`.
+- Pliki zapisane przez prawdziwy QGIS (inne wersje GDAL, opcje eksportu).
+- Duże projekty (tysiące drzew), pliki od klientów w innych układach.

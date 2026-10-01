@@ -24,6 +24,7 @@ const WORKSPACE_SECTION_LINKS = [
   { relativePath: 'trees', label: 'Drzewa', matchExactPathOnly: false },
   { relativePath: 'map', label: 'Mapa', matchExactPathOnly: false },
   { relativePath: 'documentation', label: 'Dokumentacja', matchExactPathOnly: false },
+  { relativePath: 'import-export', label: 'Import i eksport', matchExactPathOnly: false },
 ];
 
 /**
