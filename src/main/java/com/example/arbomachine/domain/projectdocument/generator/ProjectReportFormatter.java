@@ -78,6 +78,21 @@ public final class ProjectReportFormatter {
         return accuracy == null ? source : source + ", " + accuracy;
     }
 
+    /**
+     * Kategoria waloryzacji V1 po polsku - tymczasowa klasyfikacja wybrana przez arboryste (nie skala branzowa).
+     * null = "Nie oceniono".
+     */
+    public String valuationCategory(String categoryCode) {
+        if (categoryCode == null) return "Nie oceniono";
+        return switch (categoryCode) {
+            case "LOW" -> "Niska";
+            case "MEDIUM" -> "Średnia";
+            case "HIGH" -> "Wysoka";
+            case "VERY_HIGH" -> "Bardzo wysoka";
+            default -> MISSING_VALUE;
+        };
+    }
+
     /** "lipa drobnolistna (Tilia cordata)", jedna z nazw albo "Gatunek nie podany". */
     public String species(ProjectDocumentTreeData tree) {
         boolean hasPolish = hasText(tree.speciesPolish());

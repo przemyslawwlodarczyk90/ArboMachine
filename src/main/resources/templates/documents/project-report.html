@@ -88,6 +88,7 @@
   <tr><td>Liczba drzew</td><td class="num" th:text="${document.treeCount()}">0</td></tr>
   <tr><td>Drzewa z lokalizacją</td><td class="num" th:text="${document.treeWithLocationCount()}">0</td></tr>
   <tr><td>Zdjęcia</td><td class="num" th:text="${document.photoCount()}">0</td></tr>
+  <tr><td>Drzewa z waloryzacją</td><td class="num" th:text="${document.valuedTreeCount()}">0</td></tr>
   <tr><td>Zalecenia i prace</td><td class="num" th:text="${document.workCount()}">0</td></tr>
 </table>
 
@@ -107,6 +108,7 @@
     <th class="num">Obwód pnia [cm]</th>
     <th class="num">Wysokość [m]</th>
     <th class="num">Średnica korony [m]</th>
+    <th>Waloryzacja</th>
   </tr>
   </thead>
   <tbody>
@@ -117,6 +119,7 @@
     <td class="num" th:text="${format.number(tree.trunkCircumferenceCm())}">—</td>
     <td class="num" th:text="${format.number(tree.heightM())}">—</td>
     <td class="num" th:text="${format.number(tree.crownDiameterM())}">—</td>
+    <td th:text="${tree.valuation() == null ? '—' : format.valuationCategory(tree.valuation().overallCategory())}">—</td>
   </tr>
   </tbody>
 </table>
@@ -150,6 +153,19 @@
       <h4>Notatki</h4>
       <p class="multiline" th:text="${tree.notes()}">Notatki</p>
     </th:block>
+
+    <h4>Waloryzacja</h4>
+    <p th:if="${tree.valuation() == null}" class="muted">Nie przeprowadzono waloryzacji.</p>
+    <table class="info valuation" th:unless="${tree.valuation() == null}">
+      <tr><th>Ocena ogólna</th><td th:text="${format.valuationCategory(tree.valuation().overallCategory())}">Nie oceniono</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().ageValue())}"><th>Wartość wiekowa</th><td class="multiline" th:text="${tree.valuation().ageValue()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().naturalValue())}"><th>Wartość przyrodnicza</th><td class="multiline" th:text="${tree.valuation().naturalValue()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().ecologicalValue())}"><th>Wartość ekologiczna</th><td class="multiline" th:text="${tree.valuation().ecologicalValue()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().culturalValue())}"><th>Wartość kulturowa</th><td class="multiline" th:text="${tree.valuation().culturalValue()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().landscapeValue())}"><th>Wartość krajobrazowa</th><td class="multiline" th:text="${tree.valuation().landscapeValue()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().justification())}"><th>Uzasadnienie</th><td class="multiline" th:text="${tree.valuation().justification()}">-</td></tr>
+      <tr th:if="${format.hasText(tree.valuation().notes())}"><th>Uwagi</th><td class="multiline" th:text="${tree.valuation().notes()}">-</td></tr>
+    </table>
 
     <h4>Zalecenia i prace</h4>
     <p th:if="${tree.works().isEmpty()}" class="muted">Brak zapisanych zaleceń.</p>

@@ -15,6 +15,7 @@ import type { Tree } from './treeDataTypes';
 import { TreeFieldForm } from './TreeFieldForm';
 import { TreeMapSymbolSection } from './TreeMapSymbolSection';
 import { treesApi } from './treesApi';
+import { TreeValuationSection } from './valuation/TreeValuationSection';
 import { TreeWorksSection } from './works/TreeWorksSection';
 
 type TreeLoadingState =
@@ -136,6 +137,7 @@ export function TreePage() {
       <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree}
                      onUnsavedChangesChange={setHasUnsavedTreeChanges} />
       <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+      <TreeValuationSection key={`valuation-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       {isCreatedOffline ? (
         <p className="muted tree-offline-note">Symbol na mapie i zdjęcia można dodać po synchronizacji drzewa z serwerem.</p>
       ) : (

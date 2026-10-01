@@ -14,6 +14,12 @@ import { treeWorksApi } from '../works/treeWorksApi';
 import { ProjectMapLegend } from './ProjectMapLegend';
 import { ProjectTreeMap } from './ProjectTreeMap';
 import { toTreeMapPoints } from './treeMapPoints';
+import { treeValuationsApi } from '../valuation/treeValuationsApi';
+import { ValuationBadge } from '../valuation/ValuationBadge';
+import { valuationColorOf } from '../valuation/valuationColors';
+import { valuationCategoryLabel, type TreeValuation } from '../valuation/valuationDataTypes';
+import { valuationCategoryByTreeId } from '../valuation/valuationFilter';
+import { buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
 
 type ProjectMapDataState =
   | { status: 'loading' }
@@ -31,12 +37,18 @@ export function ProjectTreeMapSection() {
   const [projectMapDataState, setProjectMapDataState] = useState<ProjectMapDataState>({ status: 'loading' });
   const [selectedTreeId, setSelectedTreeId] = useState<number | null>(null);
   const { catalogState, symbolByCode } = useMapSymbolCatalog();
+  const [viewMode, setViewMode] = useState<MapViewMode>('SYMBOLS');
+  // Waloryzacje (etap 27) - osobne zapytanie; blad nie blokuje mapy (tryb "Waloryzacja" pokaze wtedy komunikat).
+  const [valuations, setValuations] = useState<TreeValuation[] | null>(null);
 
   useEffect(() => {
     if (projectId === null) return;
     let isResponseStillWanted = true;
     setProjectMapDataState({ status: 'loading' });
     setSelectedTreeId(null);
+    treeValuationsApi.listProjectValuations(projectId)
+      .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
+      .catch(() => { if (isResponseStillWanted) setValuations(null); });
     Promise.all([treesApi.listTreesOfProject(projectId), treeWorksApi.listProjectWorks(projectId)])
       .then(([trees, works]) => {
         if (isResponseStillWanted) setProjectMapDataState({ status: 'loaded', trees, works });
@@ -54,7 +66,8 @@ export function ProjectTreeMapSection() {
   const loadedData = projectMapDataState.status === 'loaded' ? projectMapDataState : null;
   // Stabilne tablice - mapa dopasowuje widok tylko wtedy, gdy zmieniaja sie dane projektu.
   const treeMapPoints = useMemo(
-    () => (loadedData ? toTreeMapPoints(loadedData.trees, loadedData.works) : []), [loadedData]);
+    () => (loadedData ? toTreeMapPoints(loadedData.trees, loadedData.works, valuationCategoryByTreeId(valuations ?? [])) : []),
+    [loadedData, valuations]);
   const legendEntries = useMemo(() => (loadedData
     ? buildProjectMapLegend(
       loadedData.trees.map((tree) => ({ id: tree.id, hasLocation: !!tree.location, mapSymbolCode: tree.mapSymbolCode })),
@@ -81,6 +94,7 @@ export function ProjectTreeMapSection() {
   const selectedTree = projectMapDataState.trees.find((tree) => tree.id === selectedTreeId) ?? null;
   const selectedTreeWorks = projectMapDataState.works.filter((work) => work.treeId === selectedTreeId);
   const selectedTreeSymbol = selectedTree?.mapSymbolCode ? symbolByCode.get(selectedTree.mapSymbolCode) : undefined;
+  const selectedTreeValuationCategory = treeMapPoints.find((point) => point.treeId === selectedTreeId)?.valuationCategory ?? null;
 
   return (
     <div className="stack">
@@ -111,14 +125,31 @@ export function ProjectTreeMapSection() {
         </Alert>
       )}
 
+      {treeMapPoints.length > 0 && (
+        <div className="map-view-mode" role="radiogroup" aria-label="Widok mapy">
+          <span className="muted small">Widok:</span>
+          {MAP_VIEW_MODES.map(({ mode, label }) => (
+            <button key={mode} type="button" role="radio" aria-checked={viewMode === mode}
+                    className={`btn btn-small ${viewMode === mode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setViewMode(mode)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {viewMode === 'VALUATION' && valuations === null && (
+        <Alert variant="error">Nie udało się pobrać waloryzacji - wszystkie drzewa są pokazane jako „Nie oceniono”.</Alert>
+      )}
+
       <div className="map-frame">
-        <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId} />
+        <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
+                        viewMode={viewMode} />
         {selectedTree && (
           <div className="map-selected-tree card" role="status">
             <div className="map-selected-tree-text">
               <strong>
                 {selectedTreeSymbol && <MapSymbolSwatch symbol={selectedTreeSymbol} size={18} />} Drzewo {selectedTree.inventoryNumber}
               </strong>
+              {viewMode === 'VALUATION' && <ValuationBadge category={selectedTreeValuationCategory} prefix="Waloryzacja: " />}
               {(selectedTree.speciesPolish || selectedTree.speciesLatin) && (
                 <span className="muted small">
                   {[selectedTree.speciesPolish, selectedTree.speciesLatin].filter(Boolean).join(' · ')}
@@ -148,7 +179,23 @@ export function ProjectTreeMapSection() {
         )}
       </div>
 
-      {treeMapPoints.length > 0 && <ProjectMapLegend entries={legendEntries} />}
+      {treeMapPoints.length > 0 && viewMode === 'SYMBOLS' && <ProjectMapLegend entries={legendEntries} />}
+      {treeMapPoints.length > 0 && viewMode === 'VALUATION' && (
+        <section className="map-legend" aria-labelledby="map-valuation-legend-heading">
+          <h3 id="map-valuation-legend-heading">Legenda - waloryzacja</h3>
+          <ul>
+            {buildValuationLegend(treeMapPoints).map(({ category, count }) => (
+              <li key={category ?? 'NONE'}>
+                <span className="map-legend-swatch-circle" style={{ background: valuationColorOf(category).fill }} aria-hidden="true" />
+                {' '}{valuationCategoryLabel(category)} ({count})
+              </li>
+            ))}
+          </ul>
+          <p className="muted small">
+            Kategorie i kolory są tymczasowe (wersja V1) - to nie jest skala branżowa. Ocenę ogólną wybiera arborysta w karcie drzewa.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

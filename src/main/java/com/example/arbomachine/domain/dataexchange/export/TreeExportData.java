@@ -27,7 +27,8 @@ public record TreeExportData(
         BigDecimal locationAltitudeM,
         String locationSource,
         String mapSymbolCode,
-        List<TreeWorkExportData> works
+        List<TreeWorkExportData> works,
+        TreeValuationExportData valuation
 ) {
 
     /** Separator nazw prac w jednej kolumnie / atrybucie. */
@@ -58,6 +59,13 @@ public record TreeExportData(
             case MAP_SYMBOL_CODE -> mapSymbolCode;
             case WORK_NAMES -> works.isEmpty() ? null
                     : works.stream().map(TreeWorkExportData::name).collect(Collectors.joining(WORK_NAMES_SEPARATOR));
+            case VALUATION_CATEGORY -> valuation == null ? null : valuation.overallCategory();
+            case VALUATION_AGE_VALUE -> valuation == null ? null : valuation.ageValue();
+            case VALUATION_NATURAL_VALUE -> valuation == null ? null : valuation.naturalValue();
+            case VALUATION_ECOLOGICAL_VALUE -> valuation == null ? null : valuation.ecologicalValue();
+            case VALUATION_CULTURAL_VALUE -> valuation == null ? null : valuation.culturalValue();
+            case VALUATION_LANDSCAPE_VALUE -> valuation == null ? null : valuation.landscapeValue();
+            case VALUATION_JUSTIFICATION -> valuation == null ? null : valuation.justification();
         };
     }
 }

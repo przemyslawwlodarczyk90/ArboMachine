@@ -13,6 +13,9 @@ import {
   createMapWithOpenStreetMapBase, createTreeMarkerStyle, fitViewToCoordinates, MARKER_HIT_TOLERANCE_PX,
   SAVED_TREE_MARKER_COLOR,
 } from '../../../map/openLayersBaseMap';
+import { valuationColorOf } from '../valuation/valuationColors';
+import type { TreeValuationCategory } from '../valuation/valuationDataTypes';
+import type { MapViewMode } from './mapViewMode';
 import type { TreeMapPoint } from './treeMapPoints';
 
 /** Nazwy wlasciwosci Feature - po nich klikniety marker jest wiazany z konkretnym drzewem. */
@@ -20,6 +23,7 @@ const TREE_ID_FEATURE_PROPERTY = 'treeId';
 const INVENTORY_NUMBER_FEATURE_PROPERTY = 'inventoryNumber';
 const TREE_SYMBOL_FEATURE_PROPERTY = 'treeSymbolCode';
 const WORK_SYMBOLS_FEATURE_PROPERTY = 'workSymbolCodes';
+const VALUATION_CATEGORY_FEATURE_PROPERTY = 'valuationCategory';
 
 /** Rozmiary V1 (piksele): centralny symbol drzewa i mniejsze znaczki prac wokol niego. */
 const TREE_SYMBOL_RADIUS_PX = 8;
@@ -47,15 +51,22 @@ function buildTreeStyles(treeSymbolCode: string | null, workSymbolCodes: string[
   return styles;
 }
 
+/** Tryb "Waloryzacja" (etap 27): sam kolor kategorii, bez znaczkow prac - nie mieszamy dwoch znaczen na jednym punkcie. */
+function buildValuationStyles(category: TreeValuationCategory | null): Style[] {
+  return [createTreeMarkerStyle(valuationColorOf(category).fill)];
+}
+
 /**
- * Mapa projektu (OpenLayers): podklad OSM + warstwa markerow drzew z symbolami drzew i prac (etap 19).
+ * Mapa projektu (OpenLayers): podklad OSM + warstwa markerow drzew. Tryby (viewMode): symbole drzew i prac (etap 19)
+ * albo kolor waloryzacji (etap 27) - zmiana trybu tylko przerysowuje style tej samej warstwy.
  * Tylko podglad - nie edytuje lokalizacji ani symboli.
  * Instancja mapy powstaje raz (przy montowaniu) i jest niszczona przy odmontowaniu; zmiana punktow podmienia
  * jedynie Feature w warstwie i dopasowuje widok. Klikniecie markera zglasza treeId (albo null - klik obok).
  */
-export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked }: {
+export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS' }: {
   treeMapPoints: TreeMapPoint[];
   symbolByCode: globalThis.Map<string, MapSymbol>;
+  viewMode?: MapViewMode;
   onTreeMarkerClicked: (treeId: number | null) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -68,6 +79,7 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
   const symbolByCodeRef = useRef(symbolByCode);
   const styleCacheRef = useRef(new globalThis.Map<string, Style[]>());
   const treeMarkerLayerRef = useRef<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
+  const viewModeRef = useRef(viewMode);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -75,6 +87,16 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     const treeMarkerLayer = new VectorLayer({
       source: treeMarkerSource,
       style: (feature: FeatureLike) => {
+        if (viewModeRef.current === 'VALUATION') {
+          const category = (feature.get(VALUATION_CATEGORY_FEATURE_PROPERTY) as TreeValuationCategory | null) ?? null;
+          const valuationKey = `valuation|${category}`;
+          let valuationStyles = styleCacheRef.current.get(valuationKey);
+          if (!valuationStyles) {
+            valuationStyles = buildValuationStyles(category);
+            styleCacheRef.current.set(valuationKey, valuationStyles);
+          }
+          return valuationStyles;
+        }
         const treeSymbolCode = (feature.get(TREE_SYMBOL_FEATURE_PROPERTY) as string | null) ?? null;
         const workSymbolCodes = (feature.get(WORK_SYMBOLS_FEATURE_PROPERTY) as string[] | undefined) ?? [];
         const styleKey = `${treeSymbolCode}|${workSymbolCodes.join(',')}`;
@@ -113,6 +135,12 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     };
   }, []);
 
+  // Zmiana trybu widoku - te same punkty, inne style (bez przebudowy warstwy i bez zmiany widoku mapy).
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+    treeMarkerLayerRef.current?.changed();
+  }, [viewMode]);
+
   // Katalog symboli dochodzi asynchronicznie - po jego zmianie przerysowujemy markery nowymi stylami.
   useEffect(() => {
     symbolByCodeRef.current = symbolByCode;
@@ -131,6 +159,7 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       [INVENTORY_NUMBER_FEATURE_PROPERTY]: treeMapPoint.inventoryNumber,
       [TREE_SYMBOL_FEATURE_PROPERTY]: treeMapPoint.treeSymbolCode,
       [WORK_SYMBOLS_FEATURE_PROPERTY]: treeMapPoint.workSymbolCodes,
+      [VALUATION_CATEGORY_FEATURE_PROPERTY]: treeMapPoint.valuationCategory,
     })));
     fitViewToCoordinates(map, treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
   }, [treeMapPoints]);

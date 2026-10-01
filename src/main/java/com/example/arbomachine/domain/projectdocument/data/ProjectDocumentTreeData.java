@@ -3,7 +3,7 @@ package com.example.arbomachine.domain.projectdocument.data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Drzewo w dokumencie: dane z karty drzewa (wartosci null = nie podano), lokalizacja, prace i zdjecia. */
+/** Drzewo w dokumencie: dane z karty drzewa (wartosci null = nie podano), lokalizacja, waloryzacja (null = brak), prace i zdjecia. */
 public record ProjectDocumentTreeData(
         long treeId,
         String inventoryNumber,
@@ -16,6 +16,7 @@ public record ProjectDocumentTreeData(
         String conditionNotes,
         String hazardNotes,
         ProjectDocumentLocationData location,
+        ProjectDocumentValuationData valuation,
         List<ProjectDocumentWorkData> works,
         List<ProjectDocumentPhotoData> photos
 ) {}

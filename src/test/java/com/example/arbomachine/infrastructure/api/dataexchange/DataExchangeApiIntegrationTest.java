@@ -192,7 +192,8 @@ class DataExchangeApiIntegrationTest {
         assertThat(records.getFirst().toList()).containsExactly("ID drzewa (ArboMachine)", "Numer inwentaryzacyjny", "Gatunek polski",
                 "Gatunek łaciński", "Obwód pnia [cm]", "Wysokość [m]", "Średnica korony [m]", "Notatki", "Stan drzewa",
                 "Zagrożenia", "Szerokość geograficzna", "Długość geograficzna", "Dokładność lokalizacji [m]", "Wysokość n.p.m. [m]",
-                "Źródło lokalizacji", "Zalecenia i prace");
+                "Źródło lokalizacji", "Zalecenia i prace", "Waloryzacja - ocena ogólna", "Wartość wiekowa",
+                "Wartość przyrodnicza", "Wartość ekologiczna", "Wartość kulturowa", "Wartość krajobrazowa", "Uzasadnienie waloryzacji");
         assertThat(records).hasSize(4);
         CSVRecord full = records.get(1);
         assertThat(full.get(1)).isEqualTo("L-1");
@@ -209,7 +210,7 @@ class DataExchangeApiIntegrationTest {
         assertThat(full.get(15)).isEqualTo("Cięcia redukcyjne; Kontrola za 12 miesięcy");
         CSVRecord onlyNumber = records.get(2);
         assertThat(onlyNumber.get(1)).isEqualTo("L-2");
-        assertThat(onlyNumber.toList().subList(2, 16)).allMatch(String::isEmpty);
+        assertThat(onlyNumber.toList().subList(2, 23)).allMatch(String::isEmpty);
         assertThat(csv).doesNotContain("null").contains("\r\n");
     }
 

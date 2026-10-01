@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 26
+## Rejestr braków — stan po etapie 27
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -332,6 +332,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Drzewa | Autonumeracja i unikalność numeru drzewa w projekcie | OPEN |
 | Drzewa | Słownik gatunków, autocomplete, PL ↔ LAT | BRAK (V1 = wolny tekst) |
 | Drzewa | Model wielopniowości, historia pomiarów, strukturalna ocena stanu / VTA / ryzyko | OPEN |
+| Waloryzacja | V1 od etapu 27: zapis oceny arborysty (kategoria V1 + opisy); brak metody, skal, punktów, wycen PLN, historii ocen, waloryzacji grup drzew | OPEN |
 | Formularz | Blokada opuszczenia strony z niezapisanymi zmianami (jest tylko komunikat „Masz niezapisane zmiany”) | BRAK |
 | Zdjęcia | Miniatury po stronie serwera / kompresja (galeria ładuje pełne pliki) | BRAK |
 | Zdjęcia | Podpisy, kategorie, zdjęcie główne, kolejność, EXIF, HEIC | OPEN |
@@ -656,3 +657,42 @@ Uzupełnia wcześniejsze pytania z sekcji „Lokalizacja drzewa — dane pomiaru
 | Kolejka niepusta → nowe zmiany też idą do kolejki (nawet online) | Zachowanie kolejności |
 | Brak limitu wieku i rozmiaru kopii odczytów | Kopie kasowane przy wylogowaniu |
 | Service worker tylko w zbudowanej aplikacji i w bezpiecznym kontekście | Produkcja wymaga HTTPS |
+
+---
+
+## Waloryzacja drzew — etap 27
+
+**Status:** V1 IMPLEMENTED (zapis oceny arborysty) / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-27-waloryzacja.md`.
+**Aplikacja niczego nie wylicza** — brak wzorów, punktów, wag, współczynników i kwot PLN (pierwsza wersja polecenia
+proponowała wzór „obwód² × wysokość” i wycenę w PLN; obowiązująca wersja tego zabrania, bo metoda nie jest znana).
+
+| Temat | Stan |
+|---|---|
+| Metoda waloryzacji | OPEN DOMAIN QUESTION: opisowa, punktowa, klasowa, mieszana? Kto i jak ją ustala? |
+| Skale wartości składowych | V1: wolny tekst (wiekowa, przyrodnicza, ekologiczna, kulturowa, krajobrazowa). OPEN: czy są klasy / skale (np. I–V)? |
+| Ocena ogólna | V1 HYPOTHESIS: opcjonalna kategoria Niska / Średnia / Wysoka / Bardzo wysoka, brak = „Nie oceniono” — **nie jest to skala branżowa**, wybierana ręcznie. OPEN: czy wynik końcowy istnieje i jak się nazywa? |
+| Punkty i wagi | OPEN: czy stosowane? V1 ich nie ma. |
+| Wycena pieniężna | DEFERRED / OPEN: czy potrzebna, jaką metodą (odtworzeniowa, tablice, przepisy o opłatach za usunięcie drzew), kto ją podpisuje? V1 nie pokazuje żadnych kwot. |
+| Przechowywanie | V1 IMPLEMENTED: ocena zapisana w bazie (to dane wpisane przez arborystę, nie wynik obliczeń). OPEN: czy potrzebna historia ocen (kolejne inwentaryzacje, porównania)? |
+| Odszkodowania / historia wartości | OPEN: czy klient potrzebuje historii wartości drzewa lub odszkodowań? |
+| Grupy drzew | OPEN: czy waloryzuje się też grupy, szpalery, zadrzewienia (V1: pojedyncze drzewo)? |
+| Waloryzacja a rodzaj opracowania | OPEN: czy pola zależą od rodzaju dokumentu (waloryzacja, inwentaryzacja, program prac)? |
+| Mapa | V1 IMPLEMENTED: tryb „Waloryzacja” z umownymi kolorami (jasny żółty → ciemna zieleń, szary = nie oceniono). OPEN: jakie kolory / oznaczenia klas stosuje arborysta? |
+| Dokument | V1 IMPLEMENTED: kolumna „Waloryzacja” w zestawieniu, blok „Waloryzacja” w karcie drzewa, „Nie przeprowadzono waloryzacji.”, liczba drzew z waloryzacją. OPEN: jak waloryzacja wygląda w finalnym dokumencie? |
+| Eksport | V1 IMPLEMENTED: CSV/XLSX — kategoria i wszystkie opisy; GeoJSON/GeoPackage — tylko kategoria (`valuationCategory` / `val_categ`). OPEN: czy opisy są potrzebne w GIS? |
+| Import waloryzacji | DEFERRED: import plików ignoruje pola waloryzacji. |
+| DOCX z edytowalną waloryzacją | DEFERRED. |
+| Oficjalne tablice / przeliczniki | OPEN: czy istnieją i czy integrować? |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Osobna encja `TreeValuation` 1:1 z `Tree` (tabela `tree_valuation`, `tree_id` UNIQUE) | Inwentaryzacja (pomiary) oddzielona od oceny eksperckiej |
+| `GET …/valuation` zwraca 200 z `hasValuation: false` zamiast 404 | Jeden kształt odpowiedzi dla karty drzewa i kopii offline |
+| Pusta ocena nie może być zapisana (400) — do usunięcia służy DELETE | — |
+| `PUT` zastępuje całą ocenę (pominięte pole = brak wartości); `DELETE` idempotentny | Bezpieczne powtórzenie przy synchronizacji offline |
+| Limit 5000 znaków na opis | Techniczny, jak opis pracy |
+| Kolory kategorii: `#f2d16b`, `#8fcf6b`, `#2f9e44`, `#14532d`, szary `#9aa3a0` | Umowne, różna jasność (część osób z zaburzeniami widzenia barw) |
+| Filtr listy „Nieocenione” = brak waloryzacji albo waloryzacja bez oceny ogólnej | — |
+| Waloryzacja w kolejce offline: `UPSERT_TREE_VALUATION`, `DELETE_TREE_VALUATION` | Ten sam mechanizm co etap 26; konflikty: ostatni zapis wygrywa |
+| Waloryzacja nie wpływa automatycznie na nic (prace, priorytety, symbole) | Decyzje podejmuje arborysta |

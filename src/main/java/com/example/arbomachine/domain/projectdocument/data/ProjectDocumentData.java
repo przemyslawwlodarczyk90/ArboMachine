@@ -31,6 +31,11 @@ public record ProjectDocumentData(
         return trees.stream().mapToLong(tree -> tree.photos().size()).sum();
     }
 
+    /** Drzewa z zapisana waloryzacja (oceną arborysty). */
+    public long valuedTreeCount() {
+        return trees.stream().filter(tree -> tree.valuation() != null).count();
+    }
+
     public long workCount() {
         return trees.stream().mapToLong(tree -> tree.works().size()).sum();
     }

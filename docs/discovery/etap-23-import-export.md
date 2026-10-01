@@ -47,6 +47,11 @@ i polski nagłówek („ArboMachine Tree Exchange Schema V1”, `SCHEMA_VERSION 
 | `longitude` | (geometria) | Długość geograficzna | liczba (WGS 84) | tak |
 | `mapSymbolCode` | `map_symbol` | — (tylko GIS) | tekst | ignorowane |
 | `workNames` | `work_names` | Zalecenia i prace | tekst (nazwy rozdzielone „; ”) | ignorowane |
+| `locationAccuracyM` | `accuracy_m` | Dokładność lokalizacji [m] | liczba (etap 25) | ignorowane |
+| `locationAltitudeM` | `altitude_m` | Wysokość n.p.m. [m] | liczba (etap 25) | ignorowane |
+| `locationSource` | `loc_source` | Źródło lokalizacji | `MANUAL`/`MAP`/`DEVICE_GNSS`/`IMPORT` (etap 25) | ignorowane (import ustawia `IMPORT`) |
+| `valuationCategory` | `val_categ` | Waloryzacja - ocena ogólna | `LOW`/`MEDIUM`/`HIGH`/`VERY_HIGH` (etap 27) | ignorowane |
+| `valuationAgeValue` … `valuationJustification` | `val_age`, `val_nature`, `val_ecol`, `val_cult`, `val_landsc`, `val_justif` | Wartość wiekowa / przyrodnicza / ekologiczna / kulturowa / krajobrazowa, Uzasadnienie waloryzacji | tekst - tylko CSV/XLSX (nie GIS) | ignorowane |
 
 Przy imporcie nagłówek kolumny może być polską etykietą, nazwą techniczną albo nazwą GIS (wielkość liter
 bez znaczenia) — plik wyeksportowany z ArboMachine albo z QGIS wraca bez zmian nagłówków.

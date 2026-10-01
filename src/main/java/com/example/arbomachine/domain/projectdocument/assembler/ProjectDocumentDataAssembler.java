@@ -14,7 +14,10 @@ import com.example.arbomachine.domain.treework.entity.TreeWork;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoRepository;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
+import com.example.arbomachine.infrastructure.repository.TreeValuationRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
+import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentValuationData;
+import com.example.arbomachine.domain.treevaluation.entity.TreeValuation;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +31,7 @@ import java.util.stream.Collectors;
 
 /**
  * Sklada ProjectDocumentData z danych WLASNEGO projektu (wlasnosc sprawdza wczesniej handler). Stala liczba zapytan
- * niezaleznie od liczby drzew: drzewa, prace projektu, zdjecia projektu, adnotacje tych zdjec - laczone w pamieci
+ * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec - laczone w pamieci
  * (brak N+1). Plikow zdjec NIE czyta - daje tylko leniwy dostep do tresci (wersja z adnotacja, jesli istnieje,
  * jak .../documentation-content). Kolejnosc: drzewa, prace i zdjecia w kolejnosci dodania.
  */
@@ -43,16 +46,19 @@ public class ProjectDocumentDataAssembler {
     private final TreePhotoRepository treePhotoRepository;
     private final TreePhotoAnnotationRepository treePhotoAnnotationRepository;
     private final PhotoStorage photoStorage;
+    private final TreeValuationRepository treeValuationRepository;
 
     public ProjectDocumentDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                         TreePhotoRepository treePhotoRepository,
                                         TreePhotoAnnotationRepository treePhotoAnnotationRepository,
-                                        PhotoStorage photoStorage) {
+                                        PhotoStorage photoStorage,
+                                        TreeValuationRepository treeValuationRepository) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treePhotoRepository = treePhotoRepository;
         this.treePhotoAnnotationRepository = treePhotoAnnotationRepository;
         this.photoStorage = photoStorage;
+        this.treeValuationRepository = treeValuationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +73,9 @@ public class ProjectDocumentDataAssembler {
         Map<Long, TreePhotoAnnotation> annotationByPhotoId = photos.isEmpty() ? Map.of()
                 : treePhotoAnnotationRepository.findAllByTreePhotoIdIn(photos.stream().map(TreePhoto::getId).toList())
                 .stream().collect(Collectors.toMap(annotation -> annotation.getTreePhoto().getId(), Function.identity()));
+
+        Map<Long, TreeValuation> valuationByTreeId = treeValuationRepository.findAllByTreeProjectId(ownedProject.getId()).stream()
+                .collect(Collectors.toMap(valuation -> valuation.getTree().getId(), Function.identity()));
 
         int[] nextPhotoNumber = {1};
         List<ProjectDocumentTreeData> treeData = new ArrayList<>(trees.size());
@@ -84,10 +93,18 @@ public class ProjectDocumentDataAssembler {
                             : new ProjectDocumentLocationData(tree.getLocation().getLatitude(), tree.getLocation().getLongitude(),
                             tree.getLocation().getAccuracyM(),
                             tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name()),
-                    treeWorkData, treePhotoData));
+                    valuationDataOf(valuationByTreeId.get(tree.getId())), treeWorkData, treePhotoData));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 ownedProject.getCreatedAt(), ownedProject.getUpdatedAt(), generatedAt, treeData);
+    }
+
+    private static ProjectDocumentValuationData valuationDataOf(TreeValuation valuation) {
+        if (valuation == null) return null;
+        return new ProjectDocumentValuationData(
+                valuation.getOverallCategory() == null ? null : valuation.getOverallCategory().name(),
+                valuation.getAgeValue(), valuation.getNaturalValue(), valuation.getEcologicalValue(),
+                valuation.getCulturalValue(), valuation.getLandscapeValue(), valuation.getJustification(), valuation.getNotes());
     }
 
     private ProjectDocumentPhotoData photoDataOf(TreePhoto photo, TreePhotoAnnotation annotationOrNull, int documentPhotoNumber) {

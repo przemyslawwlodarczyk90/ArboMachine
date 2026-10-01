@@ -3,6 +3,7 @@ import type { Coordinate } from 'ol/coordinate.js';
 import { toMapCoordinate } from '../location/treeLocationMapCoordinates.ts';
 import { isTreeLocationWithinValidRange } from '../location/treeLocationValidRange.ts';
 import type { Tree } from '../treeDataTypes';
+import type { TreeValuationCategory } from '../valuation/valuationDataTypes';
 
 /** Punkt drzewa na mapie projektu - to, co trafia do Feature OpenLayers. */
 export interface TreeMapPoint {
@@ -13,6 +14,8 @@ export interface TreeMapPoint {
   treeSymbolCode: string | null;
   /** symbole prac tego drzewa w kolejnosci prac (tylko prace z przypisanym symbolem) */
   workSymbolCodes: string[];
+  /** kategoria waloryzacji V1 (etap 27); null = nie oceniono */
+  valuationCategory: TreeValuationCategory | null;
 }
 
 /** Minimum danych pracy potrzebne mapie (TreeWork z GET /api/projects/{projectId}/works). */
@@ -26,7 +29,8 @@ export interface TreeMapWorkInput {
  * Drzewo bez lokalizacji (albo z punktem spoza zakresu WGS84) po prostu nie ma markera - nadal istnieje
  * i jest widoczne na liscie drzew.
  */
-export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = []): TreeMapPoint[] => {
+export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = [],
+                                valuationCategoryByTreeId: Map<number, TreeValuationCategory | null> = new Map()): TreeMapPoint[] => {
   const workSymbolCodesByTreeId = new Map<number, string[]>();
   for (const work of works) {
     if (!work.mapSymbolCode) continue;
@@ -41,6 +45,7 @@ export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = []): 
       mapCoordinate: toMapCoordinate(tree.location),
       treeSymbolCode: tree.mapSymbolCode ?? null,
       workSymbolCodes: workSymbolCodesByTreeId.get(tree.id) ?? [],
+      valuationCategory: valuationCategoryByTreeId.get(tree.id) ?? null,
     }]
     : []);
 };

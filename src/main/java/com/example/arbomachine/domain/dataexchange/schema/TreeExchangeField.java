@@ -31,7 +31,15 @@ public enum TreeExchangeField {
     LOCATION_ALTITUDE_M("locationAltitudeM", "altitude_m", "Wysokość n.p.m. [m]", ValueType.DECIMAL, false),
     LOCATION_SOURCE("locationSource", "loc_source", "Źródło lokalizacji", ValueType.TEXT, false),
     MAP_SYMBOL_CODE("mapSymbolCode", "map_symbol", "Symbol drzewa na mapie", ValueType.TEXT, false),
-    WORK_NAMES("workNames", "work_names", "Zalecenia i prace", ValueType.TEXT, false);
+    WORK_NAMES("workNames", "work_names", "Zalecenia i prace", ValueType.TEXT, false),
+    // Waloryzacja (etap 27) - ocena arborysty; kategoria V1 to NIE skala branzowa (LOW / MEDIUM / HIGH / VERY_HIGH).
+    VALUATION_CATEGORY("valuationCategory", "val_categ", "Waloryzacja - ocena ogólna", ValueType.TEXT, false),
+    VALUATION_AGE_VALUE("valuationAgeValue", "val_age", "Wartość wiekowa", ValueType.TEXT, false),
+    VALUATION_NATURAL_VALUE("valuationNaturalValue", "val_nature", "Wartość przyrodnicza", ValueType.TEXT, false),
+    VALUATION_ECOLOGICAL_VALUE("valuationEcologicalValue", "val_ecol", "Wartość ekologiczna", ValueType.TEXT, false),
+    VALUATION_CULTURAL_VALUE("valuationCulturalValue", "val_cult", "Wartość kulturowa", ValueType.TEXT, false),
+    VALUATION_LANDSCAPE_VALUE("valuationLandscapeValue", "val_landsc", "Wartość krajobrazowa", ValueType.TEXT, false),
+    VALUATION_JUSTIFICATION("valuationJustification", "val_justif", "Uzasadnienie waloryzacji", ValueType.TEXT, false);
 
     /** Wersja schematu wymiany - zapisywana w eksportach (GeoJSON, XLSX, GeoPackage). */
     public static final String SCHEMA_VERSION = "1";
@@ -39,12 +47,17 @@ public enum TreeExchangeField {
     /** Kolumny eksportu tabelarycznego (CSV, XLSX) w stalej kolejnosci. */
     public static final List<TreeExchangeField> TABULAR_EXPORT_COLUMNS = List.of(TREE_ID, INVENTORY_NUMBER,
             SPECIES_POLISH, SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES,
-            HAZARD_NOTES, LATITUDE, LONGITUDE, LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, WORK_NAMES);
+            HAZARD_NOTES, LATITUDE, LONGITUDE, LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, WORK_NAMES,
+            VALUATION_CATEGORY, VALUATION_AGE_VALUE, VALUATION_NATURAL_VALUE, VALUATION_ECOLOGICAL_VALUE,
+            VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION);
 
-    /** Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). */
+    /**
+     * Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). Z waloryzacji tylko kategoria -
+     * dlugie opisy zostaja w CSV/XLSX.
+     */
     public static final List<TreeExchangeField> GIS_ATTRIBUTES = List.of(TREE_ID, INVENTORY_NUMBER, SPECIES_POLISH,
             SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES, HAZARD_NOTES,
-            LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES);
+            LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES, VALUATION_CATEGORY);
 
     public enum ValueType { TEXT, INTEGER, DECIMAL }
 

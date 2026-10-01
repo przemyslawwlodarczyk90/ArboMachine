@@ -10,7 +10,10 @@ export type PendingChangeKind =
   | 'SET_TREE_LOCATION'
   | 'CLEAR_TREE_LOCATION'
   | 'CREATE_TREE_WORK'
-  | 'UPDATE_TREE_WORK';
+  | 'UPDATE_TREE_WORK'
+  /** etap 27: zapis (PUT - utworz albo zastap) i usuniecie waloryzacji drzewa */
+  | 'UPSERT_TREE_VALUATION'
+  | 'DELETE_TREE_VALUATION';
 
 /** Blad wyslania zmiany (walidacja, brak zasobu, blad serwera) - synchronizacja stoi do decyzji uzytkownika. */
 export interface PendingChangeFailure {

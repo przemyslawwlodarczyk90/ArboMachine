@@ -47,6 +47,10 @@ GeoPackage używa krótkich nazw pól („QGIS compatibility profile V1”), Geo
 | `hazards` | `hazardNotes` | zagrożenia (opis) |
 | `map_symbol` | `mapSymbolCode` | kod symbolu drzewa z mapy ArboMachine (np. `GREEN_CIRCLE`) |
 | `work_names` | `workNames` | nazwy zaleceń / prac rozdzielone „; ” |
+| `accuracy_m` | `locationAccuracyM` | dokładność lokalizacji [m] (etap 25; puste = nieznana) |
+| `altitude_m` | `locationAltitudeM` | wysokość n.p.m. [m] z GNSS (etap 25) |
+| `loc_source` | `locationSource` | źródło punktu: `MANUAL`, `MAP`, `DEVICE_GNSS`, `IMPORT` (puste = sprzed etapu 25) |
+| `val_categ` | `valuationCategory` | waloryzacja - ocena ogólna V1: `LOW`, `MEDIUM`, `HIGH`, `VERY_HIGH` (puste = nie oceniono; to nie skala branżowa, etap 27) |
 | — | `works` | (tylko GeoJSON) lista prac: nazwa, opis, kod symbolu |
 
 Puste pole = brak danych. Kody symboli to dane, a nie styl — QGIS może po nich stylować warstwę

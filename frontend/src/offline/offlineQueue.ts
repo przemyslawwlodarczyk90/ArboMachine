@@ -12,6 +12,11 @@ export const treePath = (projectId: number, treeId: number) => `${treesListPath(
 export const treeWorksPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/works`;
 export const treePhotosPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/photos`;
 export const projectWorksPath = (projectId: number) => `/api/projects/${projectId}/works`;
+export const treeValuationPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/valuation`;
+export const projectValuationsPath = (projectId: number) => `/api/projects/${projectId}/valuations`;
+
+/** Pusta waloryzacja (jak GET backendu dla drzewa bez waloryzacji). */
+const emptyValuationOf = (treeId: number) => ({ treeId, hasValuation: false });
 
 /** Sciezki obiektow istniejacych tylko na urzadzeniu (tymczasowe id < 0) - nigdy nie ida do serwera. */
 export const isLocalOnlyPath = (path: string) => /\/trees\/-\d+(\/|$)/.test(path) || /\/works\/-\d+(\/|$)/.test(path);
@@ -50,6 +55,10 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
       return { httpMethod: 'POST', path: treeWorksPath(change.projectId, treeId), body: change.body };
     case 'UPDATE_TREE_WORK':
       return { httpMethod: 'PATCH', path: `${treeWorksPath(change.projectId, treeId)}/${workId}`, body: change.body };
+    case 'UPSERT_TREE_VALUATION':
+      return { httpMethod: 'PUT', path: treeValuationPath(change.projectId, treeId), body: change.body };
+    case 'DELETE_TREE_VALUATION':
+      return { httpMethod: 'DELETE', path: treeValuationPath(change.projectId, treeId) };
   }
 }
 
@@ -75,6 +84,19 @@ async function upsertInCachedList(store: OfflineStore, path: string, record: Cac
 async function cacheTree(store: OfflineStore, projectId: number, tree: CachedRecord, replacedId = tree.id, append = false) {
   await store.writeCachedResponse(treePath(projectId, tree.id), tree);
   await upsertInCachedList(store, treesListPath(projectId), tree, replacedId, append);
+}
+
+/**
+ * Waloryzacja w kopiach: karta drzewa (GET .../valuation) i lista waloryzacji projektu (klucz = treeId, nie id -
+ * lista zawiera tylko drzewa z waloryzacja).
+ */
+async function cacheValuation(store: OfflineStore, projectId: number, treeId: number, valuation: Record<string, unknown>,
+                              replacedTreeId = treeId) {
+  await store.writeCachedResponse(treeValuationPath(projectId, treeId), valuation);
+  const list = await store.readCachedResponse(projectValuationsPath(projectId));
+  if (!Array.isArray(list)) return;
+  const others = (list as Record<string, unknown>[]).filter((item) => item.treeId !== replacedTreeId && item.treeId !== treeId);
+  await store.writeCachedResponse(projectValuationsPath(projectId), valuation.hasValuation ? [...others, valuation] : others);
 }
 
 async function cacheWork(store: OfflineStore, projectId: number, treeId: number, work: CachedRecord, replacedId = work.id,
@@ -104,6 +126,22 @@ export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft,
       // Puste sekcje drzewa utworzonego offline - karta drzewa dziala bez polaczenia.
       await store.writeCachedResponse(treeWorksPath(projectId, treeId), []);
       await store.writeCachedResponse(treePhotosPath(projectId, treeId), []);
+      await store.writeCachedResponse(treeValuationPath(projectId, treeId), emptyValuationOf(treeId));
+      break;
+    }
+    case 'UPSERT_TREE_VALUATION': {
+      const body = (draft.body ?? {}) as Record<string, unknown>;
+      const cachedValuation = (await store.readCachedResponse(treeValuationPath(projectId, treeId))) as Record<string, unknown> | undefined;
+      result = { id: treeId, ...emptyValuationOf(treeId), ...body, treeId, hasValuation: true,
+        createdAt: cachedValuation?.createdAt ?? timestamp, updatedAt: timestamp, offlinePending: true };
+      delete (result as Record<string, unknown>).id;
+      await cacheValuation(store, projectId, treeId, result);
+      break;
+    }
+    case 'DELETE_TREE_VALUATION': {
+      result = { id: treeId, ...emptyValuationOf(treeId), offlinePending: true };
+      delete (result as Record<string, unknown>).id;
+      await cacheValuation(store, projectId, treeId, result);
       break;
     }
     case 'UPDATE_TREE':
@@ -198,6 +236,13 @@ export async function syncPendingChanges(store: OfflineStore, ownerEmail: string
 }
 
 async function applyServerResponse(store: OfflineStore, change: PendingChange, response: unknown) {
+  if (change.kind === 'UPSERT_TREE_VALUATION' || change.kind === 'DELETE_TREE_VALUATION') {
+    const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
+    const valuation = change.kind === 'UPSERT_TREE_VALUATION' && typeof response === 'object' && response !== null
+      ? (response as Record<string, unknown>) : emptyValuationOf(serverTreeId);
+    await cacheValuation(store, change.projectId, serverTreeId, valuation, change.treeId);
+    return;
+  }
   if (typeof response !== 'object' || response === null || !('id' in response)) return;
   const record = response as CachedRecord;
   if (change.kind === 'CREATE_TREE') {
@@ -206,6 +251,8 @@ async function applyServerResponse(store: OfflineStore, change: PendingChange, r
     const localWorks = await store.readCachedResponse(treeWorksPath(change.projectId, change.treeId));
     await store.writeCachedResponse(treeWorksPath(change.projectId, record.id), localWorks ?? []);
     await store.writeCachedResponse(treePhotosPath(change.projectId, record.id), []);
+    const localValuation = await store.readCachedResponse(treeValuationPath(change.projectId, change.treeId));
+    await store.writeCachedResponse(treeValuationPath(change.projectId, record.id), localValuation ?? emptyValuationOf(record.id));
   } else if (change.kind === 'CREATE_TREE_WORK' || change.kind === 'UPDATE_TREE_WORK') {
     const serverTreeId = Number(record.treeId);
     if (change.kind === 'CREATE_TREE_WORK' && change.workId !== undefined) await store.writeIdMapping('work', change.workId, record.id);
@@ -240,5 +287,7 @@ export function describePendingChange(change: PendingChange): string {
     case 'CLEAR_TREE_LOCATION': return 'Usunięcie lokalizacji drzewa';
     case 'CREATE_TREE_WORK': return `Nowa praca „${String(body.name ?? '')}”`;
     case 'UPDATE_TREE_WORK': return `Zmiana pracy „${String(body.name ?? '')}”`;
+    case 'UPSERT_TREE_VALUATION': return 'Waloryzacja drzewa';
+    case 'DELETE_TREE_VALUATION': return 'Usunięcie waloryzacji drzewa';
   }
 }

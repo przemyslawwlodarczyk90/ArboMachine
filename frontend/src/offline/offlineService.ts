@@ -178,7 +178,13 @@ export function startOfflineSupport() {
     reportReachability: setServerReachable,
   });
   if (typeof window === 'undefined') return;
-  window.addEventListener('online', () => { setState({ isOnline: isServerReachable }); setServerReachable(true); });
+  // Powrot sieci: zawsze proba synchronizacji - takze gdy zadne zadanie nie zdazylo sie nie udac (przegladarka
+  // od razu wiedziala, ze jest offline, wiec "reachability" sie nie zmienila i setServerReachable nic by nie zrobil).
+  window.addEventListener('online', () => {
+    setState({ isOnline: isServerReachable });
+    setServerReachable(true);
+    scheduleSync();
+  });
   window.addEventListener('offline', () => setState({ isOnline: false }));
   window.setInterval(() => {
     if (state.pendingChangeCount > 0 && browserOnline() && state.syncStatus === 'idle') void offlineService.syncNow();

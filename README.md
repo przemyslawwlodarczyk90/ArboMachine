@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-26 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-26 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline, waloryzacja):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -122,6 +122,10 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
 - 📴 **Praca offline (V1)** - ostatnio pobrane dane działają bez sieci (kopie w IndexedDB, powłoka z service workera);
   dodanie/edycja drzewa, lokalizacja i prace zapisują się na urządzeniu i synchronizują po połączeniu (pasek stanu,
   „Synchronizuj teraz”, „Spróbuj ponownie” / „Pomiń”). Zdjęcia wymagają połączenia (`docs/discovery/etap-26-offline.md`)
+- 🌳 **Waloryzacja (V1)** - sekcja „Waloryzacja” w karcie drzewa: zapis oceny arborysty - ocena ogólna V1 (Niska /
+  Średnia / Wysoka / Bardzo wysoka, to nie skala branżowa) i opisy wartości wiekowej, przyrodniczej, ekologicznej,
+  kulturowej i krajobrazowej z dyktowaniem. Aplikacja niczego nie wylicza (bez wzorów i kwot). Filtr na liście
+  drzew, tryb mapy „Waloryzacja”, PDF, eksport, offline (`docs/discovery/etap-27-waloryzacja.md`)
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -196,6 +200,11 @@ com.example.arbomachine
 │   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
 │                   UnsupportedTreePhotoTypeException, TreePhotoAnnotationNotFoundException,
 │                   InvalidPhotoAnnotationException, InvalidRenderedAnnotationImageException
+├── domain.treevaluation  (waloryzacja drzewa 1:1 - ocena arborysty, bez obliczen; etap 27)
+│   ├── entity      TreeValuation, TreeValuationCategory (V1, nie skala branzowa)
+│   ├── dto         TreeValuationRequest, TreeValuationResponse
+│   ├── facade      TreeValuationFacade
+│   └── service.treevaluationfacade  Get/Save/DeleteTreeValuationHandler, GetTreeValuationsOfProjectHandler
 ├── domain.dataexchange  (import/eksport drzew; czyta tree i treework - etapy 23-24)
 │   ├── schema      TreeExchangeField - JEDYNE mapowanie: nazwa techniczna / GIS / polski naglowek, SCHEMA_VERSION
 │   ├── export      ProjectExportData, TreeExportData, ProjectExportDataAssembler, TreeCsvExporter,
@@ -428,6 +437,8 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, hasAnnotation, annotationUpdatedAt, createdAt }` (bez ścieżek plików) |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik, także adnotacja i jej PNG) → 204 |
+| GET / PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/valuation` | każdy zalogowany | Waloryzacja drzewa: odczyt (brak = `hasValuation: false`), zapis całej oceny (pusta → 400), usunięcie → 204 |
+| GET | `/api/projects/{projectId}/valuations` | każdy zalogowany | Waloryzacje drzew projektu (lista drzew z filtrem, mapa) |
 | GET | `/api/projects/{projectId}/exports/trees.csv` / `.xlsx` / `.geojson` / `.gpkg` | każdy zalogowany | Eksport drzew (CSV, XLSX, GeoJSON i GeoPackage - tylko drzewa z lokalizacją, EPSG:4326) |
 | POST | `/api/projects/{projectId}/imports/trees/validate` | każdy zalogowany | Sprawdzenie pliku importu (multipart `file`: CSV/XLSX/GeoJSON) - nic nie zapisuje |
 | POST | `/api/projects/{projectId}/imports/trees` | każdy zalogowany | Import drzew - wszystko albo nic: 201 `{ importedTreeCount }` albo 400 z wynikiem sprawdzenia |
@@ -508,6 +519,9 @@ Tabela `tree_photo_annotation` (etap 20): `id bigint PK`, `tree_photo_id bigint 
 `schema_version integer NOT NULL`, `document_json text NOT NULL`, `rendered_storage_key varchar(64) NOT NULL`,
 `rendered_content_type varchar(100) NOT NULL`, `rendered_file_size_bytes bigint NOT NULL`,
 `created_at` / `updated_at timestamptz NOT NULL` - spłaszczony PNG leży w tym samym katalogu co zdjęcia.
+Tabela `tree_valuation` (etap 27): `id bigint PK`, `tree_id bigint NOT NULL UNIQUE FK -> tree(id)`,
+`overall_category varchar(32) NULL`, `age_value`, `natural_value`, `ecological_value`, `cultural_value`,
+`landscape_value`, `justification`, `notes` (`text NULL`), `created_at` / `updated_at timestamptz NOT NULL`.
 Tabele bez `owner_id`.
 
 ## 🧭 Trasy frontendu projektów

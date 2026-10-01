@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createMemoryOfflineStore } from './memoryOfflineStore.ts';
 import {
-  describePendingChange, discardChange, isLocalOnlyPath, projectWorksPath, queueChange, syncPendingChanges, treePath,
-  treesListPath, treeWorksPath,
+  describePendingChange, discardChange, isLocalOnlyPath, projectValuationsPath, projectWorksPath, queueChange, syncPendingChanges,
+  treePath, treesListPath, treeValuationPath, treeWorksPath,
 } from './offlineQueue.ts';
 import type { PendingChangeRequest } from './offlineTypes.ts';
 
@@ -134,4 +134,33 @@ test('opisy zmian po polsku', () => {
   assert.equal(describePendingChange({ ...base, kind: 'CREATE_TREE', body: { inventoryNumber: 'A-1' } }), 'Nowe drzewo „A-1”');
   assert.equal(describePendingChange({ ...base, kind: 'SET_TREE_LOCATION' }), 'Lokalizacja drzewa');
   assert.equal(describePendingChange({ ...base, kind: 'CREATE_TREE_WORK', body: { name: 'Cięcia' } }), 'Nowa praca „Cięcia”');
+});
+
+test('waloryzacja offline: od razu w karcie i liscie projektu, synchronizacja PUT/DELETE z id drzewa z serwera', async () => {
+  const store = createMemoryOfflineStore();
+  await store.writeCachedResponse(projectValuationsPath(PROJECT), []);
+  const tree = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE', body: { inventoryNumber: 'W-1' } }) as { id: number };
+  assert.deepEqual(await store.readCachedResponse(treeValuationPath(PROJECT, tree.id)), { treeId: tree.id, hasValuation: false });
+  const saved = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPSERT_TREE_VALUATION', treeId: tree.id,
+    body: { overallCategory: 'HIGH', naturalValue: 'Okazały egzemplarz' } }) as Record<string, unknown>;
+  assert.equal(saved.hasValuation, true);
+  assert.equal(saved.offlinePending, true);
+  assert.equal(saved.id, undefined);
+  const list = await store.readCachedResponse(projectValuationsPath(PROJECT)) as { treeId: number; overallCategory: string }[];
+  assert.deepEqual(list.map((item) => [item.treeId, item.overallCategory]), [[tree.id, 'HIGH']]);
+
+  const sent: string[] = [];
+  const outcome = await syncPendingChanges(store, OWNER, async (request) => {
+    sent.push(`${request.httpMethod} ${request.path}`);
+    if (request.path.endsWith('/trees')) return { id: 700, projectId: PROJECT, inventoryNumber: 'W-1' };
+    return { treeId: 700, hasValuation: true, ...(request.body as object) };
+  });
+  assert.deepEqual(outcome, { status: 'completed', syncedCount: 2 });
+  assert.deepEqual(sent, [`POST /api/projects/${PROJECT}/trees`, `PUT /api/projects/${PROJECT}/trees/700/valuation`]);
+  const syncedList = await store.readCachedResponse(projectValuationsPath(PROJECT)) as { treeId: number }[];
+  assert.deepEqual(syncedList.map((item) => item.treeId), [700], 'wpis z tymczasowym id zastapiony');
+
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'DELETE_TREE_VALUATION', treeId: 700 });
+  assert.deepEqual(await store.readCachedResponse(projectValuationsPath(PROJECT)), []);
+  assert.equal(describePendingChange((await store.listChanges())[0]), 'Usunięcie waloryzacji drzewa');
 });
