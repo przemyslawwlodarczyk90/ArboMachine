@@ -12,5 +12,8 @@ public record TreePhotoResponse(
         String originalFileName,
         String contentType,
         long fileSizeBytes,
+        /** czy zdjecie ma aktualna adnotacje (szkic) - tresc do dokumentacji: .../documentation-content */
+        boolean hasAnnotation,
+        Instant annotationUpdatedAt,
         Instant createdAt
 ) {}

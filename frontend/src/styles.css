@@ -532,6 +532,37 @@ th.right, td.right { text-align: right; }
 .tree-photo-thumbnail-placeholder { cursor: default; text-align: center; padding: 0.5rem; }
 .tree-photo-tile-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
 .tree-photo-tile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.tree-photo-tile-footer { flex-wrap: wrap; }
+.tree-photo-tile-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.tree-photo-annotated-badge { margin-left: 0; justify-self: start; }
+
+/* ---------- Edytor adnotacji zdjecia (pelny ekran, tablet-first) ---------- */
+.modal.modal-fullscreen { max-width: none; width: 100%; height: calc(100vh - 32px); max-height: calc(100vh - 32px); }
+@media (max-width: 560px) {
+  .modal-backdrop:has(.modal-fullscreen) { padding: 0; }
+  .modal.modal-fullscreen { height: 100vh; max-height: 100vh; border-radius: 0; }
+}
+.photo-annotation-editor { min-width: 0; }
+.photo-annotation-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: flex-end; }
+.photo-annotation-toolbar-group { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.photo-annotation-color { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem; font: inherit; font-size: 0.85rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.photo-annotation-color.selected { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); font-weight: 600; }
+.photo-annotation-color:disabled { opacity: 0.6; cursor: default; }
+.photo-annotation-color-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgb(0 0 0 / 35%); }
+.photo-annotation-text-field { flex: 1 1 220px; margin: 0; }
+.photo-annotation-canvas-container { display: grid; justify-items: center; width: 100%; min-width: 0; }
+/* touch-action: none - gest rysowania palcem/rysikiem nie przewija ani nie powieksza strony. */
+.photo-annotation-canvas { display: block; touch-action: none; cursor: crosshair; border-radius: var(--radius); background: var(--surface-muted); }
+.photo-annotation-confirmation { display: grid; gap: 0.5rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.photo-annotation-actions { justify-content: flex-end; }
+
+/* ---------- Materialy do dokumentacji projektu ---------- */
+.documentation-tree-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
+.documentation-tree-group { display: grid; gap: 0.6rem; min-width: 0; }
+.documentation-tree-group-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.documentation-tree-group-header h3 { margin: 0; }
+.documentation-photo-card { display: grid; gap: 0.35rem; min-width: 0; }
+.documentation-photo-card .tree-photo-thumbnail { cursor: default; }
 .tree-photo-preview-image { width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius); background: var(--surface-muted); }
 .tree-photo-upload-preview { display: grid; gap: 0.4rem; justify-items: start; overflow-wrap: anywhere; }
 .tree-photo-upload-preview img { max-width: 100%; max-height: 240px; border-radius: var(--radius); border: 1px solid var(--border); }

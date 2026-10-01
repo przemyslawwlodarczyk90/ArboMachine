@@ -10,9 +10,9 @@ import { EmailConfirmationPage } from './pages/EmailConfirmationPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { MyProfilePage } from './pages/MyProfilePage';
 import { OfficialDashboardPage } from './pages/official/OfficialDashboardPage';
+import { ProjectDocumentationPage } from './pages/projects/documentation/ProjectDocumentationPage';
 import { ProjectPage } from './pages/projects/ProjectPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
-import { RedirectToProjectSummary } from './pages/projects/RedirectToProjectSummary';
 import { ProjectSummaryPage } from './pages/projects/summary/ProjectSummaryPage';
 import { ProjectTreeMapSection } from './pages/trees/map/ProjectTreeMapSection';
 import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
@@ -55,9 +55,8 @@ export default function App() {
                 <Route path="trees" element={<ProjectTreesSection />} />
                 <Route path="trees/:treeId" element={<TreePage />} />
                 <Route path="map" element={<ProjectTreeMapSection />} />
-                {/* Dawna zakladka-placeholder "Zdjecia i dokumentacja" (zdjecia sa w karcie drzewa) - stary link
-                    prowadzi do podsumowania zamiast do pustej strony. */}
-                <Route path="documentation" element={<RedirectToProjectSummary />} />
+                {/* Materialy do dokumentacji (zdjecia projektu w wersji z adnotacja) - nie generator dokumentu. */}
+                <Route path="documentation" element={<ProjectDocumentationPage />} />
               </Route>
             </Route>
           </Route>

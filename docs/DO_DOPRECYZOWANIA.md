@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 19
+## Rejestr braków — stan po etapie 20
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -334,16 +334,17 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Drzewa | Model wielopniowości, historia pomiarów, strukturalna ocena stanu / VTA / ryzyko | OPEN |
 | Formularz | Blokada opuszczenia strony z niezapisanymi zmianami (jest tylko komunikat „Masz niezapisane zmiany”) | BRAK |
 | Zdjęcia | Miniatury po stronie serwera / kompresja (galeria ładuje pełne pliki) | BRAK |
-| Zdjęcia | Podpisy, kategorie, zdjęcie główne, kolejność, EXIF, adnotacje (szkice cięć), HEIC | OPEN |
+| Zdjęcia | Podpisy, kategorie, zdjęcie główne, kolejność, EXIF, HEIC | OPEN |
+| Zdjęcia | Adnotacje (szkice cięć) — V1 od etapu 20 (linia, strzałka, odręcznie, tekst); właściwy zestaw narzędzi arborysty, edycja/przesuwanie elementów, gumka, powiększanie zdjęcia w edytorze | OPEN / BRAK |
 | Zdjęcia | Zewnętrzny aparat i automatyczne przypisanie zdjęcia do drzewa | OPEN |
-| Zdjęcia | Widok wszystkich zdjęć projektu (zakładka „Zdjęcia i dokumentacja” usunięta w etapie 16) | OPEN |
+| Zdjęcia | Widok wszystkich zdjęć projektu — V1 od etapu 20 (zakładka „Dokumentacja”: zdjęcia pogrupowane po drzewie); brak filtrów, podglądu w pełnym rozmiarze i wyboru zdjęć do raportu | OPEN |
 | Prace | Słownik typów prac, kody, priorytet, termin, status wykonania, parametry | OPEN |
 | Mapa | Symbole prac i drzew, legenda — V1 od etapu 19 (katalog techniczny); właściwe symbole arborysty, etykiety numerów drzew przy markerach | OPEN |
 | Mapa | Klastrowanie przy dużej liczbie drzew; korony, strefy ochronne, poligony | BRAK / OPEN |
 | Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
 | Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
-| Dokumentacja | Generator dokumentów (PDF/DOCX), tabele zaleceń, mapy do raportu | BRAK |
+| Dokumentacja | Generator dokumentów (PDF/DOCX), tabele zaleceń, mapy do raportu (jest tylko przegląd materiałów i stabilny kontrakt `.../documentation-content`) | BRAK |
 | Import/eksport | XLSX, CSV, GeoPackage, SHP, GeoJSON, DXF, QGIS | BRAK |
 | Teren | GNSS/RTK, NTRIP, geolokalizacja urządzenia, praca offline, synchronizacja | OPEN |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
@@ -361,6 +362,8 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dyktowanie | Docelowe tablety/przeglądarki (Safari na iPadzie, Chrome na Androidzie), jakość polskiego rozpoznawania w terenie | DO SPRAWDZENIA |
 | Dyktowanie | Prywatność: Chrome rozpoznaje mowę przez usługę Google (wymaga internetu, dźwięk opuszcza urządzenie przez przeglądarkę) | OPEN |
 | Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
+| Adnotacje | Rysowanie palcem i rysikiem na fizycznym tablecie, eksport PNG z dużych zdjęć (12+ Mpx) na słabszym tablecie (pamięć, czas) — edytor sprawdzony testami logiki i kompilacją, nie ręcznie w przeglądarce | DO SPRAWDZENIA |
+| Dokumentacja | Wydajność zakładki „Dokumentacja” przy setkach zdjęć (każda miniatura pobiera pełny plik) | DO SPRAWDZENIA |
 | Zdjęcia | Aparat tabletu przez `<input type="file" accept="image/*">`, duże zdjęcia (8–15 MB) na słabym łączu | DO SPRAWDZENIA |
 | Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
 | Mapa | Czytelność symboli i znaczków prac na gęstym podkładzie OSM, na ortofotomapie i w wydruku | DO SPRAWDZENIA |
@@ -375,9 +378,10 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Testy frontendu | Tylko testy logiki (`node --test`); brak testów renderowania komponentów React | DŁUG |
 | Testy E2E | Scenariusze E2E (headless Chrome przez CDP) istnieją tylko lokalnie poza repozytorium — brak E2E w repo i CI | DŁUG |
 | Jakość | Brak lintera (ESLint) i CI uruchamiającego testy przy commitach | DŁUG |
-| Frontend | Paczka JS ~650 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy) | DŁUG |
+| Frontend | Paczka JS ~690 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy i edytora adnotacji) | DŁUG |
 | Bezpieczeństwo | Token JWT w `localStorage`, brak odświeżania tokenu (sesja wygasa po czasie ważności) | OPEN |
-| Zdjęcia | Brak zadania sprzątającego osierocone pliki (plik bez rekordu po nieudanym usunięciu) | DŁUG |
+| Zdjęcia | Brak zadania sprzątającego osierocone pliki (plik bez rekordu po nieudanym usunięciu; od etapu 20 także stare PNG adnotacji) | DŁUG |
+| Adnotacje | PNG adnotacji sprawdzany tylko po sygnaturze i rozmiarze — backend nie dekoduje obrazu ani nie sprawdza wymiarów | DŁUG |
 | Zdjęcia | Storage produkcyjny i kopie zapasowe plików (dziś katalog na dysku serwera) | OPEN |
 | Mapa | Publiczne kafelki OpenStreetMap — polityka użycia nie dopuszcza ruchu produkcyjnego | OPEN |
 
@@ -436,3 +440,62 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 - Format eksportu stylu do QGIS (SVG Tiny 1.2, QML/SLD) i DXF.
 - Własne symbole użytkownika (upload SVG — wymaga osobnego projektu bezpieczeństwa i sanityzacji).
 - Etykiety numerów drzew przy markerach (dziś brak).
+
+---
+
+## Adnotacje fotograficzne — etap 20
+
+**Status:** V1 DECISION / DISCOVERY REQUIRED
+
+### Decyzje V1
+- Oryginalne `TreePhoto` nigdy nie jest nadpisywane. Adnotacja to osobna encja `TreePhotoAnnotation`
+  (tabela `tree_photo_annotation`, `tree_photo_id` UNIQUE) — jedna **aktualna** adnotacja na zdjęcie, bez historii wersji.
+- Adnotacja = edytowalny dokument wektorowy (`document_json`, TEXT, `schemaVersion = 1`) + osobny spłaszczony PNG
+  (zdjęcie + rysunek) w istniejącym `PhotoStorage`, pod kluczem UUID (klucz nie wychodzi do frontendu).
+- Współrzędne znormalizowane 0..1 względem zdjęcia (nie piksele ekranu), zaokrąglane do 6 miejsc po przecinku.
+- Narzędzia V1: `LINE`, `ARROW`, `FREEHAND`, `TEXT`. Paleta: `RED`, `YELLOW`, `BLUE`, `BLACK`, `WHITE`;
+  grubości `SMALL` / `MEDIUM` / `LARGE`. Nazwy techniczne po angielsku, UI po polsku; kolor nie ma znaczenia arborystycznego.
+- Renderer V1: natywny Canvas 2D (bez Fabric.js / Konva); ten sam kod rysuje podgląd i PNG do dokumentacji.
+  Pointer Events — mysz, dotyk i rysik jednym kodem; bez obsługi nacisku rysika.
+- Cofnij / Ponów / Wyczyść tylko w bieżącej sesji edycji (frontend); backend przechowuje wyłącznie aktualny dokument.
+- Backend waliduje cały dokument przed zapisem i zapisuje dokument po walidacji, nigdy surowy JSON.
+- Zapis: najpierw NOWY PNG, potem metadane; błąd bazy → usunięcie nowego pliku; stary PNG usuwany dopiero po udanym
+  zapisie (best effort). Usunięcie zdjęcia usuwa także adnotację i jej PNG; usunięcie adnotacji nie rusza oryginału.
+- `GET .../photos/{photoId}/documentation-content` = wersja z adnotacją, jeśli istnieje, w przeciwnym razie oryginał —
+  stabilny kontrakt dla przyszłego generatora dokumentów.
+- `TreePhotoResponse` rozszerzony o `hasAnnotation` i `annotationUpdatedAt`; nowe `GET /api/projects/{projectId}/photos`
+  (zdjęcia całego projektu jednym zapytaniem, bez N+1).
+- `/projects/:projectId/documentation` to zakładka „Dokumentacja” → „Materiały do dokumentacji” (przegląd zdjęć
+  pogrupowanych po drzewie). To NIE jest generator PDF/DOCX.
+
+### Założenia przyjęte bez potwierdzenia (NIEWIADOME — do sprawdzenia z arborystą)
+| Założenie V1 | Dlaczego niepewne |
+|---|---|
+| Limity techniczne: maks. 200 elementów, 1000 punktów w linii odręcznej, 20 000 punktów łącznie, tekst do 500 znaków, id elementu do 64 znaków `[A-Za-z0-9_-]` | Ochrona przed ogromnymi dokumentami, dobrane bez danych z terenu |
+| Kolory: czerwony `#E53935`, żółty `#FDD835`, niebieski `#1E88E5`, czarny, biały | Dobrane „na oko”; nie sprawdzone w druku ani na różnych zdjęciach |
+| Grubości względne do krótszego boku zdjęcia: 0,4% / 0,8% / 1,4%; tekst 3,5% / 5% / 7% | Nie wiadomo, jakich grubości używa arborysta (ZWCAD) |
+| Tekst: jedna linia, lewy górny róg w miejscu dotknięcia, pogrubiony, z kontrastową obwódką; bez zawijania (może wyjść poza zdjęcie) | Brak wiedzy o tym, jak opisuje się szkice |
+| Tekst wstawia się przez: wpisanie tekstu w pole, potem dotknięcie zdjęcia | Wygodniejszy przepływ do ustalenia na tablecie |
+| Grot strzałki tylko na końcu odcinka | Może potrzebne strzałki dwustronne |
+| Linia/strzałka krótsza niż 0,5% zdjęcia (przypadkowe dotknięcie) nie jest zapisywana; linia odręczna dopisuje punkt co ≥ 0,2% | Progi dobrane bez testów na tablecie |
+| Brak edycji/przesuwania istniejących elementów i gumki — tylko Cofnij / Wyczyść | Nie wiadomo, czy arborysta tego potrzebuje |
+| Pustej adnotacji nie da się zapisać — trzeba użyć „Usuń adnotacje” (backend odrzuca dokument bez elementów) | Świadoma decyzja porządkowa |
+| Brak adnotacji → `GET .../annotation` zwraca 404 (jak każdy nieistniejący zasób), nie 204 | Konwencja API |
+| PNG do dokumentacji: dłuższy bok maks. 2560 px (mniejsze zdjęcia w oryginalnej rozdzielczości) | Wymagana rozdzielczość druku nieznana |
+| Limit rozmiaru PNG = limit rozmiaru zdjęcia (`tree-photos.max-file-size`) | PNG dużego zdjęcia może przekroczyć limit — wtedy zapis się nie uda |
+| Miniatura w galerii drzewa i podgląd pokazują wersję do dokumentacji (z adnotacją); oryginał widać w edytorze | Może arborysta chce przełączać oryginał/adnotację w podglądzie |
+| Brak pliku PNG adnotacji na dysku → `documentation-content` oddaje oryginał (log błędu), `annotation/content` → 404 | Lepsze zdjęcie bez szkicu niż brak zdjęcia w dokumentacji |
+| Treści adnotacji/dokumentacji wysyłane z `Cache-Control: no-store` | Zmieniają się po edycji |
+| Pobrany plik adnotowany nazywa się `<nazwa zdjęcia>-adnotacja.png` | — |
+| Edycja adnotacji nie zmienia `updatedAt` drzewa ani zdjęcia | Czy adnotacja ma być zmianą danych drzewa? |
+| Zakładka „Dokumentacja” pokazuje wszystkie zdjęcia (bez wyboru, kolejności i podpisów do raportu), drzewa i zdjęcia w kolejności dodania | Układ raportu nieznany |
+
+### Nadal OPEN
+- Dokładny zestaw narzędzi używanych przez arborystę (dziś w ZWCAD); czy potrzebne prostokąt / wielokąt.
+- Znaczenie kolorów adnotacji i preferowane grubości linii.
+- Czy potrzebna trwała historia zmian (undo po ponownym otwarciu) i kilka wariantów adnotacji jednego zdjęcia.
+- Czy adnotacja ma autora, datę, podpis.
+- Rozdzielczość zdjęcia do dokumentacji, wymagania druku.
+- Czy dokument zawsze używa wersji z adnotacją (dziś tak — `documentation-content`).
+- Pozycjonowanie zdjęć w raporcie, podpisy pod zdjęciami, wybór zdjęć do raportu.
+- Adnotacje zdjęć z zewnętrznego aparatu (import zdjęć spoza tabletu).

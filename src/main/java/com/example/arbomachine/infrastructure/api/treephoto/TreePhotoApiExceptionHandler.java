@@ -2,6 +2,9 @@ package com.example.arbomachine.infrastructure.api.treephoto;
 
 import com.example.arbomachine.domain.project.exception.ProjectNotFoundException;
 import com.example.arbomachine.domain.tree.exception.TreeNotFoundException;
+import com.example.arbomachine.domain.treephoto.exception.InvalidPhotoAnnotationException;
+import com.example.arbomachine.domain.treephoto.exception.InvalidRenderedAnnotationImageException;
+import com.example.arbomachine.domain.treephoto.exception.TreePhotoAnnotationNotFoundException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoFileMissingException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoFileTooLargeException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoNotFoundException;
@@ -17,7 +20,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
  * i zdjecie spoza drzewa daja to samo 404. Plik ponad limit multipart serwera (zanim zadanie dotrze do kontrolera)
  * obsluguje wspolny ApiExceptionHandler.
  */
-@ControllerAdvice(assignableTypes = TreePhotoController.class)
+@ControllerAdvice(assignableTypes = {TreePhotoController.class, TreePhotoAnnotationController.class, ProjectPhotosController.class})
 public class TreePhotoApiExceptionHandler {
 
     @ExceptionHandler(ProjectNotFoundException.class)
@@ -40,10 +43,29 @@ public class TreePhotoApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
     }
 
-    /** Zadanie multipart bez czesci "file". */
+    /** Zadanie multipart bez wymaganej czesci: "file" (zdjecie) albo "document"/"renderedImage" (adnotacja). */
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<String> handleMissingFilePart(MissingServletRequestPartException exception) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Photo file is mandatory");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(switch (exception.getRequestPartName()) {
+            case "document" -> "Annotation document is mandatory";
+            case "renderedImage" -> "Rendered annotation image must be a PNG";
+            default -> "Photo file is mandatory";
+        });
+    }
+
+    @ExceptionHandler(TreePhotoAnnotationNotFoundException.class)
+    public ResponseEntity<String> handleTreePhotoAnnotationNotFound(TreePhotoAnnotationNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPhotoAnnotationException.class)
+    public ResponseEntity<String> handleInvalidPhotoAnnotation(InvalidPhotoAnnotationException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRenderedAnnotationImageException.class)
+    public ResponseEntity<String> handleInvalidRenderedAnnotationImage(InvalidRenderedAnnotationImageException exception) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(exception.getMessage());
     }
 
     @ExceptionHandler(TreePhotoFileTooLargeException.class)

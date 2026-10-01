@@ -71,7 +71,7 @@ public class UploadTreePhotoHandler {
                     displayableOriginalFileNameOf(treePhotoUpload.originalFileName()), storageKey,
                     photoType.contentType(), treePhotoUpload.fileSizeBytes(),
                     Instant.now().truncatedTo(ChronoUnit.MICROS)));
-            return treePhotoMapper.toTreePhotoResponse(savedTreePhoto);
+            return treePhotoMapper.toTreePhotoResponse(savedTreePhoto, null);
         } catch (RuntimeException metadataSavingError) {
             deleteStoredFileAfterFailedSave(storageKey, metadataSavingError);
             throw metadataSavingError;

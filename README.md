@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-19 - formularz terenowy, dyktowanie, symbole mapowe):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-20 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -101,6 +101,11 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   z technicznego katalogu 6 kształtów/kolorów (`GET /api/map-symbols`). Na mapie projektu: centralny symbol drzewa,
   znaczki prac wokół niego (maks. 3 + „+N”), panel drzewa z pracami i automatyczna legenda z nazw prac. Symbole
   nie oznaczają rodzajów zabiegów - znaczenie nadaje nazwa pracy (docs/DO_DOPRECYZOWANIA.md)
+- ✏️ **Adnotacje zdjęć (V1)** - „Adnotuj” / „Edytuj adnotacje” przy zdjęciu: pełnoekranowy edytor (Canvas 2D,
+  mysz/dotyk/rysik) - Rysuj, Linia, Strzałka, Tekst, 5 kolorów, 3 grubości, Cofnij/Ponów/Wyczyść. Oryginał zdjęcia
+  nigdy nie jest zmieniany: zapis to dokument wektorowy (współrzędne 0..1, `schemaVersion` 1) + osobny spłaszczony PNG
+- 📚 **Materiały do dokumentacji** - zakładka „Dokumentacja” projektu: wszystkie zdjęcia pogrupowane po drzewie,
+  w wersji z adnotacją, jeśli istnieje (`.../documentation-content`). To nie jest jeszcze generator PDF/DOCX
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -156,17 +161,25 @@ com.example.arbomachine
 │   ├── mapper      TreeMapper
 │   └── exception   TreeNotFoundException
 ├── domain.treephoto  (zależy od domain.tree; własność = Tree -> Project -> owner)
-│   ├── entity      TreePhoto (tree -> Tree; tylko metadane, plik w PhotoStorage)
+│   ├── entity      TreePhoto (tree -> Tree; tylko metadane, plik w PhotoStorage),
+│   │               TreePhotoAnnotation (treePhoto -> TreePhoto, 1:1; dokument JSON + klucz spłaszczonego PNG)
+│   ├── annotation  PhotoAnnotationElementType, PhotoAnnotationColor, PhotoAnnotationStrokeSize, PhotoAnnotationLimits
 │   ├── config      TreePhotoProperties (app.tree-photos.*: limit rozmiaru, katalog storage)
 │   ├── storage     PhotoStorage (store/load/delete po kluczu) + PhotoStorageException
-│   ├── dto         TreePhotoUpload (wejście bez MultipartFile), TreePhotoResponse, TreePhotoContent
-│   ├── facade      TreePhotoFacade
+│   ├── dto         TreePhotoUpload (wejście bez MultipartFile), TreePhotoResponse, TreePhotoContent, ProjectPhotoResponse,
+│   │               PhotoAnnotationDocumentRequest, PhotoAnnotationElementDto, NormalizedPointDto,
+│   │               PhotoAnnotationResponse, RenderedAnnotationImageUpload
+│   ├── facade      TreePhotoFacade, TreePhotoAnnotationFacade
 │   ├── service.treephotofacade  UploadTreePhotoHandler, GetTreePhotosHandler, GetTreePhotoContentHandler,
 │   │                            DeleteTreePhotoHandler, FindTreePhotoOfTreeInProjectOwnedByCurrentUserHandler,
-│   │                            SupportedTreePhotoType (typ z sygnatury pliku)
+│   │                            SupportedTreePhotoType (typ z sygnatury pliku), GetProjectPhotosHandler
+│   ├── service.treephotoannotationfacade  GetTreePhotoAnnotationHandler, SaveTreePhotoAnnotationHandler,
+│   │                            DeleteTreePhotoAnnotationHandler, GetTreePhotoAnnotationContentHandler,
+│   │                            GetTreePhotoDocumentationContentHandler, PhotoAnnotationDocumentValidator
 │   ├── mapper      TreePhotoMapper
 │   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
-│                   UnsupportedTreePhotoTypeException
+│                   UnsupportedTreePhotoTypeException, TreePhotoAnnotationNotFoundException,
+│                   InvalidPhotoAnnotationException, InvalidRenderedAnnotationImageException
 ├── domain.projectsummary  (read-model; zależy od project, tree, treephoto, treework - tylko przez COUNT w repozytoriach)
 │   ├── dto         ProjectSummaryResponse
 │   ├── facade      ProjectSummaryFacade
@@ -237,7 +250,9 @@ frontend/src
     │   ├── map       ProjectTreeMapSection (trasa /map: dane i stany UI), ProjectTreeMap (OpenLayers),
     │   │             treeMapPoints (drzewa -> punkty mapy)
     │   ├── photos    TreePhotosSection (galeria), AddTreePhotoDialog, TreePhotoTile, DeleteTreePhotoDialog,
-    │   │             useTreePhotoObjectUrl (treść z tokenem -> blob:), treePhotoFileRules + treePhotosApi
+    │   │             useTreePhotoObjectUrl (treść z tokenem -> blob:), treePhotoFileRules + treePhotosApi;
+    │   │             annotations/: TreePhotoAnnotationDialog, PhotoAnnotationCanvas, PhotoAnnotationToolbar +
+    │   │             logika: annotationCoordinates, annotationElements, annotationHistory, annotationRenderer
     │   └── works     TreeWorksSection (lista + edycja w miejscu), TreeWorkForm, DeleteTreeWorkDialog,
     │                 treeWorkFormValues (walidacja) + treeWorksApi
     ├── official   OfficialDashboardPage + officialPanelApi
@@ -366,9 +381,15 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}/map-symbol` | każdy zalogowany | Symbol pracy (bez edycji nazwy/opisu) → 200 z pracą |
 | GET | `/api/projects/{projectId}/works` | każdy zalogowany | Prace wszystkich drzew projektu jednym zapytaniem (mapa, legenda) |
 | POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, createdAt }` (bez ścieżek plików) |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, hasAnnotation, annotationUpdatedAt, createdAt }` (bez ścieżek plików) |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
-| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik) → 204 |
+| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik, także adnotacja i jej PNG) → 204 |
+| GET | `/api/projects/{projectId}/photos` | każdy zalogowany | Zdjęcia wszystkich drzew projektu jednym zapytaniem `{ photoId, treeId, inventoryNumber, …, hasAnnotation, annotationUpdatedAt }` |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Dokument adnotacji `{ photoId, schemaVersion, elements, createdAt, updatedAt }`; brak adnotacji → 404 |
+| PUT | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Utworzenie/zastąpienie: `multipart/form-data` z częściami `document` (JSON) i `renderedImage` (PNG) → 200; zły dokument → 400, nie-PNG → 415 |
+| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Usunięcie adnotacji i jej PNG (oryginał zostaje) → 204 |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation/content` | każdy zalogowany | Spłaszczony PNG adnotacji |
+| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/documentation-content` | każdy zalogowany | Zdjęcie do dokumentacji: PNG z adnotacją, jeśli istnieje, inaczej oryginał |
 | POST | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Nowa praca `{ name, description? }` → 201 |
 | GET | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Prace drzewa w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Pojedyncza praca |
@@ -433,7 +454,11 @@ Tabela `tree_photo`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (i
 `file_size_bytes bigint NOT NULL`, `created_at timestamptz NOT NULL` - sam plik leży poza bazą.
 Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks), `name varchar(255) NOT NULL`,
 `description text NULL`, `map_symbol_code varchar(64) NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
-Obie tabele bez `owner_id`.
+Tabela `tree_photo_annotation` (etap 20): `id bigint PK`, `tree_photo_id bigint NOT NULL UNIQUE FK -> tree_photo(id)`,
+`schema_version integer NOT NULL`, `document_json text NOT NULL`, `rendered_storage_key varchar(64) NOT NULL`,
+`rendered_content_type varchar(100) NOT NULL`, `rendered_file_size_bytes bigint NOT NULL`,
+`created_at` / `updated_at timestamptz NOT NULL` - spłaszczony PNG leży w tym samym katalogu co zdjęcia.
+Tabele bez `owner_id`.
 
 ## 🧭 Trasy frontendu projektów
 
@@ -444,7 +469,7 @@ Obie tabele bez `owner_id`.
 | `/projects/:projectId/trees` | ARBORIST | Sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
 | `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
 | `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
-| `/projects/:projectId/documentation` | ARBORIST | Dawna zakładka-placeholder - przekierowuje na podsumowanie (stare linki działają) |
+| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Dokumentacja”: materiały do dokumentacji - zdjęcia projektu pogrupowane po drzewie (wersja z adnotacją, jeśli istnieje) |
 
 Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
 Kolejny moduł projektu dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -

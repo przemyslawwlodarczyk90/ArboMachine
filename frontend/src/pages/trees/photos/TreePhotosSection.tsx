@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { ModalDialog } from '../../../components/ModalDialog';
 import { formatTimestampForDisplay } from '../../../formatting/formatTimestampForDisplay';
 import { AddTreePhotoDialog } from './AddTreePhotoDialog';
+import { TreePhotoAnnotationDialog } from './annotations/TreePhotoAnnotationDialog';
 import { DeleteTreePhotoDialog } from './DeleteTreePhotoDialog';
 import type { TreePhoto } from './treePhotoDataTypes';
 import { formatFileSizeForDisplay } from './treePhotoFileRules';
@@ -25,6 +26,7 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
   const [isAddPhotoDialogOpen, setIsAddPhotoDialogOpen] = useState(false);
   const [previewedPhoto, setPreviewedPhoto] = useState<{ treePhoto: TreePhoto; objectUrl: string } | null>(null);
   const [photoAwaitingDeletion, setPhotoAwaitingDeletion] = useState<TreePhoto | null>(null);
+  const [annotatedPhoto, setAnnotatedPhoto] = useState<TreePhoto | null>(null);
 
   useEffect(() => {
     let isResponseStillWanted = true;
@@ -50,6 +52,15 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
     }));
     setIsAddPhotoDialogOpen(false);
   };
+
+  // Po zapisie/usunieciu adnotacji aktualizujemy tylko to zdjecie (bez przeladowania listy); zmiana daty
+  // adnotacji odswieza miniature w wersji do dokumentacji.
+  const updateAnnotationStateOfPhoto = (treePhotoId: number,
+                                        annotationState: { hasAnnotation: boolean; annotationUpdatedAt: string | null }) =>
+    setTreePhotoListState((currentState) => currentState.status === 'loaded'
+      ? { status: 'loaded', treePhotos: currentState.treePhotos.map((treePhoto) =>
+        treePhoto.id === treePhotoId ? { ...treePhoto, ...annotationState } : treePhoto) }
+      : currentState);
 
   // Zdjecie znika z listy dopiero po potwierdzeniu backendu - kafelek odmontowuje sie i zwalnia swoj adres blob.
   const removeDeletedPhoto = (deletedTreePhotoId: number) => {
@@ -82,6 +93,7 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
           {treePhotoListState.treePhotos.map((treePhoto) => (
             <TreePhotoTile key={treePhoto.id} projectId={projectId} treeId={treeId} treePhoto={treePhoto}
                            openPreview={(photo, objectUrl) => setPreviewedPhoto({ treePhoto: photo, objectUrl })}
+                           openAnnotationEditor={setAnnotatedPhoto}
                            requestRemoval={setPhotoAwaitingDeletion} />
           ))}
         </ul>
@@ -106,11 +118,20 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
                       onClick={() => setPhotoAwaitingDeletion(previewedPhoto.treePhoto)}>Usuń</button>
               {/* Pobranie z juz wczytanego adresu blob: - bez ponownego zapytania i bez tokenu w URL. */}
               <a className="btn btn-secondary" href={previewedPhoto.objectUrl}
-                 download={previewedPhoto.treePhoto.originalFileName}>Pobierz</a>
+                 download={previewedPhoto.treePhoto.hasAnnotation
+                   ? `${previewedPhoto.treePhoto.originalFileName.replace(/\.[^.]+$/, '')}-adnotacja.png`
+                   : previewedPhoto.treePhoto.originalFileName}>Pobierz</a>
               <button type="button" className="btn btn-primary" onClick={() => setPreviewedPhoto(null)}>Zamknij</button>
             </div>
           </div>
         </ModalDialog>
+      )}
+
+      {annotatedPhoto && (
+        <TreePhotoAnnotationDialog projectId={projectId} treeId={treeId} treePhoto={annotatedPhoto}
+                                   onAnnotationChanged={(annotationState) =>
+                                     updateAnnotationStateOfPhoto(annotatedPhoto.id, annotationState)}
+                                   closeDialog={() => setAnnotatedPhoto(null)} />
       )}
 
       {photoAwaitingDeletion && (

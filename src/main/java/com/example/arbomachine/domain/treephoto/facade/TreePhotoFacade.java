@@ -1,9 +1,11 @@
 package com.example.arbomachine.domain.treephoto.facade;
 
+import com.example.arbomachine.domain.treephoto.dto.ProjectPhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoContent;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoUpload;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.DeleteTreePhotoHandler;
+import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetProjectPhotosHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetTreePhotoContentHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetTreePhotosHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.UploadTreePhotoHandler;
@@ -21,15 +23,18 @@ public class TreePhotoFacade {
     private final GetTreePhotosHandler getTreePhotosHandler;
     private final GetTreePhotoContentHandler getTreePhotoContentHandler;
     private final DeleteTreePhotoHandler deleteTreePhotoHandler;
+    private final GetProjectPhotosHandler getProjectPhotosHandler;
 
     public TreePhotoFacade(UploadTreePhotoHandler uploadTreePhotoHandler,
                            GetTreePhotosHandler getTreePhotosHandler,
                            GetTreePhotoContentHandler getTreePhotoContentHandler,
-                           DeleteTreePhotoHandler deleteTreePhotoHandler) {
+                           DeleteTreePhotoHandler deleteTreePhotoHandler,
+                           GetProjectPhotosHandler getProjectPhotosHandler) {
         this.uploadTreePhotoHandler = uploadTreePhotoHandler;
         this.getTreePhotosHandler = getTreePhotosHandler;
         this.getTreePhotoContentHandler = getTreePhotoContentHandler;
         this.deleteTreePhotoHandler = deleteTreePhotoHandler;
+        this.getProjectPhotosHandler = getProjectPhotosHandler;
     }
 
     public TreePhotoResponse uploadPhotoOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
@@ -48,5 +53,9 @@ public class TreePhotoFacade {
 
     public void deletePhotoOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId, Long treePhotoId) {
         deleteTreePhotoHandler.handle(currentUserEmail, projectId, treeId, treePhotoId);
+    }
+
+    public List<ProjectPhotoResponse> getPhotosOfProjectOfCurrentUser(String currentUserEmail, Long projectId) {
+        return getProjectPhotosHandler.handle(currentUserEmail, projectId);
     }
 }

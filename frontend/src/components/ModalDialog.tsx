@@ -12,10 +12,12 @@ const FOCUSABLE_ELEMENTS_SELECTOR = [
  * przy otwarciu (albo zostaje na polu z autoFocus), Tab krazy wewnatrz okna, a po zamknieciu fokus wraca
  * na element, ktory okno otworzyl. Tresc i przyciski dostarcza wywolujacy.
  */
-export function ModalDialog({ title, closeDialog, isClosingBlocked = false, children }: {
+export function ModalDialog({ title, closeDialog, isClosingBlocked = false, isFullScreen = false, children }: {
   title: string;
   closeDialog: () => void;
   isClosingBlocked?: boolean;
+  /** okno na caly ekran (np. edytor adnotacji zdjecia na tablecie) */
+  isFullScreen?: boolean;
   children: ReactNode;
 }) {
   const titleId = useId();
@@ -61,7 +63,7 @@ export function ModalDialog({ title, closeDialog, isClosingBlocked = false, chil
 
   return (
     <div className="modal-backdrop" onClick={closeUnlessBlocked}>
-      <div ref={dialogRef} className="card modal" role="dialog" aria-modal="true" aria-labelledby={titleId}
+      <div ref={dialogRef} className={`card modal${isFullScreen ? ' modal-fullscreen' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId}
            tabIndex={-1} onKeyDown={handleKeyDown} onClick={(clickEvent) => clickEvent.stopPropagation()}>
         <h2 id={titleId}>{title}</h2>
         {children}
