@@ -11,7 +11,8 @@ import java.util.Optional;
  * - gisFieldName  - krotka nazwa pola w eksportach GIS (GeoPackage; "QGIS compatibility profile V1"),
  * - polishLabel   - naglowek kolumny w CSV/XLSX (UI po polsku).
  * Nazw technicznych i GIS nie zmieniamy - pliki uzytkownikow i projekty QGIS na nich polegaja. Nowe pole = nowa stala.
- * importable = false: pole tylko eksportowane (identyfikator ArboMachine, symbol, prace) - import je ignoruje.
+ * importable = false: pole tylko eksportowane (identyfikator ArboMachine, dane pomiaru lokalizacji, symbol, prace) -
+ * import je ignoruje (punkt z importu dostaje zrodlo IMPORT).
  */
 public enum TreeExchangeField {
     TREE_ID("treeId", "tree_id", "ID drzewa (ArboMachine)", ValueType.INTEGER, false),
@@ -26,6 +27,9 @@ public enum TreeExchangeField {
     HAZARD_NOTES("hazardNotes", "hazards", "Zagrożenia", ValueType.TEXT, true),
     LATITUDE("latitude", "latitude", "Szerokość geograficzna", ValueType.DECIMAL, true),
     LONGITUDE("longitude", "longitude", "Długość geograficzna", ValueType.DECIMAL, true),
+    LOCATION_ACCURACY_M("locationAccuracyM", "accuracy_m", "Dokładność lokalizacji [m]", ValueType.DECIMAL, false),
+    LOCATION_ALTITUDE_M("locationAltitudeM", "altitude_m", "Wysokość n.p.m. [m]", ValueType.DECIMAL, false),
+    LOCATION_SOURCE("locationSource", "loc_source", "Źródło lokalizacji", ValueType.TEXT, false),
     MAP_SYMBOL_CODE("mapSymbolCode", "map_symbol", "Symbol drzewa na mapie", ValueType.TEXT, false),
     WORK_NAMES("workNames", "work_names", "Zalecenia i prace", ValueType.TEXT, false);
 
@@ -35,12 +39,12 @@ public enum TreeExchangeField {
     /** Kolumny eksportu tabelarycznego (CSV, XLSX) w stalej kolejnosci. */
     public static final List<TreeExchangeField> TABULAR_EXPORT_COLUMNS = List.of(TREE_ID, INVENTORY_NUMBER,
             SPECIES_POLISH, SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES,
-            HAZARD_NOTES, LATITUDE, LONGITUDE, WORK_NAMES);
+            HAZARD_NOTES, LATITUDE, LONGITUDE, LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, WORK_NAMES);
 
     /** Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). */
     public static final List<TreeExchangeField> GIS_ATTRIBUTES = List.of(TREE_ID, INVENTORY_NUMBER, SPECIES_POLISH,
             SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES, HAZARD_NOTES,
-            MAP_SYMBOL_CODE, WORK_NAMES);
+            LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES);
 
     public enum ValueType { TEXT, INTEGER, DECIMAL }
 

@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { OfflineStatusBar } from '../offline/OfflineStatusBar';
 import type { UserRole } from '../api/apiDataTypes';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { PANEL_HOME_PATH_BY_ROLE, USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
@@ -60,6 +61,7 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
         </div>
       </header>
       <main className="content">
+        <OfflineStatusBar />
         <Outlet />
       </main>
     </div>

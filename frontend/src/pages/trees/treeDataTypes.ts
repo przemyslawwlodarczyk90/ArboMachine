@@ -25,22 +25,36 @@ export interface Tree {
   mapSymbolCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** tylko frontend (etap 26): zapisane na urzadzeniu, czeka na synchronizacje; id < 0 = drzewo utworzone offline */
+  offlinePending?: boolean;
 }
 
+/** Skad pochodzi punkt (TreeLocationSource w backendzie); null/brak = punkt sprzed etapu 25. */
+export type TreeLocationSource = 'MANUAL' | 'MAP' | 'DEVICE_GNSS' | 'IMPORT';
+
 /**
- * TreeLocationResponse - punkt drzewa w stopniach dziesietnych (WGS84), zawsze kompletna para.
- * Przyszle dane pomiaru (dokladnosc, zrodlo) dojda tutaj, a nie jako luzne pola drzewa.
+ * TreeLocationResponse - punkt drzewa w stopniach dziesietnych (WGS84), zawsze kompletna para, oraz (etap 25)
+ * opcjonalne dane pomiaru: wysokosc n.p.m. i dokladnosc pozioma w metrach, zrodlo punktu.
  */
 export interface TreeLocation {
   latitude: number;
   longitude: number;
+  altitudeM?: number | null;
+  accuracyM?: number | null;
+  source?: TreeLocationSource | null;
 }
 
 /**
- * Body PUT /api/projects/{projectId}/trees/{treeId}/location. Backend nie wie, skad pochodza wspolrzedne
- * (formularz, mapa, GNSS) - usuniecie lokalizacji to osobne DELETE, a nie wyslanie pustych pol.
+ * Body PUT /api/projects/{projectId}/trees/{treeId}/location: punkt + opcjonalne dane pomiaru. Zrodlo IMPORT
+ * ustawia tylko import plikow. Usuniecie lokalizacji to osobne DELETE, a nie wyslanie pustych pol.
  */
-export type TreeLocationRequest = TreeLocation;
+export interface TreeLocationRequest {
+  latitude: number;
+  longitude: number;
+  altitudeM?: number;
+  accuracyM?: number;
+  source?: Exclude<TreeLocationSource, 'IMPORT'>;
+}
 
 /**
  * Pola drzewa ustawiane przez uzytkownika (TreeEditableFieldsRequest w backendzie) - bez projectId (idzie w URL)

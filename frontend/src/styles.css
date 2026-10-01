@@ -485,6 +485,24 @@ th.right, td.right { text-align: right; }
 .tree-location-section h3 { margin: 0; }
 .tree-location-section .form { margin-top: 0; }
 .tree-location-coordinates { margin: 0; font-size: 1.1rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tree-location-measurement { display: block; font-size: 0.85rem; }
+/* Praca offline (etap 26) */
+.offline-status-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 1rem; padding: 0.7rem 1rem; border-radius: var(--radius); border: 1px solid var(--border); font-size: 0.92rem; overflow-wrap: anywhere; }
+.offline-status-offline { background: #fff4e5; border-color: #f0b35c; color: #6b3d00; }
+.offline-status-pending { background: var(--surface-muted); }
+.offline-status-error { background: #fdecea; border-color: #e5a29b; color: #7a1f16; }
+.offline-status-success { background: var(--brand-soft); color: var(--brand); }
+.offline-status-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.offline-pending-badge { background: #fff4e5; color: #6b3d00; }
+.tree-offline-note { margin: 0.75rem 0 0; padding-top: 1rem; border-top: 1px solid var(--border); }
+@media (prefers-color-scheme: dark) {
+  .offline-status-offline, .offline-pending-badge { background: #3d2a0c; color: #ffd8a1; border-color: #7a5520; }
+  .offline-status-error { background: #3d1612; color: #ffc4bc; border-color: #7a2e25; }
+}
+/* GNSS urzadzenia (etap 25) */
+.gnss-measuring { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+.gnss-panel p { margin: 0; }
+.gnss-external-receiver { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 @media (max-width: 560px) {
   .tree-list-item, .tree-details { grid-template-columns: 1fr; }
   .tree-list-item-number { grid-row: auto; }

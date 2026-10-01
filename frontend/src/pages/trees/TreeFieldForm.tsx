@@ -152,7 +152,11 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
         <VoiceEnabledTextAreaField label="Notatki" rows={4} {...bindVoiceTextField('notes')} />
       </TreeFieldFormSection>
 
-      {wasJustSaved && !hasUnsavedChanges && <Alert variant="success">Zmiany zostały zapisane.</Alert>}
+      {wasJustSaved && !hasUnsavedChanges && (
+        <Alert variant="success">{savedTree.offlinePending
+          ? 'Zmiany zapisano na tym urządzeniu - zostaną wysłane po połączeniu z internetem.'
+          : 'Zmiany zostały zapisane.'}</Alert>
+      )}
       <div className="form-actions tree-field-form-actions">
         {hasUnsavedChanges && <span className="muted small tree-field-form-dirty">Masz niezapisane zmiany.</span>}
         {/* Anuluj zablokowane w trakcie zapisu - inaczej odpowiedz PATCH nadpisalaby porzucona edycje. */}

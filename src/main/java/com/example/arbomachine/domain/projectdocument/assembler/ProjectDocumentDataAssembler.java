@@ -81,7 +81,9 @@ public class ProjectDocumentDataAssembler {
                     tree.getSpeciesLatin(), tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(),
                     tree.getNotes(), tree.getConditionNotes(), tree.getHazardNotes(),
                     tree.getLocation() == null ? null
-                            : new ProjectDocumentLocationData(tree.getLocation().getLatitude(), tree.getLocation().getLongitude()),
+                            : new ProjectDocumentLocationData(tree.getLocation().getLatitude(), tree.getLocation().getLongitude(),
+                            tree.getLocation().getAccuracyM(),
+                            tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name()),
                     treeWorkData, treePhotoData));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),

@@ -31,6 +31,7 @@ public class TreeMapper {
     }
 
     private TreeLocationResponse toTreeLocationResponseOrNull(TreeLocation location) {
-        return location == null ? null : new TreeLocationResponse(location.getLatitude(), location.getLongitude());
+        return location == null ? null : new TreeLocationResponse(location.getLatitude(), location.getLongitude(),
+                location.getAltitudeM(), location.getAccuracyM(), location.getSource() == null ? null : location.getSource().name());
     }
 }

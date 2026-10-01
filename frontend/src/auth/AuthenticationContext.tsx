@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { accessTokenStorage, registerUnauthorizedResponseHandler } from '../api/httpClient';
 import { authenticationApi } from '../api/authenticationApi';
 import { currentUserAccountApi } from '../api/currentUserAccountApi';
+import { offlineService } from '../offline/offlineService';
 import type { UserAccount } from '../api/apiDataTypes';
 
 interface AuthenticationState {
@@ -25,6 +26,12 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
     accessTokenStorage.remove();
     setCurrentUserAccount(null);
   }, []);
+
+  // Warstwa offline zna zalogowane konto: kolejka zmian jest wysylana tylko przez to samo konto, a wylogowanie
+  // kasuje kopie odczytow z urzadzenia (niewyslane zmiany zostaja do ponownego zalogowania tego konta).
+  useEffect(() => {
+    void offlineService.setCurrentUser(currentUserAccount?.email ?? null);
+  }, [currentUserAccount?.email]);
 
   // Kazda odpowiedz 401 z chronionego endpointu (wygasly token, zablokowane konto) wylogowuje.
   useEffect(() => {

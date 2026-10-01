@@ -1,20 +1,22 @@
 import { useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
+import { describeLocationMeasurement } from '../../../gnss/deviceGnss';
 import { Alert } from '../../../components/Alert';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import { formatTreeLocationForDisplay } from './formatTreeLocationForDisplay';
 import { RemoveTreeLocationDialog } from './RemoveTreeLocationDialog';
+import { TreeGnssLocationPanel } from './TreeGnssLocationPanel';
 import { TreeLocationForm } from './TreeLocationForm';
 import { TreeLocationMap } from './TreeLocationMap';
 import { isTreeLocationWithinValidRange } from './treeLocationValidRange';
 
-/** Co robi sekcja: tylko pokazuje punkt, edytuje go recznym formularzem albo wskazaniem na mapie. */
-type LocationEditingMode = 'viewing' | 'manualForm' | 'mapPicking';
+/** Co robi sekcja: tylko pokazuje punkt, edytuje go recznym formularzem, wskazaniem na mapie albo pomiarem GPS. */
+type LocationEditingMode = 'viewing' | 'manualForm' | 'mapPicking' | 'gnss';
 
 /**
- * Sekcja "Lokalizacja" karty drzewa: zapisany punkt (tekst + mapa) i trzy operacje na tym samym TreeLocation -
- * wskazanie na mapie, reczne wspolrzedne (formularz) i usuniecie. Mapa i formularz uzywaja tego samego endpointu
+ * Sekcja "Lokalizacja" karty drzewa: zapisany punkt (tekst + mapa, z opisem pomiaru) i operacje na tym samym
+ * TreeLocation - pomiar GPS urzadzenia (etap 25), wskazanie na mapie, reczne wspolrzedne (formularz) i usuniecie. Mapa i formularz uzywaja tego samego endpointu
  * (PUT .../location) i tego samego drzewa z TreePage (jedno zrodlo prawdy), wiec zapis jednym od razu widac w drugim.
  * Wybor na mapie: "Ustaw/Zmien na mapie" -> klikniecie ustawia tymczasowy punkt -> "Zapisz lokalizacje" / "Anuluj".
  * Dopiero zapis wysyla request; po sukcesie pokazujemy punkt z odpowiedzi backendu (moze go zaokraglic).
@@ -63,7 +65,8 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
     setMapSavingErrorMessage(null);
     try {
       // Tymczasowy punkt zostaje na mapie do odpowiedzi; potem zastepuje go punkt zapisany przez backend.
-      replaceTreeAndStopEditing(await treesApi.setTreeLocation(projectId, tree.id, pendingMapLocation));
+      replaceTreeAndStopEditing(await treesApi.setTreeLocation(projectId, tree.id,
+        { latitude: pendingMapLocation.latitude, longitude: pendingMapLocation.longitude, source: 'MAP' }));
     } catch (savingError) {
       // Blad nie kasuje wskazanego punktu - mozna sprobowac ponownie albo wskazac inny.
       setMapSavingErrorMessage(savingError instanceof ApiRequestError
@@ -84,6 +87,9 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
             <button className={`btn ${savedLocation ? 'btn-secondary' : 'btn-primary'}`} onClick={startMapPicking}>
               {savedLocation ? 'Zmień na mapie' : 'Ustaw na mapie'}
             </button>
+            <button className="btn btn-secondary" onClick={() => { setPendingMapLocation(null); setEditingMode('gnss'); }}>
+              Użyj GPS urządzenia
+            </button>
             <button className="btn btn-secondary" onClick={() => setEditingMode('manualForm')}>Wpisz współrzędne</button>
             {savedLocation && (
               <button className="btn btn-danger-outline" onClick={() => setIsRemovalDialogOpen(true)}>Usuń</button>
@@ -95,6 +101,9 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
       {editingMode !== 'manualForm' && (savedLocation ? (
         <p className="tree-location-coordinates">
           <span className="muted small">Współrzędne (WGS84): </span>{formatTreeLocationForDisplay(savedLocation)}
+          {describeLocationMeasurement(savedLocation) && (
+            <span className="tree-location-measurement muted small">{describeLocationMeasurement(savedLocation)}</span>
+          )}
         </p>
       ) : editingMode === 'viewing' && (
         <p className="muted">
@@ -106,6 +115,22 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
       {editingMode === 'manualForm' && (
         <TreeLocationForm projectId={projectId} tree={tree} onTreeLocationSaved={replaceTreeAndStopEditing}
                           cancelEditing={stopEditing} />
+      )}
+
+      {editingMode === 'gnss' && (
+        <TreeGnssLocationPanel projectId={projectId} tree={tree} onPendingLocationChanged={setPendingMapLocation}
+                               onTreeLocationSaved={replaceTreeAndStopEditing} cancel={stopEditing} />
+      )}
+
+      {editingMode === 'viewing' && (
+        <div className="gnss-external-receiver">
+          <button type="button" className="btn btn-secondary btn-small" disabled aria-describedby="gnss-external-receiver-note">
+            Połącz odbiornik GNSS (Bluetooth)
+          </button>
+          <span id="gnss-external-receiver-note" className="muted small">
+            Niedostępne w wersji MVP - zewnętrzne odbiorniki i korekty RTK są planowane.
+          </span>
+        </div>
       )}
 
       {editingMode === 'mapPicking' && (
@@ -134,7 +159,7 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
 
       {/* Mapa zamontowana stale (jedna instancja OpenLayers) - zmienia sie tylko to, co pokazuje. */}
       <TreeLocationMap savedLocation={savedLocation}
-                       pendingLocation={editingMode === 'mapPicking' ? pendingMapLocation : null}
+                       pendingLocation={editingMode === 'mapPicking' || editingMode === 'gnss' ? pendingMapLocation : null}
                        isPickingLocation={editingMode === 'mapPicking' && !isSavingMapLocation}
                        onLocationPicked={setPendingMapLocation} />
 

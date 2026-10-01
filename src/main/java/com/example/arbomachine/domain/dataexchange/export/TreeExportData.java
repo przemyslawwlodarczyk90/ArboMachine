@@ -23,6 +23,9 @@ public record TreeExportData(
         String hazardNotes,
         BigDecimal latitude,
         BigDecimal longitude,
+        BigDecimal locationAccuracyM,
+        BigDecimal locationAltitudeM,
+        String locationSource,
         String mapSymbolCode,
         List<TreeWorkExportData> works
 ) {
@@ -49,6 +52,9 @@ public record TreeExportData(
             case HAZARD_NOTES -> hazardNotes;
             case LATITUDE -> latitude;
             case LONGITUDE -> longitude;
+            case LOCATION_ACCURACY_M -> locationAccuracyM;
+            case LOCATION_ALTITUDE_M -> locationAltitudeM;
+            case LOCATION_SOURCE -> locationSource;
             case MAP_SYMBOL_CODE -> mapSymbolCode;
             case WORK_NAMES -> works.isEmpty() ? null
                     : works.stream().map(TreeWorkExportData::name).collect(Collectors.joining(WORK_NAMES_SEPARATOR));

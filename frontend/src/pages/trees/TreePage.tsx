@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { formatTimestampForDisplay } from '../../formatting/formatTimestampForDisplay';
+import { offlineService } from '../../offline/offlineService';
+import { useOfflineState } from '../../offline/useOfflineState';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
+import { parseTreeIdRouteParam } from '../../routing/parseTreeIdRouteParam';
 import { TreeLocationSection } from './location/TreeLocationSection';
 import { NewTreeDialog } from './NewTreeDialog';
 import { TreePhotosSection } from './photos/TreePhotosSection';
@@ -31,7 +34,10 @@ type TreeLoadingState =
 export function TreePage() {
   const routeParams = useParams();
   const projectId = parsePositiveIdRouteParam(routeParams.projectId);
-  const treeId = parsePositiveIdRouteParam(routeParams.treeId);
+  // Ujemne id = drzewo utworzone bez polaczenia (etap 26), dostepne z kopii na urzadzeniu do synchronizacji.
+  const treeId = parseTreeIdRouteParam(routeParams.treeId);
+  const navigate = useNavigate();
+  const { syncGeneration, pendingTreeIds } = useOfflineState();
   const [treeLoadingState, setTreeLoadingState] = useState<TreeLoadingState>({ status: 'loading' });
   const [hasUnsavedTreeChanges, setHasUnsavedTreeChanges] = useState(false);
   const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
@@ -42,8 +48,15 @@ export function TreePage() {
       return;
     }
     let isResponseStillWanted = true;
-    setTreeLoadingState({ status: 'loading' });
+    setTreeLoadingState((currentState) => (currentState.status === 'loaded' && currentState.tree.id === treeId
+      ? currentState : { status: 'loading' }));
     setHasUnsavedTreeChanges(false);
+    // Drzewo utworzone offline, ktore juz trafilo na serwer -> karta pod nowym (prawdziwym) adresem.
+    if (treeId < 0) {
+      void offlineService.serverTreeIdOf(treeId).then((serverTreeId) => {
+        if (isResponseStillWanted && serverTreeId) navigate(`/projects/${projectId}/trees/${serverTreeId}`, { replace: true });
+      });
+    }
     treesApi.getTreeOfProject(projectId, treeId)
       .then((tree) => {
         if (isResponseStillWanted) setTreeLoadingState({ status: 'loaded', tree });
@@ -57,7 +70,7 @@ export function TreePage() {
           : { status: 'failed', errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.' });
       });
     return () => { isResponseStillWanted = false; };
-  }, [projectId, treeId]);
+  }, [projectId, treeId, syncGeneration, navigate]);
 
   // Stabilna funkcja - formularz zglasza przez nia zmiane stanu "niezapisane zmiany" w efekcie.
   const replaceTree = useCallback((changedTree: Tree) => setTreeLoadingState({ status: 'loaded', tree: changedTree }), []);
@@ -90,6 +103,8 @@ export function TreePage() {
 
   const { tree } = treeLoadingState;
   if (projectId === null) return null;
+  const isCreatedOffline = tree.id < 0;
+  const hasPendingChanges = pendingTreeIds.has(tree.id);
 
   return (
     <div className="stack">
@@ -109,13 +124,27 @@ export function TreePage() {
         </button>
       </div>
 
+      {(isCreatedOffline || hasPendingChanges) && (
+        <Alert variant="info">
+          {isCreatedOffline
+            ? 'To drzewo zostało dodane bez połączenia i jest zapisane na tym urządzeniu. Zostanie wysłane po połączeniu z internetem.'
+            : 'Zmiany tego drzewa są zapisane na tym urządzeniu i czekają na wysłanie.'}
+        </Alert>
+      )}
+
       {/* key: przejscie na inne drzewo zaczyna formularz od zera (bez resztek poprzedniego drzewa). */}
       <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree}
                      onUnsavedChangesChange={setHasUnsavedTreeChanges} />
       <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
-      <TreeMapSymbolSection key={`symbol-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
-      <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
-      <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} />
+      {isCreatedOffline ? (
+        <p className="muted tree-offline-note">Symbol na mapie i zdjęcia można dodać po synchronizacji drzewa z serwerem.</p>
+      ) : (
+        <>
+          <TreeMapSymbolSection key={`symbol-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+          <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
+        </>
+      )}
+      <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
 
       {isNewTreeDialogOpen && (
         <NewTreeDialog projectId={projectId} closeDialog={() => setIsNewTreeDialogOpen(false)} />

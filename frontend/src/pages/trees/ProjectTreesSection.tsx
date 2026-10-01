@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { useOfflineState } from '../../offline/useOfflineState';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
 import { NewTreeDialog } from './NewTreeDialog';
 import type { Tree } from './treeDataTypes';
@@ -22,6 +23,7 @@ export function ProjectTreesSection() {
   const projectId = parsePositiveIdRouteParam(useParams().projectId);
   const [treeListState, setTreeListState] = useState<TreeListState>({ status: 'loading' });
   const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
+  const { syncGeneration, pendingTreeIds } = useOfflineState();
 
   useEffect(() => {
     if (projectId === null) return;
@@ -39,7 +41,7 @@ export function ProjectTreesSection() {
         });
       });
     return () => { isResponseStillWanted = false; };
-  }, [projectId]);
+  }, [projectId, syncGeneration]);
 
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
 
@@ -76,6 +78,7 @@ export function ProjectTreesSection() {
                 {tree.notes && <span className="tree-list-item-notes">{tree.notes}</span>}
                 {/* Pokazujemy tylko brak - to drzewa, ktore wymagaja jeszcze ustalenia punktu. */}
                 {!tree.location && <span className="tree-list-item-no-location">Brak lokalizacji</span>}
+                {pendingTreeIds.has(tree.id) && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
               </Link>
             </li>
           ))}

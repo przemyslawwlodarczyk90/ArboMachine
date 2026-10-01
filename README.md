@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-24 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-26 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -116,6 +116,12 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   (`docs/discovery/etap-23-import-export.md`)
 - 🗺️ **QGIS (V1)** - GeoPackage (warstwa `trees`, POINT, EPSG:4326) i GeoJSON do otwarcia w QGIS; powrót przez
   GeoJSON jako nowe drzewa. Instrukcja: `docs/integrations/qgis.md` (pliki sprawdzone GDAL-em, nie w samym QGIS)
+- 📡 **GPS urządzenia (V1)** - „Użyj GPS urządzenia” w lokalizacji drzewa: pomiar przez Geolocation API przeglądarki,
+  dokładność z oceną, wysokość, zapis ze źródłem `DEVICE_GNSS` (mapa: `MAP`, formularz: `MANUAL`). Bez RTK i odbiorników
+  Bluetooth (`docs/discovery/etap-25-gnss.md`)
+- 📴 **Praca offline (V1)** - ostatnio pobrane dane działają bez sieci (kopie w IndexedDB, powłoka z service workera);
+  dodanie/edycja drzewa, lokalizacja i prace zapisują się na urządzeniu i synchronizują po połączeniu (pasek stanu,
+  „Synchronizuj teraz”, „Spróbuj ponownie” / „Pomiń”). Zdjęcia wymagają połączenia (`docs/discovery/etap-26-offline.md`)
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -283,6 +289,9 @@ frontend/src
     │   │             logika: annotationCoordinates, annotationElements, annotationHistory, annotationRenderer
     │   └── works     TreeWorksSection (lista + edycja w miejscu), TreeWorkForm, DeleteTreeWorkDialog,
     │                 treeWorkFormValues (walidacja) + treeWorksApi
+    ├── (src/gnss)    deviceGnss - pomiar Geolocation API, ocena dokładności, polskie komunikaty (etap 25)
+    ├── (src/offline) offlineQueue (kolejka + synchronizacja, testy), offlineService, indexedDbOfflineStore,
+    │                 OfflineStatusBar, useOfflineState, serviceWorkerRegistration + public/sw.js (etap 26)
     ├── official   OfficialDashboardPage + officialPanelApi
     ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
     └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
@@ -295,11 +304,18 @@ frontend/src
 ### 1. Baza danych
 
 Ten sam kontener Postgres co w pozostałych projektach (`pgDB` / `user` / `password` na `localhost:5432`).
-Jeśli nie działa:
+Dane leżą na dysku hosta w `~/apps/postgres` (nie w kontenerze) - usunięcie kontenera ich nie kasuje.
+
+Jeśli aplikacja nie startuje (`Connection to localhost:5432 refused`):
 
 ```bash
-docker compose up -d
+docker ps -a                                    # czy kontener bazy istnieje?
+docker start offerbrowserprototype-postgres-1   # istnieje, ale jest zatrzymany (np. po restarcie Dockera)
+docker compose up -d                            # kontenera nie ma - tworzy nowy na tych samych danych (~/apps/postgres)
 ```
+
+Uwaga: nie uruchamiaj obu naraz - oba kontenery używają portu 5432 i tego samego katalogu danych.
+Po nieczystym zamknięciu PostgreSQL sam odtwarza bazę przy starcie ("automatic recovery in progress").
 
 ArboMachine trzyma swoje tabele (`user_account`, `email_confirmation_token`, `password_reset_token`)
 we własnym schemacie `arbomachine` - Hibernate zakłada go przy starcie, więc tabele nie kolidują
@@ -477,6 +493,8 @@ Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (i
 `trunk_circumference_cm integer NULL` (1-5000), `height_m numeric(5,2) NULL` (>0 do 150),
 `crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `condition_notes text NULL` (stan drzewa, V1),
 `hazard_notes text NULL` (zagrożenia, V1), `map_symbol_code varchar(64) NULL` (symbol na mapie, etap 19),
+`location_altitude_m numeric(7,2) NULL`, `location_accuracy_m numeric(7,2) NULL`, `location_source varchar(32) NULL`
+(dane pomiaru lokalizacji: MANUAL / MAP / DEVICE_GNSS / IMPORT, etap 25),
 `created_at` / `updated_at timestamptz NOT NULL`.
 Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
 nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc

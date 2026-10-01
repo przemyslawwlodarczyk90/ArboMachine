@@ -50,6 +50,9 @@ public class ProjectExportDataAssembler {
                 tree.getConditionNotes(), tree.getHazardNotes(),
                 tree.getLocation() == null ? null : tree.getLocation().getLatitude(),
                 tree.getLocation() == null ? null : tree.getLocation().getLongitude(),
+                tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
+                tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
+                tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
                 tree.getMapSymbolCode(), works);
     }
 }

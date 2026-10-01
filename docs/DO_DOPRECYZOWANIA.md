@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 24
+## Rejestr braków — stan po etapie 26
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -346,7 +346,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
 | Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon, placeholdery autora/zleceniodawcy); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
 | Import/eksport | CSV, XLSX, GeoJSON (eksport i import), GeoPackage (eksport) — V1 od etapów 23–24; brak SHP, DXF, QGZ, QML, aktualizacji drzew przy imporcie, importu prac i zdjęć, wyboru układu współrzędnych | OPEN / BRAK |
-| Teren | GNSS/RTK, NTRIP, geolokalizacja urządzenia, praca offline, synchronizacja | OPEN |
+| Teren | GPS urządzenia (etap 25) i praca offline z synchronizacją (etap 26) — V1; brak RTK/NTRIP, odbiorników Bluetooth, zdjęć offline, pobierania całego projektu „na wyjazd”, pełnego PWA | OPEN / BRAK |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
 | Konto | Zmiana hasła z poziomu „Mój profil” (dziś tylko przez „Nie pamiętasz hasła?”) | BRAK |
 | Konto | Po „Wyloguj” kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) | OPEN |
@@ -362,6 +362,8 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dyktowanie | Docelowe tablety/przeglądarki (Safari na iPadzie, Chrome na Androidzie), jakość polskiego rozpoznawania w terenie | DO SPRAWDZENIA |
 | Dyktowanie | Prywatność: Chrome rozpoznaje mowę przez usługę Google (wymaga internetu, dźwięk opuszcza urządzenie przez przeglądarkę) | OPEN |
 | Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
+| GPS | Dokładność i czas pomiaru GPS tabletu w terenie (pod koronami, przy budynkach) — testy tylko z emulowaną pozycją | DO SPRAWDZENIA |
+| Offline | Praca bez zasięgu na prawdziwym tablecie (przełączanie sieci, uśpienie, Safari/iPad, setki zmian) — testy w emulowanym braku sieci | DO SPRAWDZENIA |
 | Adnotacje | Rysowanie palcem i rysikiem na FIZYCZNYM tablecie, eksport PNG z dużych zdjęć (12+ Mpx) na słabszym tablecie (pamięć, czas). Sprawdzone w etapie 22 E2E w headless Chrome: mysz, emulowany dotyk, tekst, zapis, anulowanie, ekrany 390/768/1024 px | DO SPRAWDZENIA |
 | Dokumentacja | Wydajność zakładki „Dokumentacja” przy setkach zdjęć (każda miniatura pobiera pełny plik) | DO SPRAWDZENIA |
 | Dokument PDF | Czas i pamięć generowania przy dużym projekcie (setki drzew i zdjęć) — generowanie synchroniczne, cały PDF w pamięci; jakość wydruku zdjęć (1600 px) i czytelność na papierze | DO SPRAWDZENIA |
@@ -393,7 +395,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 
 | Opis | Status |
 |---|---|
-| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–24) — do usunięcia przy okazji | OPERACYJNE |
+| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–26) — do usunięcia przy okazji | OPERACYJNE |
 | Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
 | Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
 
@@ -603,3 +605,54 @@ Statusy w tej sekcji: **V1 IMPLEMENTED** — działa w V1; **OPEN DOMAIN QUESTIO
   ręcznego testu w `docs/integrations/qgis.md`.
 - Pliki zapisane przez prawdziwy QGIS (inne wersje GDAL, opcje eksportu).
 - Duże projekty (tysiące drzew), pliki od klientów w innych układach.
+
+---
+
+## GNSS / RTK — etap 25
+
+**Status:** V1 IMPLEMENTED / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-25-gnss.md`.
+Uzupełnia wcześniejsze pytania z sekcji „Lokalizacja drzewa — dane pomiaru”.
+
+| Temat | Stan |
+|---|---|
+| Źródło pozycji | V1 IMPLEMENTED: GPS urządzenia przez Geolocation API przeglądarki (jeden pomiar, wysoka dokładność, 30 s). |
+| Dane pomiaru | V1 IMPLEMENTED: dokładność pozioma, wysokość n.p.m., źródło (`MANUAL`/`MAP`/`DEVICE_GNSS`/`IMPORT`). OPEN: czy zapisywać czas pomiaru, PDOP/HDOP, liczbę satelitów, typ rozwiązania (FIX/FLOAT), wysokość anteny? |
+| RTK / NTRIP | DEFERRED / OPEN: czy projekty wymagają centymetrowej dokładności? Jaki dostawca korekt (ASG-EUPOS, komercyjny)? Kto płaci za subskrypcję? |
+| Odbiorniki Bluetooth | DEFERRED / OPEN: czy arboryści używają zewnętrznych odbiorników? Jakie modele i protokoły (NMEA)? Czy wystarczy Web Bluetooth (tylko Chrome)? V1: nieaktywny przycisk z opisem. |
+| Aplikacja natywna | OPEN: czy potrzebna wersja natywna (Android / iOS) z pełnym dostępem do GNSS? |
+| Progi dokładności | V1: do 5 m dobra, do 15 m akceptowalna, powyżej słaba (ostrzeżenie, zapis nadal możliwy). OPEN: jaka dokładność jest wymagana w dokumentacji? Czy blokować zapis słabego pomiaru? |
+| Uśrednianie pomiaru | OPEN: czy mierzyć kilka razy i uśredniać (pod koronami drzew)? V1: jeden pomiar + „Zmierz ponownie”. |
+| Pomiar RTK w UI | OPEN: z tej samej sekcji lokalizacji czy osobny ekran pomiarów? |
+| Mapa offline / podkład | OPEN: czy mapa offline ma mieć podkład (kafelki OSM nie mogą być masowo cache'owane - polityka OSM)? Ortofotomapa? |
+| Geokodowanie | OPEN: czy potrzebny adres z pozycji GPS (np. do opisu obiektu)? |
+| GPS bez sieci | V1: Geolocation API działa bez internetu (GPS urządzenia); bez GPS (Wi-Fi/sieć) pozycja może być niedostępna. DO SPRAWDZENIA w terenie. |
+
+---
+
+## Praca offline — etap 26
+
+**Status:** V1 IMPLEMENTED / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-26-offline.md`.
+
+| Temat | Stan |
+|---|---|
+| Zakres danych offline | V1 IMPLEMENTED: odczyt ostatnio pobranych danych (projekty, drzewa, prace, mapa bez podkładu); zapis: dodanie i edycja drzewa, lokalizacja, dodanie i edycja pracy. OPEN: czy offline potrzebne są zdjęcia (pliki z aparatu w kolejce), adnotacje, symbole, usuwanie? |
+| Zdjęcia offline | DEFERRED / OPEN: przechowywanie zdjęć w IndexedDB i wysyłka po połączeniu (rozmiar pamięci tabletu, 15 MB na zdjęcie). |
+| Konflikty | V1: „ostatni zapis wygrywa” (PATCH z kompletem pól) albo zatrzymanie synchronizacji przy błędzie serwera. OPEN: kto rozstrzyga konflikty, gdy w przyszłości kilka osób pracuje na jednym projekcie? |
+| PWA | V1: tylko service worker powłoki aplikacji (otwarcie strony bez sieci). OPEN: pełne PWA (manifest, instalacja na ekranie głównym, ikony)? |
+| Granularność synchronizacji | V1: pojedyncze żądania FIFO istniejącymi endpointami. OPEN: endpoint wsadowy / synchronizacja całego projektu? |
+| Informacja w UI | V1: pasek stanu, liczba czekających zmian, oznaczenia „Czeka na synchronizację”, błąd z „Spróbuj ponownie” / „Pomiń”. OPEN: czy potrzebna lista wszystkich operacji offline? |
+| Pobieranie projektu „na wyjazd” | OPEN: V1 ma tylko to, co użytkownik otworzył online. Czy potrzebny przycisk „Pobierz projekt do pracy offline” (wszystkie drzewa, prace, zdjęcia)? |
+| Duplikaty po zerwanym połączeniu | DŁUG: brak kluczy idempotencji - żądanie, które dotarło do serwera bez odpowiedzi, może przy synchronizacji utworzyć duplikat. |
+| Nakładanie zmian na dane z serwera | DŁUG: po powrocie sieci, gdy zmiany wciąż czekają (np. po błędzie), ekrany pokazują stan serwera do czasu synchronizacji. |
+| Bezpieczeństwo danych na urządzeniu | V1: kopie odczytów kasowane przy wylogowaniu; niewysłane zmiany zostają (tylko to samo konto je wyśle). OPEN: szyfrowanie danych na urządzeniu? limit czasu przechowywania? co z tabletem zgubionym w terenie? |
+| Testy terenowe | DO SPRAWDZENIA: słaby zasięg, przełączanie sieci, uśpienie tabletu, długa praca bez sieci (setki zmian), Safari na iPadzie (IndexedDB i service worker). |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| IndexedDB bez biblioteki (własny mały wrapper) | Dexie / localForage niepotrzebne przy 3 magazynach |
+| Tymczasowe ujemne id obiektów utworzonych offline | Adres karty `/trees/-…`; po synchronizacji przekierowanie |
+| Ponawianie synchronizacji co 30 s przy niepustej kolejce | Oprócz zdarzenia `online` i udanych odpowiedzi serwera |
+| Kolejka niepusta → nowe zmiany też idą do kolejki (nawet online) | Zachowanie kolejności |
+| Brak limitu wieku i rozmiaru kopii odczytów | Kopie kasowane przy wylogowaniu |
+| Service worker tylko w zbudowanej aplikacji i w bezpiecznym kontekście | Produkcja wymaga HTTPS |

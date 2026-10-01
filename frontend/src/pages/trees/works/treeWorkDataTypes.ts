@@ -13,6 +13,8 @@ export interface TreeWork {
   mapSymbolCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** tylko frontend (etap 26): zapisane na urzadzeniu, czeka na synchronizacje; id < 0 = praca utworzona offline */
+  offlinePending?: boolean;
 }
 
 /**

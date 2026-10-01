@@ -20,9 +20,11 @@ export const toTreeLocationFormValues = (location: TreeLocation | null | undefin
 
 const toDegrees = (fieldValue: string) => Number(fieldValue.trim().replace(',', '.'));
 
+/** Reczny formularz: zrodlo MANUAL, bez danych pomiaru (wysokosc/dokladnosc zna tylko GNSS). */
 export const toTreeLocationRequest = (formValues: TreeLocationFormValues): TreeLocationRequest => ({
   latitude: toDegrees(formValues.latitude),
   longitude: toDegrees(formValues.longitude),
+  source: 'MANUAL',
 });
 
 /** Blad jednej wspolrzednej albo undefined, gdy jest poprawna. Obie sa wymagane - brak lokalizacji to "Usun". */

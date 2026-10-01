@@ -132,6 +132,9 @@
         <tr><th>Wysokość</th><td th:text="${format.meters(tree.heightM())}">—</td></tr>
         <tr><th>Średnica korony</th><td th:text="${format.meters(tree.crownDiameterM())}">—</td></tr>
         <tr><th>Lokalizacja (WGS 84)</th><td th:text="${format.coordinates(tree.location())}">Nie podano</td></tr>
+        <tr th:if="${format.locationMeasurement(tree.location()) != null}">
+          <th>Pomiar lokalizacji</th><td th:text="${format.locationMeasurement(tree.location())}">GPS urządzenia, dokładność ±4 m</td>
+        </tr>
       </table>
     </div>
 

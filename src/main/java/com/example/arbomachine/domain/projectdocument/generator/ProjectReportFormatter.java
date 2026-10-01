@@ -61,6 +61,23 @@ public final class ProjectReportFormatter {
                 + coordinateFormat.format(longitude.abs()) + "° " + (longitude.signum() < 0 ? "W" : "E");
     }
 
+    /** "GPS urządzenia, dokładność ±4 m" / "wskazanie na mapie" / null (brak danych pomiaru - nic nie pokazujemy). */
+    public String locationMeasurement(ProjectDocumentLocationData location) {
+        if (location == null) return null;
+        String source = switch (location.source() == null ? "" : location.source()) {
+            case "DEVICE_GNSS" -> "GPS urządzenia";
+            case "MAP" -> "wskazanie na mapie";
+            case "MANUAL" -> "współrzędne wpisane ręcznie";
+            case "IMPORT" -> "import z pliku";
+            default -> null;
+        };
+        String accuracy = location.accuracyM() == null ? null
+                : "dokładność ±" + polishDecimalFormat("0.#").format(location.accuracyM()) + " m";
+        if (source == null && accuracy == null) return null;
+        if (source == null) return accuracy;
+        return accuracy == null ? source : source + ", " + accuracy;
+    }
+
     /** "lipa drobnolistna (Tilia cordata)", jedna z nazw albo "Gatunek nie podany". */
     public String species(ProjectDocumentTreeData tree) {
         boolean hasPolish = hasText(tree.speciesPolish());

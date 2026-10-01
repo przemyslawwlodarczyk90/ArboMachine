@@ -21,7 +21,12 @@ type TreeWorkListState =
  * Ma wlasny stan listy; po kazdej operacji uzywa odpowiedzi backendu, bez przeladowania karty drzewa.
  * Celowo bez powiazania z mapa (symbole/kolory prac) - slownik prac nie jest jeszcze ustalony.
  */
-export function TreeWorksSection({ projectId, treeId }: { projectId: number; treeId: number }) {
+export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
+  projectId: number;
+  treeId: number;
+  /** etap 26: po synchronizacji zmian offline lista jest pobierana ponownie */
+  syncGeneration?: number;
+}) {
   const [treeWorkListState, setTreeWorkListState] = useState<TreeWorkListState>({ status: 'loading' });
   const [isAddingWork, setIsAddingWork] = useState(false);
   const [editedTreeWorkId, setEditedTreeWorkId] = useState<number | null>(null);
@@ -44,7 +49,7 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
         });
       });
     return () => { isResponseStillWanted = false; };
-  }, [projectId, treeId]);
+  }, [projectId, treeId, syncGeneration]);
 
   const updateLoadedWorks = (changeTreeWorks: (treeWorks: TreeWork[]) => TreeWork[]) =>
     setTreeWorkListState((currentState) => currentState.status === 'loaded'
@@ -113,6 +118,7 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
                 <>
                   <div className="tree-work-item-text">
                     <strong>{treeWork.name}</strong>
+                    {treeWork.offlinePending && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
                     {treeWork.description && <p className="tree-work-item-description">{treeWork.description}</p>}
                     <span className="muted small map-symbol-inline">
                       Symbol na mapie: {treeWork.mapSymbolCode && symbolByCode.get(treeWork.mapSymbolCode)
@@ -130,14 +136,16 @@ export function TreeWorksSection({ projectId, treeId }: { projectId: number; tre
                       <button className="btn btn-secondary btn-small" onClick={() => setEditedTreeWorkId(treeWork.id)}>
                         Edytuj
                       </button>
-                      {catalogState.status === 'loaded' && (
+                      {catalogState.status === 'loaded' && treeWork.id > 0 && (
                         <button className="btn btn-secondary btn-small" onClick={() => setSymbolEditedTreeWorkId(treeWork.id)}>
                           Zmień symbol
                         </button>
                       )}
-                      <button className="btn btn-danger-outline btn-small" onClick={() => setWorkAwaitingDeletion(treeWork)}>
-                        Usuń
-                      </button>
+                      {treeWork.id > 0 && (
+                        <button className="btn btn-danger-outline btn-small" onClick={() => setWorkAwaitingDeletion(treeWork)}>
+                          Usuń
+                        </button>
+                      )}
                     </div>
                   )}
                 </>

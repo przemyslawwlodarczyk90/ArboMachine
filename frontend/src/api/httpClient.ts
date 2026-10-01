@@ -27,6 +27,25 @@ export class ApiRequestError extends Error {
 
 let handleUnauthorizedResponse: (() => void) | null = null;
 
+/**
+ * Kopie odczytow do pracy offline (etap 26, rejestruje je warstwa offline): odpowiedzi GET z tokenem sa zapisywane,
+ * a bez polaczenia zwracana jest ostatnia kopia. httpClient nie zna szczegolow magazynu ani endpointow.
+ */
+export interface ApiReadCache {
+  load(path: string): Promise<unknown | undefined>;
+  save(path: string, value: unknown): void;
+  /** sciezki obiektow istniejacych tylko na urzadzeniu - nigdy nie wysylane do serwera */
+  isLocalOnly(path: string): boolean;
+  /** czy ostatnie zadanie dotarlo do serwera (dowolna odpowiedz HTTP) - stan "online/offline" w UI */
+  reportReachability(reachable: boolean): void;
+}
+
+let apiReadCache: ApiReadCache | null = null;
+
+export function registerApiReadCache(cache: ApiReadCache | null) {
+  apiReadCache = cache;
+}
+
 /** AuthenticationContext rejestruje tu wylogowanie - wywolywane, gdy chroniony endpoint odpowie 401. */
 export function registerUnauthorizedResponseHandler(handler: (() => void) | null) {
   handleUnauthorizedResponse = handler;
@@ -104,8 +123,10 @@ async function fetchApiResponse(
       body: isMultipartBody ? requestBody : requestBody !== undefined ? JSON.stringify(requestBody) : undefined,
     });
   } catch {
+    apiReadCache?.reportReachability(false);
     throw new ApiRequestError(0, 'Brak połączenia z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie.');
   }
+  apiReadCache?.reportReachability(true);
 
   if (!response.ok) {
     if (response.status === 401 && sendAccessToken) handleUnauthorizedResponse?.();
@@ -127,7 +148,30 @@ export async function sendApiRequestForBlob(path: string, options: ApiRequestOpt
  * albo braku polaczenia.
  */
 export async function sendApiRequest<ResponseType>(path: string, options: ApiRequestOptions = {}): Promise<ResponseType> {
-  const response = await fetchApiResponse(path, options);
+  const isCacheableRead = apiReadCache !== null && (options.httpMethod ?? 'GET') === 'GET' && options.sendAccessToken === true;
+  if (!isCacheableRead) return parseJsonResponse<ResponseType>(await fetchApiResponse(path, options));
+  const cache = apiReadCache!;
+  // Obiekt utworzony bez polaczenia (tymczasowe id) istnieje tylko na urzadzeniu - nie pytamy serwera.
+  if (cache.isLocalOnly(path)) {
+    const localValue = await cache.load(path);
+    if (localValue !== undefined) return localValue as ResponseType;
+    throw new ApiRequestError(404, 'Ten zasób nie jest dostępny na tym urządzeniu.');
+  }
+  try {
+    const value = await parseJsonResponse<ResponseType>(await fetchApiResponse(path, options));
+    cache.save(path, value);
+    return value;
+  } catch (requestError) {
+    // Bez polaczenia: ostatnia kopia z tego urzadzenia (praca offline, etap 26).
+    if (requestError instanceof ApiRequestError && requestError.httpStatus === 0) {
+      const cachedValue = await cache.load(path);
+      if (cachedValue !== undefined) return cachedValue as ResponseType;
+    }
+    throw requestError;
+  }
+}
+
+async function parseJsonResponse<ResponseType>(response: Response): Promise<ResponseType> {
   if (response.status === 204) return undefined as ResponseType;
   const responseText = await response.text();
   if (!responseText) return undefined as ResponseType;

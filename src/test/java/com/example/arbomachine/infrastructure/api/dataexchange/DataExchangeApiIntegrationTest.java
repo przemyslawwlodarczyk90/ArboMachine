@@ -130,7 +130,9 @@ class DataExchangeApiIntegrationTest {
                          "trunkCircumferenceCm":215,"heightM":18.5,"crownDiameterM":9,"notes":"Żółć; \\"dziupla\\"\\nna 3 m",
                          "conditionNotes":"dobry","hazardNotes":"konar nad chodnikiem"}""")));
         performAs(userAccountA, put("/api/projects/{p}/trees/{t}/location", projectIdA, fullTreeId)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"latitude\":51.7592,\"longitude\":19.456}")).andExpect(status().isOk());
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"latitude\":51.7592,\"longitude\":19.456,\"accuracyM\":4.5,\"altitudeM\":201.3,\"source\":\"DEVICE_GNSS\"}"))
+                .andExpect(status().isOk());
         performAs(userAccountA, post("/api/projects/{p}/trees/{t}/works", projectIdA, fullTreeId).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Cięcia redukcyjne\",\"description\":\"od jezdni\"}")).andExpect(status().isCreated());
         performAs(userAccountA, post("/api/projects/{p}/trees/{t}/works", projectIdA, fullTreeId).contentType(MediaType.APPLICATION_JSON)
@@ -189,7 +191,8 @@ class DataExchangeApiIntegrationTest {
         }
         assertThat(records.getFirst().toList()).containsExactly("ID drzewa (ArboMachine)", "Numer inwentaryzacyjny", "Gatunek polski",
                 "Gatunek łaciński", "Obwód pnia [cm]", "Wysokość [m]", "Średnica korony [m]", "Notatki", "Stan drzewa",
-                "Zagrożenia", "Szerokość geograficzna", "Długość geograficzna", "Zalecenia i prace");
+                "Zagrożenia", "Szerokość geograficzna", "Długość geograficzna", "Dokładność lokalizacji [m]", "Wysokość n.p.m. [m]",
+                "Źródło lokalizacji", "Zalecenia i prace");
         assertThat(records).hasSize(4);
         CSVRecord full = records.get(1);
         assertThat(full.get(1)).isEqualTo("L-1");
@@ -200,10 +203,13 @@ class DataExchangeApiIntegrationTest {
         assertThat(full.get(7)).isEqualTo("Żółć; \"dziupla\"\nna 3 m");
         assertThat(full.get(10)).isEqualTo("51,7592");
         assertThat(full.get(11)).isEqualTo("19,456");
-        assertThat(full.get(12)).isEqualTo("Cięcia redukcyjne; Kontrola za 12 miesięcy");
+        assertThat(full.get(12)).isEqualTo("4,5");
+        assertThat(full.get(13)).isEqualTo("201,3");
+        assertThat(full.get(14)).isEqualTo("DEVICE_GNSS");
+        assertThat(full.get(15)).isEqualTo("Cięcia redukcyjne; Kontrola za 12 miesięcy");
         CSVRecord onlyNumber = records.get(2);
         assertThat(onlyNumber.get(1)).isEqualTo("L-2");
-        assertThat(onlyNumber.toList().subList(2, 13)).allMatch(String::isEmpty);
+        assertThat(onlyNumber.toList().subList(2, 16)).allMatch(String::isEmpty);
         assertThat(csv).doesNotContain("null").contains("\r\n");
     }
 
@@ -519,7 +525,9 @@ class DataExchangeApiIntegrationTest {
         Tree copy = trees.get(3);
         assertThat(copy.getId()).isNotEqualTo(original.getId());
         assertThat(copy.editableAttributes()).isEqualTo(original.editableAttributes());
-        assertThat(copy.getLocation()).isEqualTo(original.getLocation());
+        assertThat(copy.getLocation().getLatitude()).isEqualByComparingTo(original.getLocation().getLatitude());
+        assertThat(copy.getLocation().getLongitude()).isEqualByComparingTo(original.getLocation().getLongitude());
+        assertThat(copy.getLocation().getSource()).as("punkt z importu").isEqualTo(com.example.arbomachine.domain.tree.entity.TreeLocationSource.IMPORT);
     }
 
     // ================= WLASNOSC =================

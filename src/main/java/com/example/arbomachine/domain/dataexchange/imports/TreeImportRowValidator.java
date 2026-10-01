@@ -4,6 +4,7 @@ import com.example.arbomachine.domain.dataexchange.schema.TreeExchangeField;
 import com.example.arbomachine.domain.tree.entity.Tree;
 import com.example.arbomachine.domain.tree.entity.TreeEditableAttributes;
 import com.example.arbomachine.domain.tree.entity.TreeLocation;
+import com.example.arbomachine.domain.tree.entity.TreeLocationSource;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -103,7 +104,7 @@ final class TreeImportRowValidator {
         int errorCountBefore = errors.size();
         BigDecimal latitude = coordinate(latitudeCell, TreeLocation.MINIMUM_LATITUDE, TreeLocation.MAXIMUM_LATITUDE, rowNumber, errors);
         BigDecimal longitude = coordinate(longitudeCell, TreeLocation.MINIMUM_LONGITUDE, TreeLocation.MAXIMUM_LONGITUDE, rowNumber, errors);
-        return errors.size() > errorCountBefore ? null : TreeLocation.of(latitude, longitude);
+        return errors.size() > errorCountBefore ? null : TreeLocation.of(latitude, longitude, null, null, TreeLocationSource.IMPORT);
     }
 
     private static BigDecimal coordinate(ImportedCell cell, String minimum, String maximum, int rowNumber, List<TreeImportIssue> errors) {
