@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!--
+  "Dokument projektu" - wersja MVP (etap 22). Szablon Thymeleaf renderowany do PDF (openhtmltopdf, A4).
+  Zmiany ukladu i tresci po konsultacji z arborysta wprowadzamy TUTAJ (HTML/CSS), bez zmian w kodzie Java.
+  Zmienne: document (ProjectDocumentData), format (ProjectReportFormatter), imageProtocol.
+  Placeholdery (zleceniodawca, autor, obiekt) sa jawne - aplikacja jeszcze tych danych nie modeluje.
+-->
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Dokument projektu - ' + ${document.projectName()}">Dokument projektu</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 20mm 18mm;
+      @bottom-left { content: "ArboMachine - Dokument projektu (wersja MVP)"; font-family: 'DejaVu Sans'; font-size: 7.5pt; color: #6b7280; }
+      @bottom-right { content: "Strona " counter(page) " z " counter(pages); font-family: 'DejaVu Sans'; font-size: 7.5pt; color: #6b7280; }
+    }
+    body { font-family: 'DejaVu Sans'; font-size: 9.5pt; line-height: 1.4; color: #1f2937; }
+    h1 { font-size: 22pt; margin: 0 0 4mm 0; color: #1f4d2b; }
+    h2 { font-size: 13pt; margin: 8mm 0 3mm 0; padding-bottom: 1.5mm; border-bottom: 1px solid #9ca3af; color: #1f4d2b; page-break-after: avoid; }
+    h3 { font-size: 11pt; margin: 0 0 2mm 0; page-break-after: avoid; }
+    h4 { font-size: 9.5pt; margin: 3mm 0 1mm 0; page-break-after: avoid; }
+    p { margin: 0 0 2mm 0; }
+    .title-page { page-break-after: always; padding-top: 50mm; }
+    .brand { font-size: 11pt; font-weight: bold; letter-spacing: 1pt; color: #2f6b3c; margin-bottom: 6mm; }
+    .project-name { font-size: 16pt; font-weight: bold; margin: 2mm 0 10mm 0; word-wrap: break-word; }
+    .muted { color: #6b7280; }
+    .small { font-size: 8pt; }
+    .placeholder { color: #9a3412; font-style: italic; }
+    .multiline { white-space: pre-line; word-wrap: break-word; }
+    .notice { border: 1px solid #d1d5db; background: #f3f4f6; padding: 3mm; margin: 4mm 0; font-size: 8.5pt; }
+    table { width: 100%; border-collapse: collapse; -fs-table-paginate: paginate; }
+    th, td { border: 1px solid #9ca3af; padding: 1.2mm 1.6mm; vertical-align: top; text-align: left; word-wrap: break-word; }
+    th { background: #e5ede6; font-size: 8pt; }
+    tr { page-break-inside: avoid; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    th.inventory-number { width: 16mm; white-space: nowrap; }
+    table.info { border: none; }
+    table.info th, table.info td { border: none; border-bottom: 1px solid #e5e7eb; background: none; font-size: 9.5pt; }
+    table.info th { width: 45mm; font-weight: bold; color: #374151; }
+    .summary-table td.num { width: 25mm; }
+    .tree-card { border: 1px solid #d1d5db; padding: 4mm; margin: 0 0 5mm 0; }
+    .tree-card-header { page-break-inside: avoid; }
+    .work { margin: 0 0 1.5mm 0; page-break-inside: avoid; }
+    .work-name { font-weight: bold; }
+    .photo { margin: 3mm 0 0 0; page-break-inside: avoid; text-align: center; }
+    .photo img { max-width: 100%; max-height: 110mm; }
+    .photo-caption { font-size: 8pt; color: #374151; margin-top: 1mm; }
+  </style>
+</head>
+<body>
+
+<!-- 1. Strona tytulowa -->
+<div class="title-page">
+  <div class="brand">ArboMachine</div>
+  <h1>Dokument projektu</h1>
+  <div class="project-name" th:text="${document.projectName()}">Nazwa projektu</div>
+  <table class="info">
+    <tr><th>Rodzaj opracowania</th><td>Dokument projektu — wersja MVP</td></tr>
+    <tr><th>Zleceniodawca</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr><th>Autor opracowania</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr><th>Data wygenerowania</th><td th:text="${format.dateTime(document.generatedAt())}">01.10.2026, 12:00</td></tr>
+  </table>
+  <div class="notice">
+    Dokument roboczy wygenerowany automatycznie z danych zapisanych w ArboMachine. Układ dokumentu będzie rozwijany
+    na podstawie konsultacji z arborystami.
+  </div>
+</div>
+
+<!-- 2. Informacje o projekcie -->
+<h2>1. Informacje o projekcie</h2>
+<table class="info">
+  <tr><th>Nazwa projektu</th><td th:text="${document.projectName()}">Nazwa</td></tr>
+  <tr>
+    <th>Opis</th>
+    <td th:if="${format.hasText(document.projectDescription())}" class="multiline" th:text="${document.projectDescription()}">Opis</td>
+    <td th:unless="${format.hasText(document.projectDescription())}" class="muted">Nie podano</td>
+  </tr>
+  <tr><th>Obiekt / lokalizacja</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+  <tr><th>Projekt utworzono</th><td th:text="${format.date(document.projectCreatedAt())}">01.10.2026</td></tr>
+  <tr><th>Ostatnia zmiana projektu</th><td th:text="${format.date(document.projectUpdatedAt())}">01.10.2026</td></tr>
+</table>
+
+<!-- 3. Podsumowanie -->
+<h2>2. Podsumowanie</h2>
+<table class="summary-table">
+  <tr><td>Liczba drzew</td><td class="num" th:text="${document.treeCount()}">0</td></tr>
+  <tr><td>Drzewa z lokalizacją</td><td class="num" th:text="${document.treeWithLocationCount()}">0</td></tr>
+  <tr><td>Zdjęcia</td><td class="num" th:text="${document.photoCount()}">0</td></tr>
+  <tr><td>Zalecenia i prace</td><td class="num" th:text="${document.workCount()}">0</td></tr>
+</table>
+
+<!-- 4. Mapa (V1: bez obrazu mapy) -->
+<h2>3. Mapa</h2>
+<p class="muted">Mapa projektu dostępna jest w aplikacji ArboMachine. Współrzędne drzew podano w kartach drzew (WGS 84).</p>
+
+<!-- 5. Tabela drzew -->
+<h2>4. Zestawienie drzew</h2>
+<p th:if="${document.trees().isEmpty()}" class="muted">W projekcie nie ma jeszcze drzew.</p>
+<table th:unless="${document.trees().isEmpty()}">
+  <thead>
+  <tr>
+    <th class="inventory-number">Nr</th>
+    <th>Gatunek (nazwa polska)</th>
+    <th>Gatunek (nazwa łacińska)</th>
+    <th class="num">Obwód pnia [cm]</th>
+    <th class="num">Wysokość [m]</th>
+    <th class="num">Średnica korony [m]</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="tree : ${document.trees()}">
+    <td th:text="${tree.inventoryNumber()}">1</td>
+    <td th:text="${format.text(tree.speciesPolish())}">—</td>
+    <td th:text="${format.text(tree.speciesLatin())}">—</td>
+    <td class="num" th:text="${format.number(tree.trunkCircumferenceCm())}">—</td>
+    <td class="num" th:text="${format.number(tree.heightM())}">—</td>
+    <td class="num" th:text="${format.number(tree.crownDiameterM())}">—</td>
+  </tr>
+  </tbody>
+</table>
+
+<!-- 6. Karty drzew (dane, lokalizacja, prace, zdjecia) -->
+<th:block th:unless="${document.trees().isEmpty()}">
+  <h2>5. Karty drzew</h2>
+  <div class="tree-card" th:each="tree : ${document.trees()}">
+    <div class="tree-card-header">
+      <h3 th:text="'Drzewo nr ' + ${tree.inventoryNumber()} + ' — ' + ${format.species(tree)}">Drzewo nr 1</h3>
+      <table class="info">
+        <tr><th>Obwód pnia</th><td th:text="${format.circumference(tree.trunkCircumferenceCm())}">—</td></tr>
+        <tr><th>Wysokość</th><td th:text="${format.meters(tree.heightM())}">—</td></tr>
+        <tr><th>Średnica korony</th><td th:text="${format.meters(tree.crownDiameterM())}">—</td></tr>
+        <tr><th>Lokalizacja (WGS 84)</th><td th:text="${format.coordinates(tree.location())}">Nie podano</td></tr>
+      </table>
+    </div>
+
+    <th:block th:if="${format.hasText(tree.conditionNotes())}">
+      <h4>Stan drzewa</h4>
+      <p class="multiline" th:text="${tree.conditionNotes()}">Opis stanu</p>
+    </th:block>
+    <th:block th:if="${format.hasText(tree.hazardNotes())}">
+      <h4>Zagrożenia</h4>
+      <p class="multiline" th:text="${tree.hazardNotes()}">Zagrożenia</p>
+    </th:block>
+    <th:block th:if="${format.hasText(tree.notes())}">
+      <h4>Notatki</h4>
+      <p class="multiline" th:text="${tree.notes()}">Notatki</p>
+    </th:block>
+
+    <h4>Zalecenia i prace</h4>
+    <p th:if="${tree.works().isEmpty()}" class="muted">Brak zapisanych zaleceń.</p>
+    <div class="work" th:each="work : ${tree.works()}">
+      <span class="work-name" th:text="${work.name()}">Cięcia redukcyjne</span>
+      <div th:if="${format.hasText(work.description())}" class="multiline" th:text="${work.description()}">Opis pracy</div>
+    </div>
+
+    <h4>Zdjęcia</h4>
+    <p th:if="${tree.photos().isEmpty()}" class="muted">Brak zdjęć.</p>
+    <div class="photo" th:each="photo : ${tree.photos()}">
+      <img th:if="${photo.embeddable()}" th:src="${imageProtocol + '://' + photo.documentPhotoNumber()}"
+           th:alt="${photo.originalFileName()}" alt="Zdjęcie"/>
+      <div th:unless="${photo.embeddable()}" class="muted small">
+        Zdjęcia w tym formacie nie można jeszcze umieścić w dokumencie PDF — dostępne w aplikacji.
+      </div>
+      <div class="photo-caption"
+           th:text="'Fot. ' + ${photo.documentPhotoNumber()} + '. Drzewo nr ' + ${tree.inventoryNumber()} + ' — '
+                    + ${photo.originalFileName()} + (${photo.annotated()} ? ' (z adnotacją)' : '')">Fot. 1</div>
+    </div>
+  </div>
+</th:block>
+
+</body>
+</html>

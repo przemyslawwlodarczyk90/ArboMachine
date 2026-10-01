@@ -313,7 +313,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 20
+## Rejestr braków — stan po etapie 22
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -344,7 +344,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
 | Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
-| Dokumentacja | Generator dokumentów (PDF/DOCX), tabele zaleceń, mapy do raportu (jest tylko przegląd materiałów i stabilny kontrakt `.../documentation-content`) | BRAK |
+| Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon, placeholdery autora/zleceniodawcy); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
 | Import/eksport | XLSX, CSV, GeoPackage, SHP, GeoJSON, DXF, QGIS | BRAK |
 | Teren | GNSS/RTK, NTRIP, geolokalizacja urządzenia, praca offline, synchronizacja | OPEN |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
@@ -362,8 +362,9 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dyktowanie | Docelowe tablety/przeglądarki (Safari na iPadzie, Chrome na Androidzie), jakość polskiego rozpoznawania w terenie | DO SPRAWDZENIA |
 | Dyktowanie | Prywatność: Chrome rozpoznaje mowę przez usługę Google (wymaga internetu, dźwięk opuszcza urządzenie przez przeglądarkę) | OPEN |
 | Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
-| Adnotacje | Rysowanie palcem i rysikiem na fizycznym tablecie, eksport PNG z dużych zdjęć (12+ Mpx) na słabszym tablecie (pamięć, czas) — edytor sprawdzony testami logiki i kompilacją, nie ręcznie w przeglądarce | DO SPRAWDZENIA |
+| Adnotacje | Rysowanie palcem i rysikiem na FIZYCZNYM tablecie, eksport PNG z dużych zdjęć (12+ Mpx) na słabszym tablecie (pamięć, czas). Sprawdzone w etapie 22 E2E w headless Chrome: mysz, emulowany dotyk, tekst, zapis, anulowanie, ekrany 390/768/1024 px | DO SPRAWDZENIA |
 | Dokumentacja | Wydajność zakładki „Dokumentacja” przy setkach zdjęć (każda miniatura pobiera pełny plik) | DO SPRAWDZENIA |
+| Dokument PDF | Czas i pamięć generowania przy dużym projekcie (setki drzew i zdjęć) — generowanie synchroniczne, cały PDF w pamięci; jakość wydruku zdjęć (1600 px) i czytelność na papierze | DO SPRAWDZENIA |
 | Zdjęcia | Aparat tabletu przez `<input type="file" accept="image/*">`, duże zdjęcia (8–15 MB) na słabym łączu | DO SPRAWDZENIA |
 | Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
 | Mapa | Czytelność symboli i znaczków prac na gęstym podkładzie OSM, na ortofotomapie i w wydruku | DO SPRAWDZENIA |
@@ -382,6 +383,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Bezpieczeństwo | Token JWT w `localStorage`, brak odświeżania tokenu (sesja wygasa po czasie ważności) | OPEN |
 | Zdjęcia | Brak zadania sprzątającego osierocone pliki (plik bez rekordu po nieudanym usunięciu; od etapu 20 także stare PNG adnotacji) | DŁUG |
 | Adnotacje | PNG adnotacji sprawdzany tylko po sygnaturze i rozmiarze — backend nie dekoduje obrazu ani nie sprawdza wymiarów | DŁUG |
+| Dokument PDF | Zdjęcia bez obrotu wg EXIF; WebP bez adnotacji nie trafia do PDF; brak miniatur — generator za każdym razem dekoduje i zmniejsza pełne zdjęcia | DŁUG |
 | Zdjęcia | Storage produkcyjny i kopie zapasowe plików (dziś katalog na dysku serwera) | OPEN |
 | Mapa | Publiczne kafelki OpenStreetMap — polityka użycia nie dopuszcza ruchu produkcyjnego | OPEN |
 
@@ -389,7 +391,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 
 | Opis | Status |
 |---|---|
-| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–18) — do usunięcia przy okazji | OPERACYJNE |
+| W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–22) — do usunięcia przy okazji | OPERACYJNE |
 | Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
 | Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
 
@@ -499,3 +501,51 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 - Czy dokument zawsze używa wersji z adnotacją (dziś tak — `documentation-content`).
 - Pozycjonowanie zdjęć w raporcie, podpisy pod zdjęciami, wybór zdjęć do raportu.
 - Adnotacje zdjęć z zewnętrznego aparatu (import zdjęć spoza tabletu).
+
+---
+
+## Dokumentacja — etapy 21–22 („Dokument projektu”, PDF)
+
+**Status:** V1 IMPLEMENTED / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-21-dokumentacja-discovery.md`.
+Statusy w tej sekcji: **V1 IMPLEMENTED** — działa w V1; **OPEN DOMAIN QUESTION** — pytanie do arborysty;
+**DEFERRED** — świadomie odłożone; **TECHNICAL DECISION** — decyzja techniczna V1, łatwa do zmiany.
+
+| Temat | Stan |
+|---|---|
+| Rodzaje dokumentów | V1 IMPLEMENTED: jeden neutralny „Dokument projektu”. OPEN DOMAIN QUESTION: program prac konserwatorskich, inwentaryzacja, waloryzacja, gospodarka drzewostanem, ochrona drzew na budowie — czym się różnią? |
+| Wymagane sekcje | V1 IMPLEMENTED: strona tytułowa, informacje o projekcie, podsumowanie, mapa (tekst), zestawienie drzew, karty drzew. OPEN DOMAIN QUESTION: które sekcje są obowiązkowe, które zależą od rodzaju opracowania, co arborysta pisze zawsze ręcznie? |
+| Dane klienta / zleceniodawcy | V1 IMPLEMENTED: placeholder „Dane do uzupełnienia”. OPEN DOMAIN QUESTION: jakie dane, czy należą do projektu czy do dokumentu? Brak encji `Client`. |
+| Dane autora | V1 IMPLEMENTED: placeholder. OPEN DOMAIN QUESTION: imię, nazwisko, firma, numer uprawnień — z profilu konta czy per dokument? |
+| Kwalifikacje | OPEN DOMAIN QUESTION: jakie kwalifikacje / certyfikaty muszą być w dokumencie. Brak modelu. |
+| Dane obiektu (adres, działka) | V1 IMPLEMENTED: placeholder. OPEN DOMAIN QUESTION: zakres danych obiektu. |
+| Numeracja dokumentu | DEFERRED: brak numeru dokumentu. OPEN DOMAIN QUESTION: czy wymagany i w jakim formacie. |
+| Wersjonowanie / historia | TECHNICAL DECISION: PDF generowany na żądanie, bez zapisu pliku i bez encji `ProjectDocument`. DEFERRED: historia wygenerowanych dokumentów. |
+| Status roboczy / ostateczny | V1 IMPLEMENTED: dokument zawsze oznaczony jako roboczy (wersja MVP). OPEN DOMAIN QUESTION: czy potrzebny status i zatwierdzanie. |
+| Podpisy / pieczęcie | DEFERRED. OPEN DOMAIN QUESTION: podpis odręczny na wydruku, pieczęć, podpis elektroniczny? |
+| Logo / branding | DEFERRED: tylko napis „ArboMachine”. OPEN DOMAIN QUESTION: logo i stopka firmy arborysty. |
+| Układ tabel | V1 IMPLEMENTED: jedna tabela drzew (nr, gatunek PL, gatunek LAT, obwód, wysokość, średnica korony), nagłówek powtarzany na kolejnych stronach. OPEN DOMAIN QUESTION: kolumny, kolejność, sortowanie, tabela zbiorcza prac, numeracja tabel. |
+| Układ zdjęć | V1 IMPLEMENTED: zdjęcia pod kartą drzewa, wszystkie, „Fot. N. Drzewo nr X — nazwa pliku (z adnotacją)”. OPEN DOMAIN QUESTION: przy drzewach, w osobnym rozdziale czy w załączniku? Wybór zdjęć? Własne podpisy? Ile zdjęć? |
+| Zdjęcia z adnotacją | V1 IMPLEMENTED: wersja z adnotacją, jeśli istnieje (jak `.../documentation-content`), w przeciwnym razie oryginał. |
+| Mapy w dokumencie | DEFERRED / OPEN: zamiast obrazu mapy tekst „Mapa projektu dostępna jest w aplikacji ArboMachine.” i współrzędne w kartach drzew. Snapshot OpenLayers wymaga renderowania mapy po stronie serwera albo przesyłania obrazu z przeglądarki. OPEN DOMAIN QUESTION: mapa w dokumencie czy załącznik, skala, podkład, legenda. |
+| Załączniki | DEFERRED. OPEN DOMAIN QUESTION: jakie załączniki (mapy, tabele, zdjęcia) i w jakiej formie. |
+| PDF | V1 IMPLEMENTED: `GET /api/projects/{projectId}/documents/project-report` → `application/pdf`, plik `arbomachine-projekt-{id}.pdf`. |
+| DOCX | DEFERRED. OPEN DOMAIN QUESTION: czy arborysta potrzebuje edytowalnego DOCX? |
+| Ręczna edycja przed eksportem | DEFERRED (brak edytora). OPEN DOMAIN QUESTION: co trzeba zmieniać przed wysłaniem — DOCX, edytowalne pola, rich text czy wersja robocza dokumentu? |
+| Różne szablony | TECHNICAL DECISION: interfejs `DocumentGenerator` + szablon `templates/documents/project-report.html`; nowy rodzaj = nowy generator i szablon. OPEN DOMAIN QUESTION: jakie szablony. |
+| Szablony klientów / urzędów | OPEN DOMAIN QUESTION: czy klienci / urzędy mają własne wzory? |
+| Stan drzewa i zagrożenia w dokumencie | V1 IMPLEMENTED: wolny tekst z formularza terenowego (tylko niepuste). OPEN DOMAIN QUESTION: czy tak ma wyglądać ocena w dokumencie. |
+
+### Założenia techniczne V1 (TECHNICAL DECISION — bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Pipeline: Thymeleaf → HTML → jsoup (DOM) → openhtmltopdf 1.1.87 (PDFBox 3) | Szablon HTML/CSS łatwy do zmiany; czysta Java, bez przeglądarki |
+| Czcionka DejaVu Sans osadzona w aplikacji (`resources/fonts/documents`, licencja obok) | Polskie znaki niezależnie od serwera; wygląd do dyskusji |
+| Zdjęcia zmniejszane do 1600 px (dłuższy bok), JPEG 85% | Brak miniatur na serwerze; jakość druku do weryfikacji |
+| Brak obrotu zdjęć wg EXIF | Zdjęcia z telefonu zapisane „bokiem” mogą wyjść obrócone (w przeglądarce wyglądają dobrze) |
+| Zdjęcia WebP bez adnotacji nie są osadzane (komunikat w dokumencie) | ImageIO nie czyta WebP bez dodatkowej biblioteki |
+| Uszkodzony plik zdjęcia → zdjęcie pominięte, podpis zostaje, dokument powstaje | Log ostrzeżenia na serwerze |
+| Generowanie synchroniczne w żądaniu HTTP, cały PDF w pamięci | Przy setkach zdjęć może trwać długo — DO SPRAWDZENIA |
+| Daty w strefie Europe/Warsaw, liczby z polskim przecinkiem, braki jako „—” | — |
+| Kolejność drzew, prac i zdjęć = kolejność dodania | Brak sortowania po numerze drzewa (numery są tekstem) |
+| Placeholdery tylko w szablonie (bez nowych pól domenowych) | Kursywa, kolor — nigdy fikcyjne dane |
+| A4, marginesy 20/18 mm, numer strony „Strona N z M”, stopka „ArboMachine - Dokument projektu (wersja MVP)” | — |

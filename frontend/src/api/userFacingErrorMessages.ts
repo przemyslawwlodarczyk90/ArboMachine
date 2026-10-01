@@ -56,6 +56,7 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Unsupported map symbol': 'Wybrany symbol mapowy nie jest obsługiwany.',
   'Map symbol code is mandatory': 'Wybierz symbol.',
   'Map symbol code must have at most 64 characters': 'Wybrany symbol mapowy nie jest obsługiwany.',
+  'Document generation failed': 'Wystąpił błąd serwera - spróbuj ponownie za chwilę.',
   'Tree photo annotation not found': 'To zdjęcie nie ma adnotacji.',
   'Annotation document is mandatory': 'Brak danych adnotacji.',
   'Unsupported annotation schema version': 'Nieobsługiwana wersja adnotacji.',

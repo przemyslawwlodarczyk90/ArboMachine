@@ -557,6 +557,10 @@ th.right, td.right { text-align: right; }
 .photo-annotation-actions { justify-content: flex-end; }
 
 /* ---------- Materialy do dokumentacji projektu ---------- */
+.project-report-card { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); min-width: 0; }
+.project-report-card h3, .project-report-card p { margin: 0; }
+.project-report-actions { justify-content: flex-start; }
+.documentation-materials-heading { margin: 0.75rem 0 0; }
 .documentation-tree-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
 .documentation-tree-group { display: grid; gap: 0.6rem; min-width: 0; }
 .documentation-tree-group-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem; }

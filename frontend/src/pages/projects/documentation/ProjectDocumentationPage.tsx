@@ -8,6 +8,7 @@ import type { ProjectPhoto } from '../../trees/photos/treePhotoDataTypes';
 import { treePhotosApi } from '../../trees/photos/treePhotosApi';
 import { DocumentationPhotoCard } from './DocumentationPhotoCard';
 import { groupProjectPhotosByTree } from './documentationPhotoGroups';
+import { ProjectReportCard } from './ProjectReportCard';
 
 type ProjectPhotosState =
   | { status: 'loading' }
@@ -15,9 +16,9 @@ type ProjectPhotosState =
   | { status: 'loaded'; projectPhotos: ProjectPhoto[] };
 
 /**
- * Sekcja "Dokumentacja" workspace projektu (/projects/:projectId/documentation) - materialy do dokumentacji:
- * wszystkie zdjecia projektu pogrupowane po drzewie, w wersji do dokumentacji (z adnotacja, jesli istnieje).
- * To NIE jest generator dokumentu (PDF/DOCX) - tylko przeglad materialow. Jedno zapytanie o liste zdjec projektu.
+ * Sekcja "Dokumentacja" workspace projektu (/projects/:projectId/documentation): "Dokument projektu" (PDF z aktualnych
+ * danych, etap 22) oraz materialy do dokumentacji - zdjecia projektu pogrupowane po drzewie, w wersji do dokumentacji
+ * (z adnotacja, jesli istnieje). Jedno zapytanie o liste zdjec projektu.
  */
 export function ProjectDocumentationPage() {
   const projectId = parsePositiveIdRouteParam(useParams().projectId);
@@ -48,13 +49,21 @@ export function ProjectDocumentationPage() {
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
 
   if (projectPhotosState.status === 'loading') {
-    return <div className="center"><LoadingSpinner /></div>;
+    return (
+      <div className="stack">
+        <h2>Dokumentacja</h2>
+        <ProjectReportCard projectId={projectId} />
+        <div className="center"><LoadingSpinner /></div>
+      </div>
+    );
   }
 
   if (projectPhotosState.status === 'failed') {
     return (
       <div className="stack">
-        <h2>Materiały do dokumentacji</h2>
+        <h2>Dokumentacja</h2>
+        <ProjectReportCard projectId={projectId} />
+        <h3>Materiały do dokumentacji</h3>
         <Alert variant="error">Nie udało się pobrać zdjęć projektu. {projectPhotosState.errorMessage}</Alert>
       </div>
     );
@@ -65,10 +74,12 @@ export function ProjectDocumentationPage() {
 
   return (
     <div className="stack">
-      <h2>Materiały do dokumentacji</h2>
+      <h2>Dokumentacja</h2>
+      <ProjectReportCard projectId={projectId} />
+      <h3 className="documentation-materials-heading">Materiały do dokumentacji</h3>
       <p className="muted">
         Zdjęcia drzew w wersji do dokumentacji - jeżeli zdjęcie ma adnotację, widać wersję z naniesionym szkicem.
-        Generowanie dokumentu (PDF/DOCX) pojawi się w kolejnych etapach.
+        Te same wersje trafiają do dokumentu PDF.
       </p>
       {photoCount === 0 ? (
         <div className="empty-state">
