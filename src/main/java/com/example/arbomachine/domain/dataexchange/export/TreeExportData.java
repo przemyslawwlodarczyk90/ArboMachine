@@ -38,6 +38,24 @@ public record TreeExportData(
         return latitude != null && longitude != null;
     }
 
+    /** Wartosc kolumny prac (WorkExchangeColumn) dla jednej pracy tego drzewa. */
+    public Object workValueOf(TreeWorkExportData work, com.example.arbomachine.domain.dataexchange.schema.WorkExchangeColumn column) {
+        return switch (column) {
+            case TREE_ID -> treeId;
+            case INVENTORY_NUMBER -> inventoryNumber;
+            case SPECIES_POLISH -> speciesPolish;
+            case SPECIES_LATIN -> speciesLatin;
+            case WORK_ID -> work.workId();
+            case WORK_NAME -> work.name();
+            case WORK_DESCRIPTION -> work.description();
+            case WORK_STATUS -> work.status();
+            case WORK_PRIORITY -> work.priority();
+            case PLANNED_DATE -> work.plannedDate() == null ? null : work.plannedDate().toString();
+            case COMPLETED_DATE -> work.completedDate() == null ? null : work.completedDate().toString();
+            case WORK_SYMBOL_CODE -> work.mapSymbolCode();
+        };
+    }
+
     /** Wartosc pola: String, Long/Integer, BigDecimal albo null (brak danych). */
     public Object valueOf(TreeExchangeField field) {
         return switch (field) {
@@ -66,6 +84,10 @@ public record TreeExportData(
             case VALUATION_CULTURAL_VALUE -> valuation == null ? null : valuation.culturalValue();
             case VALUATION_LANDSCAPE_VALUE -> valuation == null ? null : valuation.landscapeValue();
             case VALUATION_JUSTIFICATION -> valuation == null ? null : valuation.justification();
+            case OPEN_WORK_COUNT -> (int) works.stream().filter(TreeWorkExportData::isOpen).count();
+            case NEXT_PLANNED_WORK_DATE -> works.stream().filter(TreeWorkExportData::isOpen)
+                    .map(TreeWorkExportData::plannedDate).filter(java.util.Objects::nonNull).min(java.util.Comparator.naturalOrder())
+                    .map(java.time.LocalDate::toString).orElse(null);
         };
     }
 }

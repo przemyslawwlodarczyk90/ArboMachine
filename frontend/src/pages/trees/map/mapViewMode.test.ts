@@ -13,5 +13,5 @@ test('legenda waloryzacji: wszystkie kategorie z liczba drzew, takze zera i "nie
 });
 
 test('tryby mapy po polsku', () => {
-  assert.deepEqual(MAP_VIEW_MODES.map((viewMode) => viewMode.label), ['Drzewa i symbole prac', 'Waloryzacja']);
+  assert.deepEqual(MAP_VIEW_MODES.map((viewMode) => viewMode.label), ['Drzewa i symbole prac', 'Waloryzacja', 'Gospodarka drzewostanem']);
 });

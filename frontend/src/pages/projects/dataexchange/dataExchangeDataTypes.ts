@@ -49,3 +49,6 @@ export interface TreeImportResult {
 }
 
 export type TreeExportFormat = 'csv' | 'xlsx' | 'geojson' | 'gpkg';
+
+/** Pliki eksportu projektu: drzewa w formatach jak wyzej + (etap 28) CSV prac - jeden wiersz na prace. */
+export type ProjectExportFile = TreeExportFormat | 'works-csv';

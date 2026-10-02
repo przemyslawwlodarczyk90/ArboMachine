@@ -15,6 +15,7 @@ import {
 } from '../../../map/openLayersBaseMap';
 import { valuationColorOf } from '../valuation/valuationColors';
 import type { TreeValuationCategory } from '../valuation/valuationDataTypes';
+import { managementColorOf, type TreeManagementSummary } from '../works/workManagement';
 import type { MapViewMode } from './mapViewMode';
 import type { TreeMapPoint } from './treeMapPoints';
 
@@ -24,6 +25,8 @@ const INVENTORY_NUMBER_FEATURE_PROPERTY = 'inventoryNumber';
 const TREE_SYMBOL_FEATURE_PROPERTY = 'treeSymbolCode';
 const WORK_SYMBOLS_FEATURE_PROPERTY = 'workSymbolCodes';
 const VALUATION_CATEGORY_FEATURE_PROPERTY = 'valuationCategory';
+const OPEN_WORK_SYMBOLS_FEATURE_PROPERTY = 'openWorkSymbolCodes';
+const MANAGEMENT_FEATURE_PROPERTY = 'management';
 
 /** Rozmiary V1 (piksele): centralny symbol drzewa i mniejsze znaczki prac wokol niego. */
 const TREE_SYMBOL_RADIUS_PX = 8;
@@ -36,9 +39,10 @@ const NEUTRAL_TREE_STYLE = createTreeMarkerStyle(SAVED_TREE_MARKER_COLOR);
  * Nieznany kod (spoza katalogu) = neutralny wyglad / pominiety znaczek zamiast bledu mapy.
  */
 function buildTreeStyles(treeSymbolCode: string | null, workSymbolCodes: string[],
-                         symbolByCode: globalThis.Map<string, MapSymbol>): Style[] {
+                         symbolByCode: globalThis.Map<string, MapSymbol>, centerStyle?: Style): Style[] {
   const treeSymbol = treeSymbolCode ? symbolByCode.get(treeSymbolCode) : undefined;
-  const styles = treeSymbol ? createMapSymbolStyles(treeSymbol, { radius: TREE_SYMBOL_RADIUS_PX }) : [NEUTRAL_TREE_STYLE];
+  const styles = centerStyle ? [centerStyle]
+    : treeSymbol ? createMapSymbolStyles(treeSymbol, { radius: TREE_SYMBOL_RADIUS_PX }) : [NEUTRAL_TREE_STYLE];
   const knownWorkSymbolCodes = workSymbolCodes.filter((symbolCode) => symbolByCode.has(symbolCode));
   const badgeLayout = layoutWorkBadges(knownWorkSymbolCodes);
   for (const badge of badgeLayout.badges) {
@@ -57,8 +61,17 @@ function buildValuationStyles(category: TreeValuationCategory | null): Style[] {
 }
 
 /**
+ * Tryb "Gospodarka drzewostanem" (etap 28): kolor markera = stan prac drzewa (pilne / do wykonania / tylko zamkniete /
+ * brak), znaczki tylko prac do wykonania - wykonane i anulowane nie zasmiecaja mapy.
+ */
+function buildManagementStyles(management: TreeManagementSummary, openWorkSymbolCodes: string[],
+                               symbolByCode: globalThis.Map<string, MapSymbol>): Style[] {
+  return buildTreeStyles(null, openWorkSymbolCodes, symbolByCode, createTreeMarkerStyle(managementColorOf(management.state)));
+}
+
+/**
  * Mapa projektu (OpenLayers): podklad OSM + warstwa markerow drzew. Tryby (viewMode): symbole drzew i prac (etap 19)
- * albo kolor waloryzacji (etap 27) - zmiana trybu tylko przerysowuje style tej samej warstwy.
+ * albo kolor waloryzacji (etap 27) albo stan prac (etap 28) - zmiana trybu tylko przerysowuje style tej samej warstwy.
  * Tylko podglad - nie edytuje lokalizacji ani symboli.
  * Instancja mapy powstaje raz (przy montowaniu) i jest niszczona przy odmontowaniu; zmiana punktow podmienia
  * jedynie Feature w warstwie i dopasowuje widok. Klikniecie markera zglasza treeId (albo null - klik obok).
@@ -96,6 +109,17 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
             styleCacheRef.current.set(valuationKey, valuationStyles);
           }
           return valuationStyles;
+        }
+        if (viewModeRef.current === 'MANAGEMENT') {
+          const management = feature.get(MANAGEMENT_FEATURE_PROPERTY) as TreeManagementSummary;
+          const openWorkSymbolCodes = (feature.get(OPEN_WORK_SYMBOLS_FEATURE_PROPERTY) as string[] | undefined) ?? [];
+          const managementKey = `management|${management.state}|${openWorkSymbolCodes.join(',')}`;
+          let managementStyles = styleCacheRef.current.get(managementKey);
+          if (!managementStyles) {
+            managementStyles = buildManagementStyles(management, openWorkSymbolCodes, symbolByCodeRef.current);
+            styleCacheRef.current.set(managementKey, managementStyles);
+          }
+          return managementStyles;
         }
         const treeSymbolCode = (feature.get(TREE_SYMBOL_FEATURE_PROPERTY) as string | null) ?? null;
         const workSymbolCodes = (feature.get(WORK_SYMBOLS_FEATURE_PROPERTY) as string[] | undefined) ?? [];
@@ -160,6 +184,8 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       [TREE_SYMBOL_FEATURE_PROPERTY]: treeMapPoint.treeSymbolCode,
       [WORK_SYMBOLS_FEATURE_PROPERTY]: treeMapPoint.workSymbolCodes,
       [VALUATION_CATEGORY_FEATURE_PROPERTY]: treeMapPoint.valuationCategory,
+      [OPEN_WORK_SYMBOLS_FEATURE_PROPERTY]: treeMapPoint.openWorkSymbolCodes,
+      [MANAGEMENT_FEATURE_PROPERTY]: treeMapPoint.management,
     })));
     fitViewToCoordinates(map, treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
   }, [treeMapPoints]);

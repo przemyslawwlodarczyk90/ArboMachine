@@ -12,7 +12,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Edycja nazwy i opisu pracy. Praca musi nalezec dokladnie do drzewa z URL (a drzewo do wlasnego projektu).
+ * Edycja pracy - komplet pol (nazwa, opis, status, priorytet, terminy; etap 28: dowolna zmiana statusu, bez regul
+ * przejsc). Praca musi nalezec dokladnie do drzewa z URL (a drzewo do wlasnego projektu).
  * Drzewa pracy nie da sie zmienic. updatedAt przesuwa sie tylko przy rzeczywistej zmianie.
  */
 @Component
@@ -34,13 +35,11 @@ public class UpdateTreeWorkHandler {
                                    UpdateTreeWorkRequest updateTreeWorkRequest) {
         TreeWork treeWork = findTreeWorkOfTreeInProjectOwnedByCurrentUserHandler.handle(currentUserEmail, projectId,
                 treeId, treeWorkId);
-        TreeWorkFieldsNormalizer.NormalizedTreeWorkFields fields =
-                TreeWorkFieldsNormalizer.normalizedFieldsOf(updateTreeWorkRequest);
-        if (!treeWork.differsFrom(fields.name(), fields.description())) {
+        TreeWork.Fields fields = TreeWorkFieldsNormalizer.normalizedFieldsOf(updateTreeWorkRequest);
+        if (!treeWork.differsFrom(fields)) {
             return treeWorkMapper.toTreeWorkResponse(treeWork);
         }
-        treeWork.replaceNameAndDescription(fields.name(), fields.description(),
-                Instant.now().truncatedTo(ChronoUnit.MICROS));
+        treeWork.replaceFields(fields, Instant.now().truncatedTo(ChronoUnit.MICROS));
         return treeWorkMapper.toTreeWorkResponse(treeWorkRepository.save(treeWork));
     }
 }

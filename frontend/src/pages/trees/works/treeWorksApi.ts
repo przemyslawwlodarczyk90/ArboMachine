@@ -7,7 +7,7 @@ const treeWorksPath = (projectId: number, treeId: number) => `/api/projects/${pr
 /**
  * Endpointy zalecen/prac przy drzewie (/api/projects/{projectId}/trees/{treeId}/works/**). Cala hierarchie
  * (wlasny projekt -> drzewo -> praca) sprawdza backend. Dodanie i edycja pracy dzialaja takze bez polaczenia
- * (offlineService, etap 26); symbole i usuwanie wymagaja polaczenia.
+ * (offlineService, etap 26), od etapu 28 takze usuwanie; symbole wymagaja polaczenia.
  */
 export const treeWorksApi = {
   listTreeWorks: (projectId: number, treeId: number) =>
@@ -19,7 +19,7 @@ export const treeWorksApi = {
   updateTreeWork: (projectId: number, treeId: number, workId: number, updateTreeWorkRequest: TreeWorkFieldsRequest) =>
     offlineService.mutate<TreeWork>({ kind: 'UPDATE_TREE_WORK', projectId, treeId, workId, body: updateTreeWorkRequest }),
 
-  /** Prace wszystkich drzew projektu jednym zapytaniem (mapa projektu: symbole prac i legenda). */
+  /** Prace wszystkich drzew projektu jednym zapytaniem (mapa projektu, widok "Gospodarka drzewostanem"). */
   listProjectWorks: (projectId: number) =>
     sendApiRequest<TreeWork[]>(`/api/projects/${projectId}/works`, { sendAccessToken: true }),
 
@@ -35,7 +35,5 @@ export const treeWorksApi = {
     }),
 
   deleteTreeWork: (projectId: number, treeId: number, workId: number) =>
-    sendApiRequest<void>(`${treeWorksPath(projectId, treeId)}/${workId}`, {
-      httpMethod: 'DELETE', sendAccessToken: true,
-    }),
+    offlineService.mutate<void>({ kind: 'DELETE_TREE_WORK', projectId, treeId, workId }),
 };

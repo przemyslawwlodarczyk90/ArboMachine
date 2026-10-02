@@ -7,7 +7,9 @@ import { useMapSymbolCatalog } from '../../../map/useMapSymbolCatalog';
 import { DeleteTreeWorkDialog } from './DeleteTreeWorkDialog';
 import type { TreeWork } from './treeWorkDataTypes';
 import { TreeWorkForm } from './TreeWorkForm';
-import { emptyTreeWorkFormValues, toTreeWorkFormValues } from './treeWorkFormValues';
+import { emptyTreeWorkFormValues, toCompletedTreeWorkRequest, toTreeWorkFormValues } from './treeWorkFormValues';
+import { TreeWorkMeta } from './TreeWorkMeta';
+import { isOpenWorkStatus, todayIsoDate } from './workManagement';
 import { TreeWorkMapSymbolEditor } from './TreeWorkMapSymbolEditor';
 import { treeWorksApi } from './treeWorksApi';
 
@@ -33,6 +35,8 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
   const [symbolEditedTreeWorkId, setSymbolEditedTreeWorkId] = useState<number | null>(null);
   const { catalogState, symbolByCode } = useMapSymbolCatalog();
   const [workAwaitingDeletion, setWorkAwaitingDeletion] = useState<TreeWork | null>(null);
+  const [completingTreeWorkId, setCompletingTreeWorkId] = useState<number | null>(null);
+  const [quickActionErrorMessage, setQuickActionErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isResponseStillWanted = true;
@@ -73,6 +77,22 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
     setWorkAwaitingDeletion(null);
   };
 
+  // Etap 28: szybkie "Oznacz jako wykonaną" - PATCH z kompletem pol (dziala tez offline, jak edycja).
+  const markWorkAsCompleted = async (treeWork: TreeWork) => {
+    if (completingTreeWorkId !== null) return;
+    setCompletingTreeWorkId(treeWork.id);
+    setQuickActionErrorMessage(null);
+    try {
+      replaceUpdatedWork(await treeWorksApi.updateTreeWork(projectId, treeId, treeWork.id,
+        toCompletedTreeWorkRequest(treeWork, todayIsoDate())));
+    } catch (savingError) {
+      setQuickActionErrorMessage(`Nie udało się oznaczyć pracy jako wykonanej. ${
+        savingError instanceof ApiRequestError ? savingError.message : 'Nieoczekiwany błąd.'}`);
+    } finally {
+      setCompletingTreeWorkId(null);
+    }
+  };
+
   const startAddingWork = () => {
     setEditedTreeWorkId(null);
     setIsAddingWork(true);
@@ -95,6 +115,8 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
       {treeWorkListState.status === 'failed' && (
         <Alert variant="error">Nie udało się wczytać zaleceń i prac. {treeWorkListState.errorMessage}</Alert>
       )}
+
+      {quickActionErrorMessage && <Alert variant="error">{quickActionErrorMessage}</Alert>}
 
       {isAddingWork && (
         <TreeWorkForm initialFormValues={emptyTreeWorkFormValues} submitButtonLabel="Dodaj pracę"
@@ -119,6 +141,7 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
                   <div className="tree-work-item-text">
                     <strong>{treeWork.name}</strong>
                     {treeWork.offlinePending && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
+                    <TreeWorkMeta treeWork={treeWork} />
                     {treeWork.description && <p className="tree-work-item-description">{treeWork.description}</p>}
                     <span className="muted small map-symbol-inline">
                       Symbol na mapie: {treeWork.mapSymbolCode && symbolByCode.get(treeWork.mapSymbolCode)
@@ -133,6 +156,12 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
                   )}
                   {!isAnyFormOpen && (
                     <div className="form-actions">
+                      {isOpenWorkStatus(treeWork.status) && (
+                        <button className="btn btn-primary btn-small" disabled={completingTreeWorkId !== null}
+                                onClick={() => markWorkAsCompleted(treeWork)}>
+                          {completingTreeWorkId === treeWork.id ? 'Zapisywanie…' : 'Oznacz jako wykonaną'}
+                        </button>
+                      )}
                       <button className="btn btn-secondary btn-small" onClick={() => setEditedTreeWorkId(treeWork.id)}>
                         Edytuj
                       </button>

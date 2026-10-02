@@ -1,6 +1,6 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-26 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline, waloryzacja):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
+**Czym jest (stan: Milestone 1 + etapy 17-28 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline, waloryzacja, gospodarka drzewostanem):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
 i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
 drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
 podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
@@ -30,11 +30,11 @@ tablecie i telefonie. Własność danych egzekwuje backend (`Tree → Project �
 ## 🚫 Czego jeszcze nie ma
 
 Świadomie **niezaimplementowane** (otwarte pytania w [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md)):
-ocena stanu drzewa / VTA / ryzyko, waloryzacja, gospodarka drzewostanem, słownik gatunków i typów prac, symbole prac
-na mapie i legenda, adnotacje na zdjęciach, generator dokumentacji (PDF/DOCX), import/eksport (QGIS, GeoPackage, SHP,
-XLSX), WMS/Geoportal, układy PL-2000/PL-1992, PostGIS, GNSS/RTK, praca offline, usuwanie drzew i projektów,
-współpraca wielu użytkowników nad projektem (organizacje, urząd ↔ wykonawca). Panel urzędnika ma na razie tylko
-pulpit z zapowiedziami modułów.
+ocena stanu drzewa / VTA / ryzyko, metoda waloryzacji i wycena pieniężna (V1 to tylko zapis oceny arborysty),
+słownik gatunków i typów prac, harmonogram / kosztorys / wykonawcy prac, DOCX, SHP/DXF/QGZ, WMS/Geoportal, układy
+PL-2000/PL-1992, PostGIS, RTK / odbiorniki zewnętrzne, zdjęcia offline, usuwanie drzew i projektów, współpraca wielu
+użytkowników nad projektem (organizacje, urząd ↔ wykonawca). Panel urzędnika ma na razie tylko pulpit z zapowiedziami
+modułów. Pełny rejestr braków: `docs/DO_DOPRECYZOWANIA.md`, „Rejestr braków”.
 
 ---
 
@@ -126,6 +126,11 @@ UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.c
   Średnia / Wysoka / Bardzo wysoka, to nie skala branżowa) i opisy wartości wiekowej, przyrodniczej, ekologicznej,
   kulturowej i krajobrazowej z dyktowaniem. Aplikacja niczego nie wylicza (bez wzorów i kwot). Filtr na liście
   drzew, tryb mapy „Waloryzacja”, PDF, eksport, offline (`docs/discovery/etap-27-waloryzacja.md`)
+- 🪓 **Gospodarka drzewostanem (V1)** - rozszerzenie „Zaleceń i prac”: status (Zalecenie / Zaplanowana / Wykonana /
+  Anulowana, dowolne przejścia), priorytet organizacyjny (Niski / Normalny / Wysoki / Pilny - nie standard
+  branżowy), termin i data wykonania (także w przeszłości), „Oznacz jako wykonaną”. Zakładka projektu „Gospodarka
+  drzewostanem” (wszystkie prace, filtry status / priorytet / drzewo), tryb mapy „Gospodarka drzewostanem”, sekcja
+  w PDF, arkusz XLSX „Prace”, CSV prac, atrybuty GIS, offline (`docs/discovery/etap-28-gospodarka-drzewostanem.md`)
 - 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
   pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
   autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
@@ -297,7 +302,8 @@ frontend/src
     │   │             annotations/: TreePhotoAnnotationDialog, PhotoAnnotationCanvas, PhotoAnnotationToolbar +
     │   │             logika: annotationCoordinates, annotationElements, annotationHistory, annotationRenderer
     │   └── works     TreeWorksSection (lista + edycja w miejscu), TreeWorkForm, DeleteTreeWorkDialog,
-    │                 treeWorkFormValues (walidacja) + treeWorksApi
+    │                 TreeWorkMeta, treeWorkFormValues (walidacja), workManagement (statusy, filtr, mapa;
+    │                 etap 28) + treeWorksApi; projects/management/ProjectManagementPage (etap 28)
     ├── (src/gnss)    deviceGnss - pomiar Geolocation API, ocena dokładności, polskie komunikaty (etap 25)
     ├── (src/offline) offlineQueue (kolejka + synchronizacja, testy), offlineService, indexedDbOfflineStore,
     │                 OfflineStatusBar, useOfflineState, serviceWorkerRegistration + public/sw.js (etap 26)
@@ -432,14 +438,15 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | GET | `/api/map-symbols` | każdy zalogowany | Katalog symboli V1 `[{ code, displayName, shape, fillColor, strokeColor }]` |
 | PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/map-symbol` | każdy zalogowany | Symbol drzewa `{ symbolCode }` / usunięcie → 200 z drzewem; kod spoza katalogu → 400 |
 | PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}/map-symbol` | każdy zalogowany | Symbol pracy (bez edycji nazwy/opisu) → 200 z pracą |
-| GET | `/api/projects/{projectId}/works` | każdy zalogowany | Prace wszystkich drzew projektu jednym zapytaniem (mapa, legenda) |
+| GET | `/api/projects/{projectId}/works` | każdy zalogowany | Prace wszystkich drzew projektu jednym zapytaniem (mapa, legenda, „Gospodarka drzewostanem”); opcjonalnie `?status=PLANNED&status=RECOMMENDED&priority=URGENT` (wiele wartości = dowolna z nich) |
 | POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, hasAnnotation, annotationUpdatedAt, createdAt }` (bez ścieżek plików) |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik, także adnotacja i jej PNG) → 204 |
 | GET / PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/valuation` | każdy zalogowany | Waloryzacja drzewa: odczyt (brak = `hasValuation: false`), zapis całej oceny (pusta → 400), usunięcie → 204 |
 | GET | `/api/projects/{projectId}/valuations` | każdy zalogowany | Waloryzacje drzew projektu (lista drzew z filtrem, mapa) |
-| GET | `/api/projects/{projectId}/exports/trees.csv` / `.xlsx` / `.geojson` / `.gpkg` | każdy zalogowany | Eksport drzew (CSV, XLSX, GeoJSON i GeoPackage - tylko drzewa z lokalizacją, EPSG:4326) |
+| GET | `/api/projects/{projectId}/exports/trees.csv` / `.xlsx` / `.geojson` / `.gpkg` | każdy zalogowany | Eksport drzew (CSV, XLSX z arkuszem „Prace”, GeoJSON i GeoPackage - tylko drzewa z lokalizacją, EPSG:4326) |
+| GET | `/api/projects/{projectId}/exports/works.csv` | każdy zalogowany | Prace projektu jako CSV - jeden wiersz = jedna praca (etap 28) |
 | POST | `/api/projects/{projectId}/imports/trees/validate` | każdy zalogowany | Sprawdzenie pliku importu (multipart `file`: CSV/XLSX/GeoJSON) - nic nie zapisuje |
 | POST | `/api/projects/{projectId}/imports/trees` | każdy zalogowany | Import drzew - wszystko albo nic: 201 `{ importedTreeCount }` albo 400 z wynikiem sprawdzenia |
 | GET | `/api/projects/{projectId}/documents/project-report` | każdy zalogowany | „Dokument projektu” - PDF generowany na żądanie (`attachment; filename="arbomachine-projekt-{id}.pdf"`); cudzy projekt → 404 |
@@ -449,10 +456,10 @@ układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Usunięcie adnotacji i jej PNG (oryginał zostaje) → 204 |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation/content` | każdy zalogowany | Spłaszczony PNG adnotacji |
 | GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/documentation-content` | każdy zalogowany | Zdjęcie do dokumentacji: PNG z adnotacją, jeśli istnieje, inaczej oryginał |
-| POST | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Nowa praca `{ name, description? }` → 201 |
+| POST | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Nowa praca `{ name, description?, status?, priority?, plannedDate?, completedDate? }` (brak statusu = `RECOMMENDED`) → 201 |
 | GET | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Prace drzewa w kolejności dodawania |
 | GET | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Pojedyncza praca |
-| PATCH | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Edycja - komplet pól `{ name, description? }` (pominięty opis = wyczyszczenie) → 200 |
+| PATCH | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Edycja - komplet pól `{ name, description?, status?, priority?, plannedDate?, completedDate? }` (pominięte pole = wyczyszczenie, status = `RECOMMENDED`) → 200 |
 | DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Usunięcie pracy → 204 |
 
 Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
@@ -514,7 +521,9 @@ Tabela `tree_photo`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (i
 `original_file_name varchar(255) NOT NULL`, `storage_key varchar(64) NOT NULL UNIQUE`, `content_type varchar(100) NOT NULL`,
 `file_size_bytes bigint NOT NULL`, `created_at timestamptz NOT NULL` - sam plik leży poza bazą.
 Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks), `name varchar(255) NOT NULL`,
-`description text NULL`, `map_symbol_code varchar(64) NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
+`description text NULL`, `map_symbol_code varchar(64) NULL`, `status varchar(32) NULL` (RECOMMENDED / PLANNED /
+COMPLETED / CANCELLED; null = praca sprzed etapu 28 = RECOMMENDED), `priority varchar(32) NULL` (LOW / NORMAL / HIGH /
+URGENT), `planned_date date NULL`, `completed_date date NULL` (etap 28), `created_at` / `updated_at timestamptz NOT NULL`.
 Tabela `tree_photo_annotation` (etap 20): `id bigint PK`, `tree_photo_id bigint NOT NULL UNIQUE FK -> tree_photo(id)`,
 `schema_version integer NOT NULL`, `document_json text NOT NULL`, `rendered_storage_key varchar(64) NOT NULL`,
 `rendered_content_type varchar(100) NOT NULL`, `rendered_file_size_bytes bigint NOT NULL`,
@@ -532,7 +541,8 @@ Tabele bez `owner_id`.
 | `/projects/:projectId` | ARBORIST | **Podsumowanie projektu** (strona główna projektu): liczby i szybkie akcje |
 | `/projects/:projectId/trees` | ARBORIST | Sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
 | `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
-| `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu |
+| `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu; tryby „Drzewa i symbole prac”, „Waloryzacja”, „Gospodarka drzewostanem” |
+| `/projects/:projectId/management` | ARBORIST | Sekcja „Gospodarka drzewostanem”: prace wszystkich drzew, liczniki, filtry, „Oznacz jako wykonaną” (etap 28) |
 | `/projects/:projectId/import-export` | ARBORIST | Sekcja „Import i eksport”: eksport CSV/XLSX/GeoJSON/GeoPackage, blok QGIS, import drzew z pliku |
 | `/projects/:projectId/documentation` | ARBORIST | Sekcja „Dokumentacja”: „Generuj dokument PDF” (Dokument projektu) oraz materiały do dokumentacji - zdjęcia projektu pogrupowane po drzewie (wersja z adnotacją, jeśli istnieje) |
 

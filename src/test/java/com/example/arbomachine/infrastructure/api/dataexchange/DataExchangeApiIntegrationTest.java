@@ -193,7 +193,8 @@ class DataExchangeApiIntegrationTest {
                 "Gatunek łaciński", "Obwód pnia [cm]", "Wysokość [m]", "Średnica korony [m]", "Notatki", "Stan drzewa",
                 "Zagrożenia", "Szerokość geograficzna", "Długość geograficzna", "Dokładność lokalizacji [m]", "Wysokość n.p.m. [m]",
                 "Źródło lokalizacji", "Zalecenia i prace", "Waloryzacja - ocena ogólna", "Wartość wiekowa",
-                "Wartość przyrodnicza", "Wartość ekologiczna", "Wartość kulturowa", "Wartość krajobrazowa", "Uzasadnienie waloryzacji");
+                "Wartość przyrodnicza", "Wartość ekologiczna", "Wartość kulturowa", "Wartość krajobrazowa", "Uzasadnienie waloryzacji",
+                "Prace do wykonania (liczba)", "Najbliższy termin pracy");
         assertThat(records).hasSize(4);
         CSVRecord full = records.get(1);
         assertThat(full.get(1)).isEqualTo("L-1");
@@ -211,6 +212,7 @@ class DataExchangeApiIntegrationTest {
         CSVRecord onlyNumber = records.get(2);
         assertThat(onlyNumber.get(1)).isEqualTo("L-2");
         assertThat(onlyNumber.toList().subList(2, 23)).allMatch(String::isEmpty);
+        assertThat(onlyNumber.get(23)).as("brak prac = 0 prac do wykonania").isEqualTo("0");
         assertThat(csv).doesNotContain("null").contains("\r\n");
     }
 

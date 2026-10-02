@@ -20,6 +20,10 @@ import { valuationColorOf } from '../valuation/valuationColors';
 import { valuationCategoryLabel, type TreeValuation } from '../valuation/valuationDataTypes';
 import { valuationCategoryByTreeId } from '../valuation/valuationFilter';
 import { buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
+import { TreeWorkMeta } from '../works/TreeWorkMeta';
+import {
+  buildManagementLegend, isOpenWorkStatus, managementColorOf, managementStateLabel, sortWorksForManagement,
+} from '../works/workManagement';
 
 type ProjectMapDataState =
   | { status: 'loading' }
@@ -92,7 +96,11 @@ export function ProjectTreeMapSection() {
   const treeCount = projectMapDataState.trees.length;
   const treesWithoutLocationCount = treeCount - treeMapPoints.length;
   const selectedTree = projectMapDataState.trees.find((tree) => tree.id === selectedTreeId) ?? null;
-  const selectedTreeWorks = projectMapDataState.works.filter((work) => work.treeId === selectedTreeId);
+  const allSelectedTreeWorks = projectMapDataState.works.filter((work) => work.treeId === selectedTreeId);
+  // W trybie gospodarki tylko prace do wykonania, w kolejnosci terminow (jak w widoku "Gospodarka drzewostanem").
+  const selectedTreeWorks = viewMode === 'MANAGEMENT'
+    ? sortWorksForManagement(allSelectedTreeWorks.filter((work) => isOpenWorkStatus(work.status)))
+    : allSelectedTreeWorks;
   const selectedTreeSymbol = selectedTree?.mapSymbolCode ? symbolByCode.get(selectedTree.mapSymbolCode) : undefined;
   const selectedTreeValuationCategory = treeMapPoints.find((point) => point.treeId === selectedTreeId)?.valuationCategory ?? null;
 
@@ -150,6 +158,9 @@ export function ProjectTreeMapSection() {
                 {selectedTreeSymbol && <MapSymbolSwatch symbol={selectedTreeSymbol} size={18} />} Drzewo {selectedTree.inventoryNumber}
               </strong>
               {viewMode === 'VALUATION' && <ValuationBadge category={selectedTreeValuationCategory} prefix="Waloryzacja: " />}
+              {viewMode === 'MANAGEMENT' && selectedTreeWorks.length === 0 && (
+                <span className="muted small">Brak prac do wykonania.</span>
+              )}
               {(selectedTree.speciesPolish || selectedTree.speciesLatin) && (
                 <span className="muted small">
                   {[selectedTree.speciesPolish, selectedTree.speciesLatin].filter(Boolean).join(' · ')}
@@ -163,6 +174,7 @@ export function ProjectTreeMapSection() {
                       <li key={work.id}>
                         {workSymbol ? <MapSymbolSwatch symbol={workSymbol} size={16} /> : <span className="map-symbol-none" aria-hidden="true" />}
                         {' '}{work.name}
+                        {viewMode === 'MANAGEMENT' && <> <TreeWorkMeta treeWork={work} /></>}
                       </li>
                     );
                   })}
@@ -193,6 +205,23 @@ export function ProjectTreeMapSection() {
           </ul>
           <p className="muted small">
             Kategorie i kolory są tymczasowe (wersja V1) - to nie jest skala branżowa. Ocenę ogólną wybiera arborysta w karcie drzewa.
+          </p>
+        </section>
+      )}
+      {treeMapPoints.length > 0 && viewMode === 'MANAGEMENT' && (
+        <section className="map-legend" aria-labelledby="map-management-legend-heading">
+          <h3 id="map-management-legend-heading">Legenda - gospodarka drzewostanem</h3>
+          <ul>
+            {buildManagementLegend(treeMapPoints).map(({ state, count }) => (
+              <li key={state}>
+                <span className="map-legend-swatch-circle" style={{ background: managementColorOf(state) }} aria-hidden="true" />
+                {' '}{managementStateLabel(state)} ({count})
+              </li>
+            ))}
+          </ul>
+          <p className="muted small">
+            Prace do wykonania = zalecenia i prace zaplanowane. Przy drzewie widać symbole tylko tych prac. Pełna lista:{' '}
+            <Link to={`/projects/${projectId}/management`}>Gospodarka drzewostanem</Link>.
           </p>
         </section>
       )}

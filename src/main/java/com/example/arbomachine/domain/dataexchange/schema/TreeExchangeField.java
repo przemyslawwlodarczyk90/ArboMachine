@@ -39,7 +39,10 @@ public enum TreeExchangeField {
     VALUATION_ECOLOGICAL_VALUE("valuationEcologicalValue", "val_ecol", "Wartość ekologiczna", ValueType.TEXT, false),
     VALUATION_CULTURAL_VALUE("valuationCulturalValue", "val_cult", "Wartość kulturowa", ValueType.TEXT, false),
     VALUATION_LANDSCAPE_VALUE("valuationLandscapeValue", "val_landsc", "Wartość krajobrazowa", ValueType.TEXT, false),
-    VALUATION_JUSTIFICATION("valuationJustification", "val_justif", "Uzasadnienie waloryzacji", ValueType.TEXT, false);
+    VALUATION_JUSTIFICATION("valuationJustification", "val_justif", "Uzasadnienie waloryzacji", ValueType.TEXT, false),
+    // Gospodarka drzewostanem (etap 28) - podsumowanie prac drzewa; szczegoly prac: arkusz "Prace" / CSV prac / works w GeoJSON.
+    OPEN_WORK_COUNT("openWorkCount", "works_open", "Prace do wykonania (liczba)", ValueType.INTEGER, false),
+    NEXT_PLANNED_WORK_DATE("nextPlannedWorkDate", "work_next", "Najbliższy termin pracy", ValueType.TEXT, false);
 
     /** Wersja schematu wymiany - zapisywana w eksportach (GeoJSON, XLSX, GeoPackage). */
     public static final String SCHEMA_VERSION = "1";
@@ -49,7 +52,7 @@ public enum TreeExchangeField {
             SPECIES_POLISH, SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES,
             HAZARD_NOTES, LATITUDE, LONGITUDE, LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, WORK_NAMES,
             VALUATION_CATEGORY, VALUATION_AGE_VALUE, VALUATION_NATURAL_VALUE, VALUATION_ECOLOGICAL_VALUE,
-            VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION);
+            VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION, OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE);
 
     /**
      * Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). Z waloryzacji tylko kategoria -
@@ -57,7 +60,8 @@ public enum TreeExchangeField {
      */
     public static final List<TreeExchangeField> GIS_ATTRIBUTES = List.of(TREE_ID, INVENTORY_NUMBER, SPECIES_POLISH,
             SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES, HAZARD_NOTES,
-            LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES, VALUATION_CATEGORY);
+            LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES, VALUATION_CATEGORY,
+            OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE);
 
     public enum ValueType { TEXT, INTEGER, DECIMAL }
 

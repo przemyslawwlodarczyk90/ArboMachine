@@ -36,6 +36,15 @@ public record ProjectDocumentData(
         return trees.stream().filter(tree -> tree.valuation() != null).count();
     }
 
+    /** Prace do wykonania (zalecone albo zaplanowane) - etap 28. */
+    public long openWorkCount() {
+        return trees.stream().flatMap(tree -> tree.works().stream()).filter(ProjectDocumentWorkData::isOpen).count();
+    }
+
+    public long completedWorkCount() {
+        return trees.stream().flatMap(tree -> tree.works().stream()).filter(work -> "COMPLETED".equals(work.status())).count();
+    }
+
     public long workCount() {
         return trees.stream().mapToLong(tree -> tree.works().size()).sum();
     }

@@ -31,10 +31,9 @@ public class CreateTreeWorkHandler {
     public TreeWorkResponse handle(String currentUserEmail, Long projectId, Long treeId,
                                    CreateTreeWorkRequest createTreeWorkRequest) {
         Tree treeInOwnedProject = findTreeInProjectOwnedByCurrentUserHandler.handle(currentUserEmail, projectId, treeId);
-        TreeWorkFieldsNormalizer.NormalizedTreeWorkFields fields =
-                TreeWorkFieldsNormalizer.normalizedFieldsOf(createTreeWorkRequest);
+        TreeWork.Fields fields = TreeWorkFieldsNormalizer.normalizedFieldsOf(createTreeWorkRequest);
         // Precyzja do mikrosekund = precyzja kolumny timestamp w PostgreSQL (jak przy drzewach).
-        TreeWork createdTreeWork = TreeWork.createForTree(treeInOwnedProject, fields.name(), fields.description(),
+        TreeWork createdTreeWork = TreeWork.createForTree(treeInOwnedProject, fields,
                 Instant.now().truncatedTo(ChronoUnit.MICROS));
         return treeWorkMapper.toTreeWorkResponse(treeWorkRepository.save(createdTreeWork));
     }

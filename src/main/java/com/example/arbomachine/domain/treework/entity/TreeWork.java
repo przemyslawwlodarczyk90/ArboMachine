@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -53,25 +54,60 @@ public class TreeWork {
     @Column(name = "map_symbol_code", length = 64)
     private String mapSymbolCode;
 
+    /**
+     * Gospodarka drzewostanem (etap 28): status, priorytet organizacyjny i terminy - wszystko opcjonalne poza statusem.
+     * Kolumna status jest nullowa tylko dla prac sprzed etapu 28 (getStatus() zwraca wtedy RECOMMENDED).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 32)
+    private TreeWorkStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority", length = 32)
+    private TreeWorkPriority priority;
+
+    /** Planowany termin - bez ograniczenia "nie wczesniej niz dzis" (dokumentacja moze dotyczyc przeszlosci). */
+    @Column(name = "planned_date")
+    private LocalDate plannedDate;
+
+    @Column(name = "completed_date")
+    private LocalDate completedDate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public static TreeWork createForTree(Tree tree, String name, String description, Instant creationTime) {
+    /** Komplet pol pracy ustawianych formularzem (znormalizowany; status nigdy null). */
+    public record Fields(String name, String description, TreeWorkStatus status, TreeWorkPriority priority,
+                         LocalDate plannedDate, LocalDate completedDate) {
+        public Fields {
+            Objects.requireNonNull(status, "status");
+        }
+    }
+
+    public static TreeWork createForTree(Tree tree, Fields fields, Instant creationTime) {
         TreeWork treeWork = new TreeWork();
         treeWork.tree = tree;
-        treeWork.name = name;
-        treeWork.description = description;
+        treeWork.apply(fields);
         treeWork.createdAt = creationTime;
         treeWork.updatedAt = creationTime;
         return treeWork;
     }
 
+    /** Status; prace sprzed etapu 28 (null w bazie) traktujemy jako zalecenie. */
+    public TreeWorkStatus getStatus() {
+        return status == null ? TreeWorkStatus.RECOMMENDED : status;
+    }
+
+    public Fields fields() {
+        return new Fields(name, description, getStatus(), priority, plannedDate, completedDate);
+    }
+
     /** Czy podane (znormalizowane) wartosci roznia sie od zapisanych - edycja bez zmian nie przesuwa updatedAt. */
-    public boolean differsFrom(String otherName, String otherDescription) {
-        return !Objects.equals(name, otherName) || !Objects.equals(description, otherDescription);
+    public boolean differsFrom(Fields otherFields) {
+        return !fields().equals(otherFields);
     }
 
     /** Ustawia albo zmienia symbol na mapie (kod juz sprawdzony w MapSymbolCatalog) i przesuwa updatedAt. */
@@ -86,10 +122,18 @@ public class TreeWork {
         this.updatedAt = updateTime;
     }
 
-    /** Zastepuje nazwe i opis. Drzewo i createdAt nigdy sie tu nie zmieniaja. */
-    public void replaceNameAndDescription(String newName, String newDescription, Instant updateTime) {
-        this.name = newName;
-        this.description = newDescription;
+    /** Zastepuje komplet pol (nazwa, opis, status, priorytet, terminy). Drzewo i createdAt nigdy sie tu nie zmieniaja. */
+    public void replaceFields(Fields newFields, Instant updateTime) {
+        apply(newFields);
         this.updatedAt = updateTime;
+    }
+
+    private void apply(Fields fields) {
+        this.name = fields.name();
+        this.description = fields.description();
+        this.status = fields.status();
+        this.priority = fields.priority();
+        this.plannedDate = fields.plannedDate();
+        this.completedDate = fields.completedDate();
     }
 }

@@ -1,5 +1,5 @@
 import { sendApiRequest, sendApiRequestForBlob } from '../../../api/httpClient';
-import type { TreeExportFormat, TreeImportResult, TreeImportValidation } from './dataExchangeDataTypes';
+import type { ProjectExportFile, TreeImportResult, TreeImportValidation } from './dataExchangeDataTypes';
 
 const projectPath = (projectId: number) => `/api/projects/${projectId}`;
 
@@ -11,8 +11,8 @@ const fileFormData = (file: File) => {
 
 /** Import i eksport drzew projektu (backend: domain.dataexchange). Wlasnosc projektu sprawdza backend (404). */
 export const dataExchangeApi = {
-  downloadTreesExport: (projectId: number, format: TreeExportFormat) =>
-    sendApiRequestForBlob(`${projectPath(projectId)}/exports/trees.${format}`, { sendAccessToken: true }),
+  downloadProjectExport: (projectId: number, exportFile: ProjectExportFile) =>
+    sendApiRequestForBlob(`${projectPath(projectId)}/exports/${exportPathOf(exportFile)}`, { sendAccessToken: true }),
 
   /** "Sprawdz plik" - nic nie zapisuje. */
   validateTreeImport: (projectId: number, file: File) =>
@@ -28,5 +28,9 @@ export const dataExchangeApi = {
 };
 
 /** Nazwa pobieranego pliku - jak w Content-Disposition backendu (tylko id projektu). */
-export const treesExportFileName = (projectId: number, format: TreeExportFormat) =>
-  `arbomachine-projekt-${projectId}-drzewa.${format}`;
+const exportPathOf = (exportFile: ProjectExportFile) => (exportFile === 'works-csv' ? 'works.csv' : `trees.${exportFile}`);
+
+/** Nazwy jak w Content-Disposition backendu (ExportedFile). */
+export const projectExportFileName = (projectId: number, exportFile: ProjectExportFile) => (exportFile === 'works-csv'
+  ? `arbomachine-projekt-${projectId}-prace.csv`
+  : `arbomachine-projekt-${projectId}-drzewa.${exportFile}`);

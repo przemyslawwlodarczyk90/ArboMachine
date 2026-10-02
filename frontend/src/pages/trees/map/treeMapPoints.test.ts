@@ -51,6 +51,18 @@ test('laczy drzewa z pracami po treeId: symbol drzewa i symbole prac (tylko prac
   assert.deepEqual(pointOfTree2.workSymbolCodes, ['BLUE_SQUARE']);
 });
 
+test('etap 28: znaczki tylko prac do wykonania i stan prac drzewa', () => {
+  const [point] = toTreeMapPoints([treeWith(1, { latitude: 52.1, longitude: 21.1 })], [
+    { treeId: 1, mapSymbolCode: 'RED_CROSS', status: 'COMPLETED' },
+    { treeId: 1, mapSymbolCode: 'BLUE_SQUARE', status: 'PLANNED', priority: 'URGENT' },
+    { treeId: 1, mapSymbolCode: 'ORANGE_TRIANGLE' },
+  ]);
+  assert.deepEqual(point.workSymbolCodes, ['RED_CROSS', 'BLUE_SQUARE', 'ORANGE_TRIANGLE']);
+  assert.deepEqual(point.openWorkSymbolCodes, ['BLUE_SQUARE', 'ORANGE_TRIANGLE'], 'praca bez statusu = zalecenie (do wykonania)');
+  assert.deepEqual(point.management, { state: 'URGENT_OPEN', openWorkCount: 2 });
+  assert.deepEqual(toTreeMapPoints([treeWith(2, { latitude: 52, longitude: 21 })])[0].management, { state: 'NO_WORKS', openWorkCount: 0 });
+});
+
 test('drzewo bez symbolu i bez prac -> neutralny punkt bez znaczkow', () => {
   const [treeMapPoint] = toTreeMapPoints([treeWith(3, { latitude: 50, longitude: 20 })]);
   assert.equal(treeMapPoint.treeSymbolCode, null);

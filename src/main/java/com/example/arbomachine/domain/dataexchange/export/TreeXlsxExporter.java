@@ -1,6 +1,7 @@
 package com.example.arbomachine.domain.dataexchange.export;
 
 import com.example.arbomachine.domain.dataexchange.schema.TreeExchangeField;
+import com.example.arbomachine.domain.dataexchange.schema.WorkExchangeColumn;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,8 @@ import java.util.List;
 
 /**
  * XLSX drzew V1 (fastexcel): arkusz "Drzewa" - naglowki po polsku (pogrubione, zamrozony pierwszy wiersz),
- * liczby jako liczby (nie tekst), puste komorki dla brakow; arkusz "Projekt" - podstawowe informacje i wersja schematu.
+ * liczby jako liczby (nie tekst), puste komorki dla brakow; arkusz "Prace" (etap 28) - jeden wiersz na prace;
+ * arkusz "Projekt" - podstawowe informacje i wersja schematu.
  * Bez dalszego stylowania.
  */
 @Component
@@ -23,12 +25,14 @@ public class TreeXlsxExporter {
 
     public static final String TREES_SHEET_NAME = "Drzewa";
     public static final String PROJECT_SHEET_NAME = "Projekt";
+    public static final String WORKS_SHEET_NAME = "Prace";
     private static final DateTimeFormatter EXPORT_TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.of("Europe/Warsaw"));
 
     public ExportedFile export(ProjectExportData data) {
         ByteArrayOutputStream xlsxBytes = new ByteArrayOutputStream();
         try (Workbook workbook = new Workbook(xlsxBytes, "ArboMachine", "1.0")) {
             writeTreesSheet(workbook.newWorksheet(TREES_SHEET_NAME), data);
+            writeWorksSheet(workbook.newWorksheet(WORKS_SHEET_NAME), data);
             writeProjectSheet(workbook.newWorksheet(PROJECT_SHEET_NAME), data);
         } catch (IOException writingError) {
             throw new UncheckedIOException(writingError);
@@ -57,6 +61,28 @@ public class TreeXlsxExporter {
                 }
             }
             row++;
+        }
+    }
+
+    /** Arkusz "Prace" (etap 28): jeden wiersz = jedna praca, z numerem i gatunkiem drzewa; kolumny: WorkExchangeColumn. */
+    private static void writeWorksSheet(Worksheet sheet, ProjectExportData data) {
+        List<WorkExchangeColumn> columns = WorkExchangeColumn.COLUMNS;
+        for (int column = 0; column < columns.size(); column++) {
+            sheet.value(0, column, columns.get(column).polishLabel());
+            sheet.style(0, column).bold().wrapText(true).set();
+            sheet.width(column, columns.get(column) == WorkExchangeColumn.WORK_DESCRIPTION ? 40 : 18);
+        }
+        sheet.freezePane(0, 1);
+        int row = 1;
+        for (TreeExportData tree : data.trees()) {
+            for (TreeWorkExportData work : tree.works()) {
+                for (int column = 0; column < columns.size(); column++) {
+                    Object value = tree.workValueOf(work, columns.get(column));
+                    if (value instanceof Number number) sheet.value(row, column, number);
+                    else if (value != null) sheet.value(row, column, value.toString());
+                }
+                row++;
+            }
         }
     }
 

@@ -371,6 +371,17 @@ td.num { font-variant-numeric: tabular-nums; color: var(--text-muted); }
   padding: 0.45rem 0.6rem;
 }
 .select-sm { padding: 0.25rem 0.4rem; font-size: 0.85rem; }
+/* Listy wyboru w polach formularzy i filtrach (waloryzacja, gospodarka) - jak .select, wysokosc wygodna dla palca. */
+.field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  min-height: 44px;
+  max-width: 100%;
+}
 .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.83rem; border-radius: 7px; }
 .row-actions { display: inline-flex; align-items: center; gap: 0.35rem; justify-content: flex-end; }
 th.right, td.right { text-align: right; }
@@ -496,6 +507,34 @@ th.right, td.right { text-align: right; }
 .valuation-category-field { border: none; padding: 0; margin: 0; min-width: 0; }
 .valuation-category-field legend { font-weight: 600; margin-bottom: 0.4rem; }
 .valuation-category-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* Etap 28: gospodarka drzewostanem */
+.work-choice-field { border: 0; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.work-choice-field legend { font-size: 0.87rem; font-weight: 600; margin-bottom: 0.35rem; padding: 0; }
+.work-choice-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.work-choice-options .btn { min-height: 40px; }
+.work-date-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; }
+.work-meta { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; margin-top: 0.25rem; font-size: 0.88rem; }
+.work-status-badge { margin-left: 0; color: #fff; }
+.work-status-RECOMMENDED { background: #5c7cfa; }
+.work-status-PLANNED { background: #1971c2; }
+.work-status-COMPLETED { background: #2b8a3e; }
+.work-status-CANCELLED { background: #868e96; }
+.work-priority-URGENT { color: #c92a2a; font-weight: 700; }
+.work-priority-HIGH { color: #e8590c; font-weight: 600; }
+.work-overdue { color: #c92a2a; font-weight: 600; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.management-filters { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: flex-end; }
+.management-filters .field { margin: 0; min-width: 11rem; }
+.management-counts { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
+.management-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.management-table th, .management-table td { text-align: left; padding: 0.5rem 0.45rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.management-table th { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+.management-cards { display: none; list-style: none; margin: 0; padding: 0; gap: 0.6rem; }
+.management-card { border: 1px solid var(--border); border-radius: 10px; padding: 0.7rem 0.8rem; background: var(--surface); display: grid; gap: 0.3rem; }
+@media (max-width: 760px) {
+  .management-table { display: none; }
+  .management-cards { display: grid; }
+}
 .valuation-category-options .btn { min-height: 44px; }
 .tree-list-filters { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: flex-end; }
 .tree-list-filters .field { margin: 0; min-width: 12rem; }

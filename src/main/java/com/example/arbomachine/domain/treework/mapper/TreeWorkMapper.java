@@ -15,6 +15,10 @@ public class TreeWorkMapper {
                 treeWork.getName(),
                 treeWork.getDescription(),
                 treeWork.getMapSymbolCode(),
+                treeWork.getStatus().name(),
+                treeWork.getPriority() == null ? null : treeWork.getPriority().name(),
+                treeWork.getPlannedDate(),
+                treeWork.getCompletedDate(),
                 treeWork.getCreatedAt(),
                 treeWork.getUpdatedAt()
         );

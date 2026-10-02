@@ -11,7 +11,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.arbomachine.domain.treework.entity.TreeWorkPriority;
+import com.example.arbomachine.domain.treework.entity.TreeWorkStatus;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.util.List;
+import java.util.Set;
 
 /**
  * Prace wszystkich drzew projektu jednym zapytaniem - dla mapy projektu (symbole prac, legenda) bez N+1.
@@ -27,10 +32,14 @@ public class ProjectTreeWorksController {
         this.treeWorkFacade = treeWorkFacade;
     }
 
-    @Operation(summary = "Prace wszystkich drzew wlasnego projektu (po drzewie, w kolejnosci dodawania)")
+    @Operation(summary = "Prace wszystkich drzew wlasnego projektu (po drzewie, w kolejnosci dodawania); opcjonalny filtr "
+            + "?status=PLANNED&status=RECOMMENDED&priority=URGENT (wiele wartosci = dowolna z nich)")
     @GetMapping("/api/projects/{projectId}/works")
     public ResponseEntity<List<TreeWorkResponse>> getTreeWorksOfProject(@AuthenticationPrincipal UserDetails authenticatedUser,
-                                                                        @PathVariable Long projectId) {
-        return ResponseEntity.ok(treeWorkFacade.getWorksOfProjectOfCurrentUser(authenticatedUser.getUsername(), projectId));
+                                                                        @PathVariable Long projectId,
+                                                                        @RequestParam(name = "status", required = false) List<TreeWorkStatus> statuses,
+                                                                        @RequestParam(name = "priority", required = false) List<TreeWorkPriority> priorities) {
+        return ResponseEntity.ok(treeWorkFacade.getWorksOfProjectOfCurrentUser(authenticatedUser.getUsername(), projectId,
+                statuses == null ? Set.of() : Set.copyOf(statuses), priorities == null ? Set.of() : Set.copyOf(priorities)));
     }
 }

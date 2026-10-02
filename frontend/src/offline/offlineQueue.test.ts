@@ -164,3 +164,34 @@ test('waloryzacja offline: od razu w karcie i liscie projektu, synchronizacja PU
   assert.deepEqual(await store.readCachedResponse(projectValuationsPath(PROJECT)), []);
   assert.equal(describePendingChange((await store.listChanges())[0]), 'Usunięcie waloryzacji drzewa');
 });
+
+test('praca offline z etapu 28: status, priorytet i terminy w kopiach; usuniecie pracy offline (DELETE_TREE_WORK)', async () => {
+  const store = createMemoryOfflineStore();
+  const TREE = 41;
+  await store.writeCachedResponse(treeWorksPath(PROJECT, TREE), [{ id: 300, treeId: TREE, name: 'Kontrola', status: 'RECOMMENDED' }]);
+  await store.writeCachedResponse(projectWorksPath(PROJECT), [{ id: 300, treeId: TREE, name: 'Kontrola', status: 'RECOMMENDED' }]);
+  const created = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE_WORK', treeId: TREE,
+    body: { name: 'Cięcia' } }) as Record<string, unknown>;
+  assert.equal(created.status, 'RECOMMENDED', 'brak statusu = zalecenie, jak w backendzie');
+  assert.equal(created.plannedDate, null);
+  const updated = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE_WORK', treeId: TREE, workId: 300,
+    body: { name: 'Kontrola', status: 'COMPLETED', priority: 'HIGH', completedDate: '2026-10-01' } }) as Record<string, unknown>;
+  assert.deepEqual([updated.status, updated.priority, updated.completedDate, updated.plannedDate], ['COMPLETED', 'HIGH', '2026-10-01', null]);
+  const projectWorks = await store.readCachedResponse(projectWorksPath(PROJECT)) as Record<string, unknown>[];
+  assert.equal(projectWorks.find((work) => work.id === 300)?.status, 'COMPLETED', 'widok gospodarki widzi zmiane offline');
+
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'DELETE_TREE_WORK', treeId: TREE, workId: 300 });
+  assert.deepEqual((await store.readCachedResponse(treeWorksPath(PROJECT, TREE)) as { id: number }[]).map((work) => work.id), [created.id]);
+  assert.equal((await store.readCachedResponse(projectWorksPath(PROJECT)) as unknown[]).length, 1);
+  assert.equal(describePendingChange((await store.listChanges())[2]), 'Usunięcie pracy');
+
+  const server = fakeServer();
+  assert.deepEqual(await syncPendingChanges(store, OWNER, server.send), { status: 'completed', syncedCount: 3 });
+  assert.deepEqual(server.requests.map((request) => `${request.httpMethod} ${request.path}`), [
+    `POST /api/projects/${PROJECT}/trees/${TREE}/works`,
+    `PATCH /api/projects/${PROJECT}/trees/${TREE}/works/300`,
+    `DELETE /api/projects/${PROJECT}/trees/${TREE}/works/300`,
+  ]);
+  assert.deepEqual((await store.readCachedResponse(treeWorksPath(PROJECT, TREE)) as { id: number }[]).map((work) => work.id), [900],
+    'po synchronizacji usunieta praca nie wraca do kopii');
+});

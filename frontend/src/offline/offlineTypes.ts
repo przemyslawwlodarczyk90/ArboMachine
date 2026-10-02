@@ -11,6 +11,7 @@ export type PendingChangeKind =
   | 'CLEAR_TREE_LOCATION'
   | 'CREATE_TREE_WORK'
   | 'UPDATE_TREE_WORK'
+  | 'DELETE_TREE_WORK'
   /** etap 27: zapis (PUT - utworz albo zastap) i usuniecie waloryzacji drzewa */
   | 'UPSERT_TREE_VALUATION'
   | 'DELETE_TREE_VALUATION';

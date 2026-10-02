@@ -93,6 +93,35 @@ public final class ProjectReportFormatter {
         };
     }
 
+    /** Status pracy po polsku (etap 28). */
+    public String workStatus(String statusCode) {
+        if (statusCode == null) return MISSING_VALUE;
+        return switch (statusCode) {
+            case "RECOMMENDED" -> "Zalecenie";
+            case "PLANNED" -> "Zaplanowana";
+            case "COMPLETED" -> "Wykonana";
+            case "CANCELLED" -> "Anulowana";
+            default -> MISSING_VALUE;
+        };
+    }
+
+    /** Priorytet organizacyjny po polsku (etap 28; nie standard arborystyczny); brak = "—". */
+    public String workPriority(String priorityCode) {
+        if (priorityCode == null) return MISSING_VALUE;
+        return switch (priorityCode) {
+            case "LOW" -> "Niski";
+            case "NORMAL" -> "Normalny";
+            case "HIGH" -> "Wysoki";
+            case "URGENT" -> "Pilny";
+            default -> MISSING_VALUE;
+        };
+    }
+
+    /** Data kalendarzowa "dd.MM.yyyy"; brak = "—". */
+    public String localDate(java.time.LocalDate date) {
+        return date == null ? MISSING_VALUE : date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    }
+
     /** "lipa drobnolistna (Tilia cordata)", jedna z nazw albo "Gatunek nie podany". */
     public String species(ProjectDocumentTreeData tree) {
         boolean hasPolish = hasText(tree.speciesPolish());

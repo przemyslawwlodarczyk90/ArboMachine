@@ -44,6 +44,7 @@
     .tree-card-header { page-break-inside: avoid; }
     .work { margin: 0 0 1.5mm 0; page-break-inside: avoid; }
     .work-name { font-weight: bold; }
+    .works-table th, .works-table td { font-size: 8pt; }
     .photo { margin: 3mm 0 0 0; page-break-inside: avoid; text-align: center; }
     .photo img { max-width: 100%; max-height: 110mm; }
     .photo-caption { font-size: 8pt; color: #374151; margin-top: 1mm; }
@@ -90,6 +91,8 @@
   <tr><td>Zdjęcia</td><td class="num" th:text="${document.photoCount()}">0</td></tr>
   <tr><td>Drzewa z waloryzacją</td><td class="num" th:text="${document.valuedTreeCount()}">0</td></tr>
   <tr><td>Zalecenia i prace</td><td class="num" th:text="${document.workCount()}">0</td></tr>
+  <tr><td>Prace do wykonania (zalecone lub zaplanowane)</td><td class="num" th:text="${document.openWorkCount()}">0</td></tr>
+  <tr><td>Prace wykonane</td><td class="num" th:text="${document.completedWorkCount()}">0</td></tr>
 </table>
 
 <!-- 4. Mapa (V1: bez obrazu mapy) -->
@@ -124,9 +127,42 @@
   </tbody>
 </table>
 
-<!-- 6. Karty drzew (dane, lokalizacja, prace, zdjecia) -->
+<!-- 6. Gospodarka drzewostanem (etap 28): prace wszystkich drzew w jednej tabeli -->
+<h2>5. Gospodarka drzewostanem</h2>
+<p th:if="${document.workCount() == 0}" class="muted">Nie zapisano zaleceń ani prac.</p>
+<table th:unless="${document.workCount() == 0}" class="works-table">
+  <thead>
+  <tr>
+    <th class="inventory-number">Nr</th>
+    <th>Gatunek</th>
+    <th>Zalecana praca</th>
+    <th>Status</th>
+    <th>Priorytet</th>
+    <th>Termin</th>
+    <th>Wykonano</th>
+    <th>Uwagi</th>
+  </tr>
+  </thead>
+  <tbody>
+  <th:block th:each="tree : ${document.trees()}">
+    <tr th:each="work : ${tree.works()}">
+      <td th:text="${tree.inventoryNumber()}">1</td>
+      <td th:text="${format.text(tree.speciesPolish() != null ? tree.speciesPolish() : tree.speciesLatin())}">—</td>
+      <td th:text="${work.name()}">Cięcia</td>
+      <td th:text="${format.workStatus(work.status())}">Zalecenie</td>
+      <td th:text="${format.workPriority(work.priority())}">—</td>
+      <td class="num" th:text="${format.localDate(work.plannedDate())}">—</td>
+      <td class="num" th:text="${format.localDate(work.completedDate())}">—</td>
+      <td class="multiline" th:text="${format.text(work.description())}">—</td>
+    </tr>
+  </th:block>
+  </tbody>
+</table>
+<p class="muted small">Status i priorytet to robocze oznaczenia wersji MVP, uzgadniane z arborystami.</p>
+
+<!-- 7. Karty drzew (dane, lokalizacja, waloryzacja, prace, zdjecia) -->
 <th:block th:unless="${document.trees().isEmpty()}">
-  <h2>5. Karty drzew</h2>
+  <h2>6. Karty drzew</h2>
   <div class="tree-card" th:each="tree : ${document.trees()}">
     <div class="tree-card-header">
       <h3 th:text="'Drzewo nr ' + ${tree.inventoryNumber()} + ' — ' + ${format.species(tree)}">Drzewo nr 1</h3>
@@ -171,6 +207,10 @@
     <p th:if="${tree.works().isEmpty()}" class="muted">Brak zapisanych zaleceń.</p>
     <div class="work" th:each="work : ${tree.works()}">
       <span class="work-name" th:text="${work.name()}">Cięcia redukcyjne</span>
+      <span class="small" th:text="${' — ' + format.workStatus(work.status())
+            + (work.priority() != null ? ', priorytet: ' + format.workPriority(work.priority()) : '')
+            + (work.plannedDate() != null ? ', termin: ' + format.localDate(work.plannedDate()) : '')
+            + (work.completedDate() != null ? ', wykonano: ' + format.localDate(work.completedDate()) : '')}"> — Zalecenie</span>
       <div th:if="${format.hasText(work.description())}" class="multiline" th:text="${work.description()}">Opis pracy</div>
     </div>
 

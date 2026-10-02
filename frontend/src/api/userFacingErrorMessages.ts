@@ -59,6 +59,8 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Document generation failed': 'Wystąpił błąd serwera - spróbuj ponownie za chwilę.',
   'Import file is mandatory': 'Wybierz plik do importu.',
   'Unsupported valuation category': 'Wybierz ocenę ogólną z listy.',
+  'Unsupported work status': 'Wybierz status pracy z listy.',
+  'Unsupported work priority': 'Wybierz priorytet pracy z listy.',
   'Valuation text must have at most 5000 characters': 'Tekst może mieć maksymalnie 5000 znaków.',
   'Valuation must contain at least one value': 'Wybierz ocenę ogólną albo wpisz przynajmniej jedną wartość.',
   'Tree photo annotation not found': 'To zdjęcie nie ma adnotacji.',

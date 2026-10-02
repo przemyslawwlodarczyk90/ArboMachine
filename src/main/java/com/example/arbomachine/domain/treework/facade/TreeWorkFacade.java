@@ -14,7 +14,11 @@ import com.example.arbomachine.domain.treework.service.treeworkfacade.SetTreeWor
 import com.example.arbomachine.domain.treework.service.treeworkfacade.UpdateTreeWorkHandler;
 import org.springframework.stereotype.Component;
 
+import com.example.arbomachine.domain.treework.entity.TreeWorkPriority;
+import com.example.arbomachine.domain.treework.entity.TreeWorkStatus;
+
 import java.util.List;
+import java.util.Set;
 
 /**
  * Zalecenia / prace przy drzewach w projektach zalogowanego uzytkownika. Wlasnosc wynika z hierarchii
@@ -82,7 +86,8 @@ public class TreeWorkFacade {
         return clearTreeWorkMapSymbolHandler.handle(currentUserEmail, projectId, treeId, treeWorkId);
     }
 
-    public List<TreeWorkResponse> getWorksOfProjectOfCurrentUser(String currentUserEmail, Long projectId) {
-        return getTreeWorksOfProjectHandler.handle(currentUserEmail, projectId);
+    public List<TreeWorkResponse> getWorksOfProjectOfCurrentUser(String currentUserEmail, Long projectId,
+                                                                 Set<TreeWorkStatus> statuses, Set<TreeWorkPriority> priorities) {
+        return getTreeWorksOfProjectHandler.handle(currentUserEmail, projectId, statuses, priorities);
     }
 }

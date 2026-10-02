@@ -229,6 +229,10 @@ Arborysta używa zaleceń i symboli prac (część dodaje dziś w ZWCAD), ale ni
   `WorkType` → symbol mapowy → reprezentacja w raporcie.
 - Mapa nie jest powiązana z pracami (markery bez zmian), generator dokumentów nie istnieje.
 
+- **Aktualizacja (etap 28):** pytania 7–9 mają V1 — status (Zalecenie / Zaplanowana / Wykonana / Anulowana),
+  priorytet organizacyjny, termin i data wykonania; patrz sekcja „Gospodarka drzewostanem — etap 28”. Pytania 7–9
+  pozostają OPEN jako weryfikacja hipotez V1.
+
 ### Czy blokuje dalszy development?
 NIE dla V1. TAK przed symbolami prac na mapie, legendą i generowaniem dokumentacji.
 
@@ -313,7 +317,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 27
+## Rejestr braków — stan po etapie 28
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -339,7 +343,8 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Zdjęcia | Adnotacje (szkice cięć) — V1 od etapu 20 (linia, strzałka, odręcznie, tekst); właściwy zestaw narzędzi arborysty, edycja/przesuwanie elementów, gumka, powiększanie zdjęcia w edytorze | OPEN / BRAK |
 | Zdjęcia | Zewnętrzny aparat i automatyczne przypisanie zdjęcia do drzewa | OPEN |
 | Zdjęcia | Widok wszystkich zdjęć projektu — V1 od etapu 20 (zakładka „Dokumentacja”: zdjęcia pogrupowane po drzewie); brak filtrów, podglądu w pełnym rozmiarze i wyboru zdjęć do raportu | OPEN |
-| Prace | Słownik typów prac, kody, priorytet, termin, status wykonania, parametry | OPEN |
+| Prace | Słownik typów prac, kody, parametry pracy | OPEN |
+| Gospodarka | V1 od etapu 28: status, priorytet organizacyjny, termin, data wykonania, widok projektu z filtrami, tryb mapy; brak prac dla grup drzew i prac niezwiązanych z drzewem, prac cyklicznych, kosztów, wykonawców, protokołów, harmonogramu, historii zmian statusu, importu prac, warstwy prac w GeoPackage | OPEN / BRAK |
 | Mapa | Symbole prac i drzew, legenda — V1 od etapu 19 (katalog techniczny); właściwe symbole arborysty, etykiety numerów drzew przy markerach | OPEN |
 | Mapa | Klastrowanie przy dużej liczbie drzew; korony, strefy ochronne, poligony | BRAK / OPEN |
 | Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
@@ -380,7 +385,9 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 |---|---|---|
 | Baza | Brak Flyway/Liquibase — schemat aktualizuje `ddl-auto=update` (nowe kolumny tekstowe z etapu 17 dodał Hibernate) | DŁUG |
 | Testy backendu | Testy działają na H2, nie na PostgreSQL (błąd tylko-PostgreSQL wyszedł już w etapie 2); rozważyć Testcontainers | DŁUG |
-| Testy frontendu | Tylko testy logiki (`node --test`); brak testów renderowania komponentów React | DŁUG |
+| Testy frontendu | Tylko testy logiki (`node --test`); brak testów renderowania komponentów React (od etapu 28 także widok „Gospodarka drzewostanem” i formularz statusu/priorytetu testowane tylko przez logikę + E2E) | DŁUG |
+| Gospodarka | Filtr listy prac projektu w backendzie działa w pamięci (całe prace projektu z bazy), frontend i tak filtruje lokalnie; przy tysiącach prac — zapytanie z WHERE / paginacja | DŁUG |
+| Gospodarka | `TreeWorkExportData.isOpen()` i `ProjectDocumentWorkData.isOpen()` porównują kody statusów jako tekst (duplikat `TreeWorkStatus.isOpen()` — moduły eksportu/dokumentu nie zależą od encji) | DŁUG |
 | Testy E2E | Scenariusze E2E (headless Chrome przez CDP) istnieją tylko lokalnie poza repozytorium — brak E2E w repo i CI | DŁUG |
 | Jakość | Brak lintera (ESLint) i CI uruchamiającego testy przy commitach | DŁUG |
 | Frontend | Paczka JS ~700 kB (głównie OpenLayers) — brak podziału na części (lazy loading mapy i edytora adnotacji) | DŁUG |
@@ -696,3 +703,42 @@ proponowała wzór „obwód² × wysokość” i wycenę w PLN; obowiązująca 
 | Filtr listy „Nieocenione” = brak waloryzacji albo waloryzacja bez oceny ogólnej | — |
 | Waloryzacja w kolejce offline: `UPSERT_TREE_VALUATION`, `DELETE_TREE_VALUATION` | Ten sam mechanizm co etap 26; konflikty: ostatni zapis wygrywa |
 | Waloryzacja nie wpływa automatycznie na nic (prace, priorytety, symbole) | Decyzje podejmuje arborysta |
+
+---
+
+## Gospodarka drzewostanem — etap 28
+
+**Status:** V1 IMPLEMENTED (rozszerzenie `TreeWork`) / DISCOVERY REQUIRED. Szczegóły:
+`docs/discovery/etap-28-gospodarka-drzewostanem.md`. Bez osobnego modelu `ManagementTask` (pierwsza wersja polecenia
+go proponowała; obowiązująca zabrania równoległego modelu obok `TreeWork`).
+
+| Temat | Stan |
+|---|---|
+| Kategorie prac | OPEN DOMAIN QUESTION: rzeczywista lista prac i kody (V1: nazwa = wolny tekst, jak od etapu 14). |
+| Status | V1 HYPOTHESIS: Zalecenie / Zaplanowana / Wykonana / Anulowana, domyślnie Zalecenie, **dowolne przejścia**. OPEN: czy są inne statusy („w trakcie”, „odebrana”, „odrzucona”) i reguły przejść? Kto zmienia status? |
+| Priorytet | V1 HYPOTHESIS: Niski / Normalny / Wysoki / Pilny, opcjonalny, ustawiany ręcznie. **Priorytet organizacyjny, nie standard arborystyczny.** OPEN: czy potrzebny, jaką skalę stosuje arborysta? |
+| Termin | V1: opcjonalna data, **może być w przeszłości** (projekty historyczne). OPEN: czy planuje się datą, sezonem, rokiem, horyzontem („do 1 roku”)? Okres lęgowy? |
+| Prace opóźnione | V1: napis „(po terminie)” przy pracy do wykonania z terminem przed dziś — tylko informacja. OPEN: czy wyróżniać / filtrować? |
+| Data wykonania | V1: opcjonalna; „Oznacz jako wykonaną” wpisuje dzisiejszą datę, jeśli brak. Wybór statusu „Wykonana” w formularzu podpowiada dzisiejszą datę. OPEN: czy wymagać daty przy „Wykonana”? |
+| Uzasadnienie | V1: istniejące pole „Opis” (bez osobnego `justification`). OPEN: czy opis i uzasadnienie to różne rzeczy? |
+| Grupy drzew / prace bez drzewa | OPEN: czy praca może dotyczyć szpaleru, grupy, zadrzewienia, czy są prace projektowe (np. nasadzenia zastępcze)? V1: praca zawsze przy jednym drzewie. |
+| Realizacja | OPEN: czy wykonanie jest śledzone w ArboMachine (kto wykonał, protokół, zdjęcia „po”, załączniki)? Koszty? Wykonawcy? |
+| Kontrole i prace cykliczne | OPEN: daty kontroli, prace powtarzalne. V1: brak. |
+| Waloryzacja a gospodarka | V1: **brak automatyki** — waloryzacja nie tworzy prac ani priorytetów. |
+| Mapa | V1 IMPLEMENTED: tryb „Gospodarka drzewostanem”: czerwony `#c92a2a` = pilna praca do wykonania, niebieski `#1971c2` = prace do wykonania, ciemnoszary `#495057` = tylko wykonane/anulowane, jasnoszary `#ced4da` = bez prac; znaczki tylko prac do wykonania. Kolory umowne. OPEN: jak arborysta oznacza stan prac na mapie? |
+| Widok projektu | V1 IMPLEMENTED: zakładka „Gospodarka drzewostanem” — liczniki, filtry (status z „Do wykonania” jako domyślnym, priorytet, drzewo), kolejność: do wykonania → termin → priorytet; edycja w karcie drzewa, w widoku tylko „Oznacz jako wykonaną”. |
+| Dokument | V1 IMPLEMENTED: sekcja „5. Gospodarka drzewostanem” (tabela: Nr, Gatunek, Zalecana praca, Status, Priorytet, Termin, Wykonano, Uwagi), status/priorytet/terminy w karcie drzewa, liczniki prac do wykonania i wykonanych. Dokument nadal neutralny („Dokument projektu”), nie „Plan gospodarki drzewostanem”. OPEN: jak prace wyglądają w finalnym opracowaniu? |
+| Eksport / QGIS | V1 IMPLEMENTED: XLSX arkusz „Prace”, CSV prac, GeoJSON `works[]` ze statusem/priorytetem/terminami, atrybuty drzewa `openWorkCount`/`works_open` i `nextPlannedWorkDate`/`work_next`. DEFERRED: osobna warstwa prac w GeoPackage, import prac. Status i priorytet eksportowane jako kody (nie polskie nazwy). |
+| Konflikty offline | V1: ostatni zapis wygrywa (jak etap 26). OPEN: czy potrzebna ręczna weryfikacja konfliktów? |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Nowe kolumny `tree_work.status`, `priority`, `planned_date`, `completed_date` — nullowe | Dodane przez `ddl-auto=update`; `status = null` (prace sprzed etapu 28) czytany jako `RECOMMENDED`, bez migracji danych |
+| Status i priorytet zapisywane jako tekst (`EnumType.STRING`) | Zmiana słownika = zmiana enuma, bez przenumerowania |
+| PATCH pracy nadal = komplet pól (pominięty status → Zalecenie, pominięty priorytet/termin → wyczyszczony) | Spójne z dotychczasową edycją; „Oznacz jako wykonaną” wysyła komplet pól |
+| Brak walidacji kolejności dat (data wykonania może być przed terminem) | Brak reguł biznesowych |
+| Filtry `?status=&priority=` w `GET …/works` — wiele wartości = OR, puste = bez filtra; filtr priorytetu pomija prace bez priorytetu | Frontend filtruje lokalnie (działa offline); filtr API dla integracji |
+| Usuwanie pracy offline (`DELETE_TREE_WORK`) — praca znika z kopii od razu | UI nie oferuje usuwania pracy utworzonej offline przed synchronizacją |
+| Liczniki w PDF: „do wykonania” = Zalecenie + Zaplanowana | — |
+

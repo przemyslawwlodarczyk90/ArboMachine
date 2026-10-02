@@ -23,6 +23,7 @@ const WORKSPACE_SECTION_LINKS = [
   { relativePath: '', label: 'Podsumowanie', matchExactPathOnly: true },
   { relativePath: 'trees', label: 'Drzewa', matchExactPathOnly: false },
   { relativePath: 'map', label: 'Mapa', matchExactPathOnly: false },
+  { relativePath: 'management', label: 'Gospodarka drzewostanem', matchExactPathOnly: false },
   { relativePath: 'documentation', label: 'Dokumentacja', matchExactPathOnly: false },
   { relativePath: 'import-export', label: 'Import i eksport', matchExactPathOnly: false },
 ];

@@ -84,7 +84,8 @@ public class ProjectDocumentDataAssembler {
                     .map(photo -> photoDataOf(photo, annotationByPhotoId.get(photo.getId()), nextPhotoNumber[0]++))
                     .toList();
             List<ProjectDocumentWorkData> treeWorkData = worksByTreeId.getOrDefault(tree.getId(), List.of()).stream()
-                    .map(work -> new ProjectDocumentWorkData(work.getName(), work.getDescription()))
+                    .map(work -> new ProjectDocumentWorkData(work.getName(), work.getDescription(), work.getStatus().name(),
+                            work.getPriority() == null ? null : work.getPriority().name(), work.getPlannedDate(), work.getCompletedDate()))
                     .toList();
             treeData.add(new ProjectDocumentTreeData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(),
                     tree.getSpeciesLatin(), tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(),

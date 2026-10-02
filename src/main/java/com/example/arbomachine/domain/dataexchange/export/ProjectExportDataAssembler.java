@@ -49,7 +49,9 @@ public class ProjectExportDataAssembler {
     }
 
     private static TreeWorkExportData workDataOf(TreeWork work) {
-        return new TreeWorkExportData(work.getName(), work.getDescription(), work.getMapSymbolCode());
+        return new TreeWorkExportData(work.getId(), work.getName(), work.getDescription(), work.getMapSymbolCode(),
+                work.getStatus().name(), work.getPriority() == null ? null : work.getPriority().name(),
+                work.getPlannedDate(), work.getCompletedDate());
     }
 
     private static TreeValuationExportData valuationDataOf(TreeValuation valuation) {

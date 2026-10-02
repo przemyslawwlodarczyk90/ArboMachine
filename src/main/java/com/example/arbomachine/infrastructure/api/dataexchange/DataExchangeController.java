@@ -47,6 +47,12 @@ public class DataExchangeController {
         return fileResponse(dataExchangeFacade.exportTreesAsCsvOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
+    @Operation(summary = "Prace projektu jako CSV (etap 28: jeden wiersz = jedna praca, status/priorytet jako kody)")
+    @GetMapping("/exports/works.csv")
+    public ResponseEntity<byte[]> exportTreeWorksAsCsv(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
+        return fileResponse(dataExchangeFacade.exportTreeWorksAsCsvOfCurrentUser(authenticatedUser.getUsername(), projectId));
+    }
+
     @Operation(summary = "Drzewa projektu jako XLSX (arkusz \"Drzewa\" i \"Projekt\")")
     @GetMapping("/exports/trees.xlsx")
     public ResponseEntity<byte[]> exportTreesAsXlsx(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {

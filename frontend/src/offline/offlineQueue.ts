@@ -29,6 +29,16 @@ export const createLocalId = () => -(Date.now() * 100 + (localIdSequence++ % 100
 const TREE_EDITABLE_FIELDS = ['inventoryNumber', 'speciesLatin', 'speciesPolish', 'trunkCircumferenceCm', 'heightM',
   'crownDiameterM', 'notes', 'conditionNotes', 'hazardNotes'] as const;
 
+/** Pola pracy ustawiane formularzem (etap 28: status, priorytet, terminy) - komplet, jak PATCH backendu. */
+const WORK_EDITABLE_FIELDS = ['name', 'description', 'status', 'priority', 'plannedDate', 'completedDate'] as const;
+
+const workFieldsOf = (body: Record<string, unknown>) => {
+  const fields: Record<string, unknown> = {};
+  for (const field of WORK_EDITABLE_FIELDS) fields[field] = body[field] ?? null;
+  fields.status ??= 'RECOMMENDED';
+  return fields;
+};
+
 type CachedRecord = Record<string, unknown> & { id: number };
 
 export interface QueuedChangeDraft {
@@ -55,6 +65,8 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
       return { httpMethod: 'POST', path: treeWorksPath(change.projectId, treeId), body: change.body };
     case 'UPDATE_TREE_WORK':
       return { httpMethod: 'PATCH', path: `${treeWorksPath(change.projectId, treeId)}/${workId}`, body: change.body };
+    case 'DELETE_TREE_WORK':
+      return { httpMethod: 'DELETE', path: `${treeWorksPath(change.projectId, treeId)}/${workId}` };
     case 'UPSERT_TREE_VALUATION':
       return { httpMethod: 'PUT', path: treeValuationPath(change.projectId, treeId), body: change.body };
     case 'DELETE_TREE_VALUATION':
@@ -97,6 +109,11 @@ async function cacheValuation(store: OfflineStore, projectId: number, treeId: nu
   if (!Array.isArray(list)) return;
   const others = (list as Record<string, unknown>[]).filter((item) => item.treeId !== replacedTreeId && item.treeId !== treeId);
   await store.writeCachedResponse(projectValuationsPath(projectId), valuation.hasValuation ? [...others, valuation] : others);
+}
+
+async function removeFromCachedList(store: OfflineStore, path: string, removedId: number) {
+  const list = await readList(store, path);
+  if (list) await store.writeCachedResponse(path, list.filter((item) => item.id !== removedId));
 }
 
 async function cacheWork(store: OfflineStore, projectId: number, treeId: number, work: CachedRecord, replacedId = work.id,
@@ -161,7 +178,7 @@ export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft,
     case 'CREATE_TREE_WORK': {
       workId = createLocalId();
       const body = (draft.body ?? {}) as Record<string, unknown>;
-      result = { id: workId, treeId, name: body.name, description: body.description ?? null, mapSymbolCode: null,
+      result = { id: workId, treeId, ...workFieldsOf(body), mapSymbolCode: null,
         createdAt: timestamp, updatedAt: timestamp, offlinePending: true };
       await cacheWork(store, projectId, treeId, result, workId, true);
       break;
@@ -170,8 +187,15 @@ export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft,
       const cachedWorks = (await readList(store, treeWorksPath(projectId, treeId))) ?? [];
       const body = (draft.body ?? {}) as Record<string, unknown>;
       const cachedWork = cachedWorks.find((work) => work.id === workId) ?? { id: workId ?? 0, treeId };
-      result = { ...cachedWork, name: body.name, description: body.description ?? null, updatedAt: timestamp, offlinePending: true };
+      result = { ...cachedWork, ...workFieldsOf(body), updatedAt: timestamp, offlinePending: true };
       await cacheWork(store, projectId, treeId, result);
+      break;
+    }
+    case 'DELETE_TREE_WORK': {
+      // Praca znika z kopii od razu; usuwanie pracy utworzonej offline (id < 0) UI nie oferuje przed synchronizacja.
+      result = { id: workId ?? 0, treeId, offlinePending: true };
+      await removeFromCachedList(store, treeWorksPath(projectId, treeId), result.id);
+      await removeFromCachedList(store, projectWorksPath(projectId), result.id);
       break;
     }
   }
@@ -243,6 +267,14 @@ async function applyServerResponse(store: OfflineStore, change: PendingChange, r
     await cacheValuation(store, change.projectId, serverTreeId, valuation, change.treeId);
     return;
   }
+  if (change.kind === 'DELETE_TREE_WORK') {
+    // Kopie zaktualizowane przy zapisie; po synchronizacji usuwamy jeszcze z list pod id z serwera.
+    const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
+    const serverWorkId = await resolveId(store, 'work', change.workId) ?? change.workId ?? 0;
+    await removeFromCachedList(store, treeWorksPath(change.projectId, serverTreeId), serverWorkId);
+    await removeFromCachedList(store, projectWorksPath(change.projectId), serverWorkId);
+    return;
+  }
   if (typeof response !== 'object' || response === null || !('id' in response)) return;
   const record = response as CachedRecord;
   if (change.kind === 'CREATE_TREE') {
@@ -287,6 +319,7 @@ export function describePendingChange(change: PendingChange): string {
     case 'CLEAR_TREE_LOCATION': return 'Usunięcie lokalizacji drzewa';
     case 'CREATE_TREE_WORK': return `Nowa praca „${String(body.name ?? '')}”`;
     case 'UPDATE_TREE_WORK': return `Zmiana pracy „${String(body.name ?? '')}”`;
+    case 'DELETE_TREE_WORK': return 'Usunięcie pracy';
     case 'UPSERT_TREE_VALUATION': return 'Waloryzacja drzewa';
     case 'DELETE_TREE_VALUATION': return 'Usunięcie waloryzacji drzewa';
   }

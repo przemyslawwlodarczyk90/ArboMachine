@@ -9,4 +9,12 @@ public interface TreeWorkFieldsRequest {
     String name();
 
     String description();
+
+    String status();
+
+    String priority();
+
+    java.time.LocalDate plannedDate();
+
+    java.time.LocalDate completedDate();
 }

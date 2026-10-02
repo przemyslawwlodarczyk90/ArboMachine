@@ -64,6 +64,10 @@ public class TreeGeoJsonExporter {
                 workNode.put("name", work.name());
                 workNode.put("description", work.description());
                 workNode.put("mapSymbolCode", work.mapSymbolCode());
+                workNode.put("status", work.status());
+                workNode.put("priority", work.priority());
+                workNode.put("plannedDate", work.plannedDate() == null ? null : work.plannedDate().toString());
+                workNode.put("completedDate", work.completedDate() == null ? null : work.completedDate().toString());
             }
         }
         try {

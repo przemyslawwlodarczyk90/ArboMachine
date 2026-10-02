@@ -3,14 +3,15 @@ import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import type { ProjectSummary } from '../summary/projectSummaryDataTypes';
 import { projectSummaryApi } from '../summary/projectSummaryApi';
-import { dataExchangeApi, treesExportFileName } from './dataExchangeApi';
-import type { TreeExportFormat } from './dataExchangeDataTypes';
+import { dataExchangeApi, projectExportFileName } from './dataExchangeApi';
+import type { ProjectExportFile } from './dataExchangeDataTypes';
 
-const TABULAR_EXPORTS: { format: TreeExportFormat; label: string }[] = [
+const TABULAR_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'csv', label: 'Pobierz CSV' },
   { format: 'xlsx', label: 'Pobierz XLSX' },
+  { format: 'works-csv', label: 'Pobierz prace (CSV)' },
 ];
-const GIS_EXPORTS: { format: TreeExportFormat; label: string }[] = [
+const GIS_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'geojson', label: 'Pobierz GeoJSON' },
   { format: 'gpkg', label: 'Pobierz GeoPackage' },
 ];
@@ -31,7 +32,7 @@ function saveBlobAsFile(blob: Blob, fileName: string) {
  */
 export function TreesExportSection({ projectId }: { projectId: number }) {
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
-  const [downloadingFormat, setDownloadingFormat] = useState<TreeExportFormat | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<ProjectExportFile | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,12 +43,12 @@ export function TreesExportSection({ projectId }: { projectId: number }) {
     return () => { isResponseStillWanted = false; };
   }, [projectId]);
 
-  const download = async (format: TreeExportFormat) => {
+  const download = async (format: ProjectExportFile) => {
     if (downloadingFormat) return;
     setDownloadingFormat(format);
     setErrorMessage(null);
     try {
-      saveBlobAsFile(await dataExchangeApi.downloadTreesExport(projectId, format), treesExportFileName(projectId, format));
+      saveBlobAsFile(await dataExchangeApi.downloadProjectExport(projectId, format), projectExportFileName(projectId, format));
     } catch (downloadError) {
       setErrorMessage(`Nie udało się pobrać pliku. ${downloadError instanceof ApiRequestError ? downloadError.message : 'Nieoczekiwany błąd.'}`);
     } finally {
@@ -55,7 +56,7 @@ export function TreesExportSection({ projectId }: { projectId: number }) {
     }
   };
 
-  const exportButton = ({ format, label }: { format: TreeExportFormat; label: string }) => (
+  const exportButton = ({ format, label }: { format: ProjectExportFile; label: string }) => (
     <button key={format} type="button" className="btn btn-secondary" onClick={() => download(format)}
             disabled={downloadingFormat !== null} aria-busy={downloadingFormat === format}>
       {downloadingFormat === format ? 'Pobieranie…' : label}
@@ -67,7 +68,8 @@ export function TreesExportSection({ projectId }: { projectId: number }) {
       <h3 id="trees-export-heading">Eksport danych</h3>
       <p className="muted">
         Tabela wszystkich drzew projektu do otwarcia w Excelu albo LibreOffice. CSV: separator „;”, kodowanie UTF-8,
-        przecinek dziesiętny. XLSX: arkusze „Drzewa” i „Projekt”.
+        przecinek dziesiętny. XLSX: arkusze „Drzewa”, „Prace” i „Projekt”. „Pobierz prace (CSV)” - jeden wiersz na
+        zalecenie lub pracę (status, priorytet, termin, data wykonania).
       </p>
       <div className="form-actions data-exchange-actions">{TABULAR_EXPORTS.map(exportButton)}</div>
 
