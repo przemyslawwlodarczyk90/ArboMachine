@@ -154,7 +154,9 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       },
     });
     const standSource = new VectorSource<Feature<Polygon>>();
-    const standLayer = new VectorLayer({ source: standSource, style: (feature: FeatureLike) => standStyleOf(String(feature.get('name') ?? '')) });
+    // declutter: nachodzace na siebie nazwy grup sa pomijane (obszary rysowane zawsze).
+    const standLayer = new VectorLayer({ source: standSource, declutter: true,
+      style: (feature: FeatureLike) => standStyleOf(String(feature.get('name') ?? '')) });
     standSourceRef.current = standSource;
     const map = createMapWithOpenStreetMapBase(mapContainerRef.current, [standLayer, treeMarkerLayer]);
     treeMarkerLayerRef.current = treeMarkerLayer;

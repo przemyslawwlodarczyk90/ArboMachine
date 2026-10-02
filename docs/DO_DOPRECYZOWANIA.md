@@ -317,7 +317,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
-## Rejestr braków — stan po etapie 28
+## Rejestr braków — stan po etapie 30
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -330,13 +330,13 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 |---|---|---|
 | Drzewa | Usuwanie drzewa (co ze zdjęciami-plikami i pracami) | BRAK |
 | Projekty | Usuwanie / archiwizacja projektu; konto z projektami nie może być usunięte (409 — polityka tymczasowa) | BRAK / OPEN |
-| Drzewa | Wyszukiwanie, sortowanie i filtrowanie listy drzew (np. „bez lokalizacji”, „bez zdjęć”) | BRAK |
+| Drzewa | Filtry listy drzew — od etapów 27–29: waloryzacja, stan z ostatniej kontroli, grupa drzew, iglaste/liściaste; brak wyszukiwania, sortowania i filtrów „bez lokalizacji”, „bez zdjęć” | BRAK |
 | Listy | Paginacja list projektów, drzew, zdjęć i prac (dziś zawsze całe listy) | DŁUG |
 | Drzewa | Nawigacja „Poprzednie / Następne drzewo”, „Zapisz i dodaj następne” w jednym kroku (jest tylko „Dodaj następne drzewo”) | OPEN |
 | Drzewa | Autonumeracja i unikalność numeru drzewa w projekcie | OPEN |
 | Drzewa | Słownik gatunków, autocomplete, PL ↔ LAT | BRAK (V1 = wolny tekst) |
 | Drzewa | Model wielopniowości, historia pomiarów, strukturalna ocena stanu / VTA / ryzyko | OPEN |
-| Waloryzacja | V1 od etapu 27: zapis oceny arborysty (kategoria V1 + opisy); brak metody, skal, punktów, wycen PLN, historii ocen, waloryzacji grup drzew | OPEN |
+| Waloryzacja | V1 od etapu 27: zapis oceny arborysty (kategoria V1 + opisy); brak metody, skal, punktów, wycen PLN, historii ocen, waloryzacji grup drzew (grupy istnieją od etapu 29, ale bez oceny) | OPEN |
 | Formularz | Blokada opuszczenia strony z niezapisanymi zmianami (jest tylko komunikat „Masz niezapisane zmiany”) | BRAK |
 | Zdjęcia | Miniatury po stronie serwera / kompresja (galeria ładuje pełne pliki) | BRAK |
 | Zdjęcia | Podpisy, kategorie, zdjęcie główne, kolejność, EXIF, HEIC | OPEN |
@@ -346,14 +346,18 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Prace | Słownik typów prac, kody, parametry pracy | OPEN |
 | Gospodarka | V1 od etapu 28: status, priorytet organizacyjny, termin, data wykonania, widok projektu z filtrami, tryb mapy; brak prac dla grup drzew i prac niezwiązanych z drzewem, prac cyklicznych, kosztów, wykonawców, protokołów, harmonogramu, historii zmian statusu, importu prac, warstwy prac w GeoPackage | OPEN / BRAK |
 | Mapa | Symbole prac i drzew, legenda — V1 od etapu 19 (katalog techniczny); właściwe symbole arborysty, etykiety numerów drzew przy markerach | OPEN |
-| Mapa | Klastrowanie przy dużej liczbie drzew; korony, strefy ochronne, poligony | BRAK / OPEN |
-| Mapa | WMS / Geoportal / ortofotomapa; układy PL-2000 / PL-1992; PostGIS | OPEN |
+| Mapa | Klastrowanie przy dużej liczbie drzew; korony i strefy ochronne (obszary grup drzew — V1 od etapu 29; promienie pnia i korony z rysunku DXF nie są importowane) | BRAK / OPEN |
+| Mapa | WMS / Geoportal / ortofotomapa; PostGIS. Układy PL-2000 / PL-1992 — od etapu 29 tylko przy imporcie (przeliczenie do WGS 84); mapa, eksport i współrzędne w karcie drzewa tylko w WGS 84 | OPEN |
 | Mapa | Start mapy z obszaru/adresu projektu (dziś: widok Polski) | OPEN |
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
-| Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon, placeholdery autora/zleceniodawcy); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
-| Import/eksport | CSV, XLSX, GeoJSON (eksport i import), GeoPackage (eksport) — V1 od etapów 23–24; brak SHP, DXF, QGZ, QML, aktualizacji drzew przy imporcie, importu prac i zdjęć, wyboru układu współrzędnych | OPEN / BRAK |
-| Teren | GPS urządzenia (etap 25) i praca offline z synchronizacją (etap 26) — V1; brak RTK/NTRIP, odbiorników Bluetooth, zdjęć offline, pobierania całego projektu „na wyjazd”, pełnego PWA | OPEN / BRAK |
+| Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon; od etapu 29 dane zlecenia: zleceniodawca, adres obiektu, data zlecenia, monitoring i grupy drzew; autor nadal placeholderem); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
+| Import/eksport | CSV, XLSX, GeoJSON, GeoPackage, Shapefile ZIP, DXF (etapy 23–24, 29); arkusze aplikacji terenowych; obszary grup drzew; brak DWG, QGZ, QML, importu pliku projektu aplikacji terenowej (format własny), aktualizacji drzew przy imporcie, importu prac, kontroli i zdjęć, ręcznego wyboru układu współrzędnych, eksportu w PL-2000 | OPEN / BRAK |
+| Teren | GPS urządzenia (etap 25) i praca offline z synchronizacją (etap 26) — V1; kontrole stanu offline od etapu 29; brak RTK/NTRIP, odbiorników Bluetooth, zdjęć i grup drzew offline, pobierania całego projektu „na wyjazd”, pełnego PWA | OPEN / BRAK |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
+| Monitoring | V1 od etapu 29: kontrola = data + ocena Dobry / Umiarkowany / Zły (umowna, nie VTA) + uwagi; brak strukturalnej karty oceny (pień, konary, korzenie, ubytki, posusz…), kontroli cyklicznych z terminem następnej, zdjęć przy kontroli, oceny ryzyka | OPEN |
+| Powiadomienia | V1 od etapu 30: lista w aplikacji + Web Push (ocena „Zły”, prace na jutro, test); brak e-mail/SMS, ustawień, które powiadomienia otrzymywać i o której, oznaczania jako przeczytane, powiadomień dla urzędu/zleceniodawcy | OPEN / BRAK |
+| Kalendarz | V1 od etapu 30: jednorazowy eksport `.ics` prac z terminem; brak subskrypcji kalendarza (adres URL odświeżany automatycznie), synchronizacji dwukierunkowej, godzin prac | OPEN / BRAK |
+| Grupy drzew | V1 od etapu 29: obszar (wielokąt) + nazwa + uwagi + przypisane drzewa; brak typów (szpaler, aleja, zadrzewienie, porost), pomiarów grupy, waloryzacji i prac dla grupy, edycji wierzchołków istniejącego obszaru (jest tylko narysowanie od nowa), pracy offline | OPEN / BRAK |
 | Konto | Zmiana hasła z poziomu „Mój profil” (dziś tylko przez „Nie pamiętasz hasła?”) | BRAK |
 | Konto | Po „Wyloguj” kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) | OPEN |
 | Role | Panel urzędnika — tylko pulpit z zapowiedziami modułów; brak workflow urząd ↔ wykonawca, organizacji | BRAK / FUTURE |
@@ -377,6 +381,10 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Mapa | Wydajność przy setkach/tysiącach drzew | DO SPRAWDZENIA |
 | QGIS | Otwarcie eksportów GeoJSON / GeoPackage w PRAWDZIWYM QGIS i import pliku zapisanego przez QGIS — sprawdzone tylko GDAL 3.12.4 (checklista: `docs/integrations/qgis.md`) | DO SPRAWDZENIA |
 | Mapa | Czytelność symboli i znaczków prac na gęstym podkładzie OSM, na ortofotomapie i w wydruku | DO SPRAWDZENIA |
+| Web Push | Powiadomienia na prawdziwym telefonie/tablecie: Android Chrome, iPad/iPhone (Safari wymaga aplikacji dodanej do ekranu głównego, iOS 16.4+). Sprawdzone: headless Chrome → prawdziwy FCM przyjął wiadomość | DO SPRAWDZENIA |
+| Kalendarz | Import pliku `.ics` w Google Calendar, Outlook i kalendarzu Apple (testy: zgodność z RFC 5545 w testach jednostkowych) | DO SPRAWDZENIA |
+| GIS | Pliki DXF z innych programów niż aplikacja terenowa arborysty (inne nazwy warstw, bloki, MTEXT, DWG zapisany jako DXF); Shapefile i GeoPackage z QGIS w PL-2000 — sprawdzone na plikach własnych i GDAL 3.12.4 | DO SPRAWDZENIA |
+| Dokument PDF | Projekt 938 drzew: 530 stron, 1,4 MB, 4,4 s — czy taki dokument jest użyteczny (czy karty wszystkich drzew mają być w PDF)? | DO SPRAWDZENIA |
 | Maile | Wysyłka maili rejestracji/resetu przez prawdziwy SMTP (lokalnie potwierdzanie maila jest wyłączalne) | DO SPRAWDZENIA |
 
 ### Dług techniczny
@@ -398,6 +406,15 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dokument PDF | Zdjęcia bez obrotu wg EXIF; WebP bez adnotacji nie trafia do PDF; brak miniatur — generator za każdym razem dekoduje i zmniejsza pełne zdjęcia | DŁUG |
 | Zdjęcia | Storage produkcyjny i kopie zapasowe plików (dziś katalog na dysku serwera) | OPEN |
 | Mapa | Publiczne kafelki OpenStreetMap — polityka użycia nie dopuszcza ruchu produkcyjnego | OPEN |
+| Powiadomienia | Kolejka wysyłki Web Push w pamięci procesu (pula wątków) — restart w trakcie wysyłki gubi wiadomości (powiadomienie w liście zostaje) | DŁUG |
+| Powiadomienia | Przypomnienia uruchamia `@Scheduled` w każdej instancji — przy kilku instancjach potrzebna blokada (np. ShedLock); deduplikacja w bazie chroni przed podwójnym zapisem, nie przed podwójnym pushem | DŁUG |
+| Bezpieczeństwo | Wygenerowany klucz prywatny VAPID zapisany w bazie bez szyfrowania (produkcja: podać klucze w konfiguracji / sejfie sekretów) | DŁUG |
+| GIS | Numery drzew z rysunku DXF dopasowywane do punktów heurystyką położenia etykiet (na pliku arborysty 836/839 poprawnie) — ostrzeżenie w imporcie, ale bez ręcznej korekty dopasowań | DŁUG |
+| GIS | Brak sprawdzania samoprzecięć wielokątów grup drzew; pole liczone na sferze (przybliżenie, błąd < 0,5% dla małych obszarów) | DŁUG |
+| GIS | Układy współrzędnych tylko PL-2000 (strefy 5–8) i PL-1992, rozpoznawane z `.prj` / SRS albo zgadywane z zakresu liczb; brak biblioteki PROJ, innych EPSG i transformacji datum | DŁUG |
+| GIS | Klasyfikacja iglaste/liściaste po nazwie gatunku zdublowana w backendzie (`SpeciesGroupClassifier`) i frontendzie (`speciesGroup.ts`); miłorząb traktowany jako liściasty | DŁUG |
+| Monitoring | Ostatnia kontrola każdego drzewa (`/monitoring/latest`) liczona w pamięci z wszystkich kontroli projektu | DŁUG |
+| Testy E2E | Skrypt danych demonstracyjnych (`scripts/demo`) jest w repo, ale scenariusze E2E nadal poza repo | DŁUG |
 
 ### Sprawy operacyjne (środowisko lokalne)
 
@@ -406,6 +423,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | W bazie deweloperskiej zostały konta i projekty testowe z adresami `...@example.com` (z testów E2E etapów 11–26) — do usunięcia przy okazji | OPERACYJNE |
 | Katalog `storage/tree-photos` może zawierać pliki testowe z E2E (w `.gitignore`) | OPERACYJNE |
 | Lokalne, niezacommitowane zmiany właściciela repo: `application.properties` (port 8083), `tsconfig.tsbuildinfo` | OPERACYJNE |
+| Produkcja: HTTPS (wymagany przez Web Push i service worker), stały `app.push.vapid-subject` z prawdziwym adresem, kopie zapasowe bazy i katalogu zdjęć — patrz `docs/WYDANIE.md` | OPERACYJNE |
 
 ---
 
@@ -742,3 +760,111 @@ go proponowała; obowiązująca zabrania równoległego modelu obok `TreeWork`).
 | Usuwanie pracy offline (`DELETE_TREE_WORK`) — praca znika z kopii od razu | UI nie oferuje usuwania pracy utworzonej offline przed synchronizacją |
 | Liczniki w PDF: „do wykonania” = Zalecenie + Zaplanowana | — |
 
+---
+
+## Monitoring stanu drzew — etap 29
+
+**Status:** V1 IMPLEMENTED (dziennik kontroli) / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-29-monitoring-i-gis.md`.
+To **nie jest ocena VTA ani ocena ryzyka** — tylko zapis, kiedy arborysta sprawdził drzewo i jak ogólnie ocenił stan.
+
+| Temat | Stan |
+|---|---|
+| Skala oceny | V1 HYPOTHESIS: opcjonalna ocena Dobry / Umiarkowany / Zły, brak = „Nie oceniono”. OPEN: jaką skalę stosuje arborysta (klasy żywotności, klasy ryzyka, skala 1–5)? |
+| Karta oceny stanu | OPEN DOMAIN QUESTION: w pliku projektu aplikacji terenowej arborysty jest strukturalna karta: wartość drzewa (pomnik przyrody, gatunek chroniony, ostoja), liczba przewodników 1–10, kształt korony (regularna / asymetryczna: odrosty z pnia, zdeformowana cięciem), odziomek, pień (pochylony, pęknięcia, słabe wiązanie, owocniki, rozkład, pędy regeneracyjne, rany, ubytek powierzchniowy / wgłębny mały / średni / rozległy, kominowy, rozwidlenie V/U), konary, gałęzie (posusz 5–100%, jemioła, gniazda), korzenie, siedlisko, notatki. Czy ArboMachine ma przejąć tę kartę jako słownik? Czy to część kontroli, czy karty drzewa? |
+| Uwagi z arkusza | V1: kolumny karty stanu z arkusza aplikacji terenowej łączone przy imporcie w tekst „Stan / uwagi” drzewa (nie w kontrolę). |
+| Cykl kontroli | OPEN: czy kontrole są cykliczne (co rok, co 3 lata), czy potrzebny termin następnej kontroli i przypomnienie? V1: brak. |
+| Zdjęcia przy kontroli | OPEN: czy kontrola ma własne zdjęcia (porównanie „przed / po”)? V1: zdjęcia tylko przy drzewie. |
+| Kto kontroluje | OPEN: zawsze arborysta-właściciel projektu? V1 tak. |
+| Ocena „Zły” | V1: zapis kontroli z oceną „Zły” tworzy powiadomienie (i Web Push). OPEN: czy to właściwy wyzwalacz? czy powiadomienie dostaje ktoś jeszcze (zleceniodawca, urząd)? |
+| Lista drzew i mapa | V1: plakietka ostatniej oceny, filtr „Stan: Zły / … / Nie sprawdzone”. Mapa nie ma trybu monitoringu. OPEN: czy potrzebny? |
+| Dokument | V1 IMPLEMENTED: liczba drzew skontrolowanych i w złym stanie, tabela kontroli w karcie drzewa. |
+| Eksport | V1: XLSX arkusz „Monitoring” (wszystkie kontrole), atrybuty drzewa `mon_date` / `mon_status` (GIS) i `lastMonitoringNotes` (tylko CSV/XLSX). DEFERRED: import kontroli. |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Encja `TreeMonitoringRecord` (tabela `tree_monitoring_record`, indeks `tree_id, inspection_date`) | Wiele kontroli na drzewo, najnowsza pierwsza |
+| Data kontroli wymagana (bez blokady dat przyszłych); ocena i uwagi opcjonalne | Uwagi do 5000 znaków. OPEN: czy blokować daty z przyszłości i puste kontrole? |
+| `PUT` zastępuje całą kontrolę, `DELETE` idempotentny | Offline: `CREATE/UPDATE/DELETE_TREE_MONITORING_RECORD` w kolejce etapu 26 |
+
+---
+
+## Grupy drzew i GIS — etap 29
+
+**Status:** V1 IMPLEMENTED / DISCOVERY REQUIRED. Szczegóły: `docs/discovery/etap-29-monitoring-i-gis.md`. W poleceniu
+obszary nazywano „porostami” — w interfejsie przyjęto nazwę **„Grupy drzew”** (w kodzie `TreeStand`).
+
+| Temat | Stan |
+|---|---|
+| Nazwa | V1: „Grupy drzew”. OPEN: czy arboryści mówią „porost”, „zadrzewienie”, „skupina”? Czy to różne typy? |
+| Geometria | V1: jeden wielokąt (bez otworów) w WGS 84; rysowany na mapie albo importowany (DXF warstwy `-Area`, Shapefile, GeoPackage, GeoJSON; MultiPolygon = kilka grup). OPEN: czy grupa bywa linią (szpaler) albo kilkoma obszarami? |
+| Drzewa w grupie | V1: przypisanie ręczne i „przypisz drzewa leżące w obszarze”; drzewo może być w kilku grupach. OPEN: czy grupa ma też drzewa nieinwentaryzowane pojedynczo (liczba, gatunki, powierzchnia)? |
+| Pomiary grupy | OPEN: czy grupa ma własne pomiary (liczba sztuk, przedział obwodów, zwarcie)? V1: tylko pole powierzchni liczone z obszaru. |
+| Prace i waloryzacja grupy | OPEN (patrz etapy 27–28). V1: brak. |
+| Symbol iglastych | V1: gwiazdka = gatunek iglasty (rozpoznany po nazwie łacińskiej/polskiej), koło = liściasty / nieznany. OPEN: czy arborysta chce takiego rozróżnienia i czy z innymi kształtami (krzewy, martwe drzewa)? |
+| Rysunek DXF | V1: punkty drzew z warstw `-Point`, numery z warstw `-Label`, obszary z `-Area` (konwencja aplikacji terenowej arborysty). Okręgi pnia i korony **nie są importowane**. OPEN: czy importować wysokość / średnicę korony z rysunku? jakie nazwy warstw mają inne programy? |
+| Układ współrzędnych | V1: PL-2000 strefy 5–8 i PL-1992 rozpoznane z `.prj` / SRS albo z zakresu liczb, przeliczone do WGS 84 (ostrzeżenie w imporcie). OPEN: czy potrzebny eksport w PL-2000 (dla projektantów, urzędów)? |
+| Arkusz aplikacji terenowej | V1: rozpoznawane nagłówki (Etykieta, Gatunki, Obwody na 130 cm, Pozycja WGS84, Karta drzewa…); wiersze obszarów pomijane; obwody wielopniowe („57+34”) trafiają do uwag, nie są sumowane. OPEN: jak liczyć obwód drzewa wielopniowego? |
+| Plik projektu aplikacji terenowej | DEFERRED: format własny (binarny) — nie importujemy. OPEN: czy arboryści mogą eksportować do XLSX/DXF (tak robią dziś)? |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Geometria jako tekst GeoJSON w `tree_stand.geometry_geojson`, bez PostGIS | Punkt-w-wielokącie i pole liczone w Javie |
+| Import obszarów: najwyżej 500, limit pliku 15 MB, „wszystko albo nic” | Jak import drzew |
+| Shapefile: ZIP z `.shp`, `.dbf`, opcjonalnie `.prj` i `.cpg`; kodowanie DBF z `.cpg`, potem UTF-8, w ostateczności Windows-1250 | — |
+| Eksport Shapefile: ZIP z warstwami `trees` (punkty) i `stands` (wielokąty), WGS 84, UTF-8; nazwy pól DBF ≤ 10 znaków | Teksty dłuższe niż 254 znaki obcinane (ograniczenie formatu) |
+
+---
+
+## Dane zlecenia projektu — etap 29
+
+| Temat | Stan |
+|---|---|
+| Pola | V1 IMPLEMENTED: zleceniodawca, adres obiektu, data zlecenia — opcjonalne, w nagłówku projektu, PDF i XLSX. OPEN: czy potrzebne: numer umowy, wykonawca/autor, termin oddania, dane kontaktowe, działki ewidencyjne? |
+| Zleceniodawca jako obiekt | OPEN: słownik zleceniodawców (ten sam urząd w wielu projektach)? V1: tekst. |
+
+---
+
+## Powiadomienia i Web Push — etap 30
+
+**Status:** V1 IMPLEMENTED. Szczegóły: `docs/discovery/etap-30-integracje-i-finalizacja.md`.
+
+| Temat | Stan |
+|---|---|
+| Kanały | V1: lista w aplikacji (Integracje, Mój profil) + Web Push w przeglądarce. OPEN: e-mail? SMS? |
+| Zdarzenia | V1: kontrola z oceną „Zły”; codziennie o 7:00 — prace z terminem na jutro (jedno zbiorcze powiadomienie); powiadomienie testowe. OPEN: jakie zdarzenia są naprawdę potrzebne (prace po terminie, zbliżająca się kontrola, sezon lęgowy)? |
+| Godzina przypomnienia | V1: 7:00 czasu polskiego, dla wszystkich. OPEN: ustawienia per użytkownik? |
+| Odbiorcy | V1: tylko właściciel projektu. OPEN: zespół, zleceniodawca, urząd. |
+| Urządzenia | V1: każde urządzenie (przeglądarka) włącza powiadomienia osobno; nieaktualne subskrypcje usuwane automatycznie. iPhone/iPad: tylko aplikacja dodana do ekranu głównego. |
+
+### Założenia techniczne V1 (bez potwierdzenia)
+| Założenie | Uwagi |
+|---|---|
+| Web Push bez zewnętrznej biblioteki: szyfrowanie RFC 8291 (aes128gcm), VAPID RFC 8292 (ES256) | Zweryfikowane wektorem testowym z RFC 8291 |
+| Wysyłka tylko do usług push na liście dozwolonych hostów, tylko HTTPS | Ochrona przed SSRF (adres subskrypcji podaje przeglądarka/klient) |
+| Klucze VAPID z konfiguracji; brak = wygenerowane i zapisane w bazie | Zmiana kluczy = wszystkie urządzenia muszą włączyć powiadomienia ponownie |
+| Deduplikacja: unikalny klucz (użytkownik + zdarzenie), np. `works-due:<data>` | Jedno przypomnienie dziennie |
+| Treść powiadomienia: numer drzewa, nazwa projektu, data kontroli, link do karty drzewa | Szyfrowana end-to-end (usługa push nie widzi treści) |
+
+---
+
+## Kalendarz ICS — etap 30
+
+| Temat | Stan |
+|---|---|
+| Zakres | V1: prace do wykonania (Zalecenie, Zaplanowana) z terminem → wydarzenia całodniowe; numer drzewa, gatunek, priorytet, opis w treści. OPEN: czy także kontrole, prace wykonane, prace bez terminu? |
+| Aktualizacja | V1: jednorazowy plik (ponowny import aktualizuje wydarzenia po stałym UID). OPEN: subskrypcja kalendarza przez adres URL (wymaga tokenu w adresie)? |
+| Import z kalendarza | DEFERRED: brak. |
+
+---
+
+## Wydanie MVP — etap 30
+
+| Temat | Stan |
+|---|---|
+| Hosting | OPEN: gdzie działa produkcja (VPS, chmura), domena, certyfikat HTTPS, kto administruje? |
+| Kopie zapasowe | OPEN: częstotliwość i miejsce kopii bazy i katalogu zdjęć. V1: procedura opisana w `docs/WYDANIE.md`. |
+| Wersjonowanie | V1: tag Git `vX.Y.Z` + JAR z sumą SHA-256 (`scripts/build-release.*`). |
+| Dane demonstracyjne | V1: `scripts/demo/seed-demo-project.mjs` (przykładowy park albo prawdziwe pliki arborysty). |
+| RODO / regulamin | OPEN: polityka prywatności, umowa powierzenia (zdjęcia, lokalizacje, dane zleceniodawców). |

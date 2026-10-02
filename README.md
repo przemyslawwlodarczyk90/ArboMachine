@@ -1,551 +1,211 @@
 # 🌳 ArboMachine
 
-**Czym jest (stan: Milestone 1 + etapy 17-28 - formularz terenowy, dyktowanie, symbole mapowe, adnotacje zdjęć, dokument PDF, import/eksport i QGIS, GPS i praca offline, waloryzacja, gospodarka drzewostanem):** aplikacja webowa dla niezależnego arborysty do pracy terenowej
-i biurowej nad projektem (np. inwentaryzacja drzew w parku). Arborysta zakłada konto, tworzy projekty, dodaje
-drzewa z podstawowymi danymi, wskazuje ich położenie na mapie, dołącza zdjęcia i zapisuje zalecenia/prace, a na
-podsumowaniu projektu widzi, ile materiału już zebrał. To pierwszy działający pionowy fragment produktu -
-**nie** kompletny system arborystyczny (patrz „Czego jeszcze nie ma”).
+**Aplikacja webowa dla niezależnego arborysty** - praca w terenie (tablet, telefon) i w biurze nad projektem, np.
+inwentaryzacją drzew w parku: drzewa z pomiarami, lokalizacją GPS i zdjęciami, waloryzacja, zalecenia i plan prac,
+kontrole stanu, grupy drzew, mapa, dokument PDF oraz wymiana danych z QGIS i aplikacjami terenowymi.
 
-**Stack:** backend Spring Boot 3.5 (**Java 25**, Spring Security + JWT, JPA/Hibernate, PostgreSQL, Thymeleaf dla maili),
-frontend React 19 + TypeScript + Vite w katalogu [`frontend/`](frontend), mapa OpenLayers (podkład OpenStreetMap).
-Zbudowany frontend serwuje Spring Boot (jeden proces, jeden port).
+**Stan: MVP po etapach 1-30** - gotowe do pokazania arborystom i zebrania uwag. To **nie** jest kompletny system
+arborystyczny: wszystko, czego nie wiemy od arborystów (metody waloryzacji, VTA, skale ocen, słowniki prac), jest
+zapisane jako robocze „V1” albo pytanie w [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md).
 
-Konwencja językowa:
-- **kod i identyfikatory techniczne po angielsku** - klasy, encje, metody, zmienne, DTO, komponenty React, typy
-  TypeScript, pliki, endpointy REST, enumy i pola API (możliwie samoopisujące się, np. `UserAccount`,
-  `ProjectTreeMap`, `setTreeLocation`);
-- **cały interfejs użytkownika po polsku** - wszystkie ekrany, komunikaty błędów, powitania paneli i maile
-  (rejestracja, reset hasła). Bez biblioteki i18n - teksty są wprost w komponentach;
-- **komentarze i dokumentacja po polsku**. Surowe komunikaty błędów API są celowo po angielsku (kontrakt API) -
-  frontend tłumaczy je w `userFacingErrorMessages.ts`.
+**Stack:** Spring Boot 3.5 (**Java 25**, Spring Security + JWT, JPA/Hibernate, PostgreSQL, Thymeleaf), React 19 +
+TypeScript + Vite ([`frontend/`](frontend)), OpenLayers (podkład OpenStreetMap). Zbudowany frontend serwuje Spring Boot -
+jeden proces, jeden port. PDF: openhtmltopdf, XLSX: fastexcel, GeoPackage: NGA, reszta formatów GIS i Web Push - własny
+kod na bibliotece standardowej Javy.
 
-## ✅ Milestone 1 - co działa
-
-Rejestracja / logowanie → **Projekty** → nowy projekt → **Podsumowanie** projektu (liczby drzew, lokalizacji,
-zdjęć, prac + szybkie akcje) → **Drzewa** → nowe drzewo → **karta drzewa** (dane Tree V1, **Lokalizacja** na mapie
-albo ręcznie, **Zdjęcia**, **Zalecenia i prace**) → **Mapa** projektu (markery, przejście do karty) → powrót do
-podsumowania. Cały flow działa przez UI (bez wpisywania adresów), po odświeżeniu (F5) każdej trasy, na desktopie,
-tablecie i telefonie. Własność danych egzekwuje backend (`Tree → Project → owner`) - cudze dane dają 404.
-
-## 🚫 Czego jeszcze nie ma
-
-Świadomie **niezaimplementowane** (otwarte pytania w [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md)):
-ocena stanu drzewa / VTA / ryzyko, metoda waloryzacji i wycena pieniężna (V1 to tylko zapis oceny arborysty),
-słownik gatunków i typów prac, harmonogram / kosztorys / wykonawcy prac, DOCX, SHP/DXF/QGZ, WMS/Geoportal, układy
-PL-2000/PL-1992, PostGIS, RTK / odbiorniki zewnętrzne, zdjęcia offline, usuwanie drzew i projektów, współpraca wielu
-użytkowników nad projektem (organizacje, urząd ↔ wykonawca). Panel urzędnika ma na razie tylko pulpit z zapowiedziami
-modułów. Pełny rejestr braków: `docs/DO_DOPRECYZOWANIA.md`, „Rejestr braków”.
+Konwencja językowa: **kod i identyfikatory po angielsku**, **interfejs, komentarze i dokumentacja po polsku**. Surowe
+komunikaty błędów API są po angielsku (kontrakt), frontend tłumaczy je w `userFacingErrorMessages.ts`.
 
 ---
 
-## 👥 Typy kont
+## ✅ Co działa (przepływ MVP)
 
-| Rola | Jak się ją dostaje | Panel |
+**Projekt → teren → waloryzacja i plan prac → mapa → dokument → eksport / QGIS**
+
+| Obszar | Co jest | Szczegóły |
 |---|---|---|
-| **Arborysta** (`ARBORIST`) | wybór przy rejestracji | `/arborist` |
-| **Urzędnik** (`OFFICIAL`) | wybór przy rejestracji | `/official` |
-| **Administrator** (`ADMIN`) | **tylko ręcznie w bazie** | `/admin` |
+| 👥 Konta | rejestracja z potwierdzeniem e-mail, logowanie JWT, reset hasła, panele: arborysta / urzędnik / administrator | urzędnik - na razie tylko pulpit |
+| 📁 Projekty | lista, tworzenie, edycja; **dane zlecenia**: zleceniodawca, adres obiektu, data zlecenia; podsumowanie z liczbami | etap 29 |
+| 🌳 Drzewa | formularz terenowy (tablet-first): numer, gatunek, obwód, wysokość, korona, stan, zagrożenia, notatki; dyktowanie | [etap 8](docs/discovery/etap-8-karta-drzewa-discovery.md) |
+| 📍 Lokalizacja | punkt WGS 84 z mapy, ręcznie albo z **GPS urządzenia** (dokładność, wysokość, źródło) | [etap 25](docs/discovery/etap-25-gnss.md) |
+| 📷 Zdjęcia | zdjęcia drzewa z aparatu tabletu, **adnotacje** (rysunek na zdjęciu bez zmiany oryginału) | etapy 13, 20 |
+| 🏅 Waloryzacja | zapis **oceny arborysty**: kategoria V1 + opisy wartości (wiekowa, przyrodnicza, ...). **Bez wzorów i kwot** | [etap 27](docs/discovery/etap-27-waloryzacja.md) |
+| 🪓 Gospodarka drzewostanem | zalecenia i prace: status, priorytet, termin, wykonanie; widok projektu z filtrami (też „najbliższe 7 dni”) | [etap 28](docs/discovery/etap-28-gospodarka-drzewostanem.md) |
+| 🩺 Monitoring stanu | historia kontroli drzewa: data, ocena V1 (Dobry / Umiarkowany / Zły - nie VTA), uwagi; „Nie sprawdzone” na liście | [etap 29](docs/discovery/etap-29-monitoring-i-gis.md) |
+| 🌲 Grupy drzew | obszary (szpalery, zadrzewienia) rysowane na mapie albo importowane; przypisanie drzew, także „w obszarze” | etap 29 |
+| 🗺️ Mapa | tryby: symbole prac / waloryzacja / gospodarka; **gwiazdka = iglaste**, warstwa grup drzew, legendy | etapy 19, 27-29 |
+| 📄 Dokument | „Dokument projektu” PDF: dane zlecenia, podsumowanie, zestawienie drzew, gospodarka, grupy, karty drzew ze zdjęciami | etap 22 + rozszerzenia |
+| 🔁 Import | CSV, XLSX (także **arkusze z aplikacji terenowych**), GeoJSON, **Shapefile (ZIP), GeoPackage, DXF**; **PL-2000 / PL-1992** przeliczane do WGS 84; obszary grup drzew | [etapy 23-24](docs/discovery/etap-23-import-export.md), 29 |
+| 📤 Eksport / QGIS | CSV, XLSX (arkusze: Drzewa, Prace, Monitoring, Grupy drzew, Projekt), GeoJSON, **GeoPackage** (trees + stands), **Shapefile ZIP** | [instrukcja QGIS](docs/integrations/qgis.md) |
+| 🔔 Powiadomienia | lista powiadomień + **Web Push**: ocena „Zły” przy kontroli, przypomnienie rano o pracach na jutro, test | [etap 30](docs/discovery/etap-30-integracje-i-finalizacja.md) |
+| 📅 Kalendarz | eksport prac z terminami do **.ics** (Google / Outlook / Apple) | etap 30 |
+| 📴 Offline | odczyty z pamięci urządzenia, kolejka zmian (drzewa, lokalizacja, prace, waloryzacja, kontrole) i synchronizacja | [etap 26](docs/discovery/etap-26-offline.md) |
 
-Po zalogowaniu każdy trafia do swojego panelu. Arborysta i urzędnik widzą i zmieniają wyłącznie
-**własne** konto. Cudzymi kontami zarządza tylko administrator: edycja danych, zmiana roli
-arborysta ↔ urzędnik, blokada/odblokowanie, potwierdzenie e-maila w imieniu użytkownika, usunięcie.
-Kont administratorów nie da się zmieniać z panelu admina.
+Własność danych egzekwuje backend (`… → Tree → Project → owner`): cudze dane zawsze dają 404, także przy imporcie,
+eksporcie, grupach drzew i powiadomieniach.
 
-Nadanie roli administratora istniejącemu kontu:
+## 🚫 Czego (jeszcze) nie ma
 
-```sql
-UPDATE arbomachine.user_account SET role = 'ADMIN' WHERE email = 'ktos@example.com';
-```
-
-### Statusy konta
-
-- `emailConfirmed` - użytkownik kliknął link aktywacyjny (albo admin potwierdził e-mail za niego).
-  Bez tego nie da się zalogować.
-- `lockedByAdmin` - blokada nałożona przez admina. Zablokowane konto nie może się zalogować,
-  zarejestrować ponownie ani zresetować hasła, a wydane wcześniej tokeny przestają działać od razu.
-
----
-
-## 🚀 Funkcje
-
-- 📝 **Rejestracja** z wyborem typu konta i potwierdzeniem e-mail (link ważny 24 h; ponowna rejestracja
-  na niepotwierdzony adres wysyła nowy link)
-- 🔐 **Logowanie JWT**
-- 🔁 **Reset hasła** - jednorazowy link mailem, ważny 30 min
-- 🧭 **Trzy panele ról** z osobnym prefiksem ścieżek backendu dla każdej roli
-- 📁 **Projekty arborysty** - lista własnych projektów (`/projects`), tworzenie i edycja projektu, workspace
-  projektu z zakładkami **Podsumowanie** / **Drzewa** / **Mapa** i breadcrumbem („Projekty / nazwa projektu”)
-- 📊 **Podsumowanie projektu** (`/projects/:projectId`) - liczba drzew, drzew z lokalizacją i bez, zdjęć oraz
-  zaleceń/prac (liczone w bazie jednym zestawem zapytań COUNT) + szybkie akcje „Przejdź do drzew” / „Otwórz mapę”
-- 🌳 **Drzewa projektu** (`/projects/:projectId/trees`) - lista drzew; „Dodaj drzewo” pyta tylko o numer i od razu
-  otwiera kartę drzewa. Na karcie **formularz terenowy** (tablet-first, zawsze edytowalny): Identyfikacja → Gatunek →
-  Pomiary (klawiatura numeryczna, przecinek dziesiętny, jednostki w etykietach) → Stan drzewa → Zagrożenia → Notatki;
-  „Zapisz zmiany” / „Anuluj”, sygnał niezapisanych zmian, „Dodaj następne drzewo”.
-  Model **Tree V1**: numer inwentaryzacyjny, gatunek łaciński i polski, obwód pnia (cm), wysokość (m),
-  średnica korony (m), notatka, opis stanu i opis zagrożeń (wolny tekst V1). To roboczy model do rozwijania
-  małymi krokami, nie docelowy model arborystyczny -
-  patrz [`docs/discovery/etap-8-karta-drzewa-discovery.md`](docs/discovery/etap-8-karta-drzewa-discovery.md)
-- 📍 **Lokalizacja drzewa (TreeLocation V1)** - punkt WGS84 (`latitude`/`longitude` w stopniach dziesiętnych),
-  ustawiany w karcie drzewa wskazaniem na mapie albo ręcznym formularzem współrzędnych; można go też usunąć
-- 🗺️ **Mapa projektu** (`/projects/:projectId/map`, OpenLayers + podkład OpenStreetMap) - markery drzew
-  z zapisaną lokalizacją; kliknięcie markera pokazuje „Drzewo {numer}”, gatunek i link do karty drzewa
-- 📷 **Zdjęcia drzewa (TreePhoto V1)** - sekcja „Zdjęcia” w karcie drzewa: dodawanie z urządzenia (na tablecie
-  przeglądarka może od razu otworzyć aparat), siatka miniatur, większy podgląd z pobraniem, usuwanie z potwierdzeniem.
-  JPEG/PNG/WebP, typ sprawdzany z zawartości pliku, limit 15 MB (konfigurowalny); pliki na dysku, metadane w bazie
-- 🪚 **Zalecenia i prace (TreeWork V1)** - sekcja „Zalecenia i prace” w karcie drzewa: wiele prac na drzewo,
-  każda z nazwą (wolny tekst, np. „Cięcia redukcyjne”) i opcjonalnym opisem; dodawanie, edycja, usuwanie.
-  Celowo bez słownika typów prac, symboli mapowych i priorytetów (`docs/DO_DOPRECYZOWANIA.md`)
-- 🛠️ **Administracja** - statystyki, lista kont z filtrami, akcje na kontach
-- 📄 **Swagger** (opisy po polsku) - `http://localhost:<port>/swagger-ui.html`
-- 🔣 **Symbole mapowe (V1)** - symbol drzewa (sekcja „Symbol drzewa na mapie”) i symbol każdej pracy („Zmień symbol”)
-  z technicznego katalogu 6 kształtów/kolorów (`GET /api/map-symbols`). Na mapie projektu: centralny symbol drzewa,
-  znaczki prac wokół niego (maks. 3 + „+N”), panel drzewa z pracami i automatyczna legenda z nazw prac. Symbole
-  nie oznaczają rodzajów zabiegów - znaczenie nadaje nazwa pracy (docs/DO_DOPRECYZOWANIA.md)
-- ✏️ **Adnotacje zdjęć (V1)** - „Adnotuj” / „Edytuj adnotacje” przy zdjęciu: pełnoekranowy edytor (Canvas 2D,
-  mysz/dotyk/rysik) - Rysuj, Linia, Strzałka, Tekst, 5 kolorów, 3 grubości, Cofnij/Ponów/Wyczyść. Oryginał zdjęcia
-  nigdy nie jest zmieniany: zapis to dokument wektorowy (współrzędne 0..1, `schemaVersion` 1) + osobny spłaszczony PNG
-- 📚 **Materiały do dokumentacji** - zakładka „Dokumentacja” projektu: wszystkie zdjęcia pogrupowane po drzewie,
-  w wersji z adnotacją, jeśli istnieje (`.../documentation-content`)
-- 📄 **Dokument projektu (PDF, wersja MVP)** - „Generuj dokument PDF” w zakładce „Dokumentacja”: strona tytułowa,
-  informacje o projekcie, podsumowanie, zestawienie drzew, karty drzew z pomiarami, lokalizacją, pracami i zdjęciami
-  (wersja z adnotacją). Generowany na żądanie z aktualnych danych; dane autora/zleceniodawcy to jawne placeholdery.
-  Szablon: `src/main/resources/templates/documents/project-report.html` (`docs/discovery/etap-21-dokumentacja-discovery.md`)
-- 🔁 **Import i eksport (V1)** - zakładka „Import i eksport”: eksport drzew do CSV („;”, UTF-8, przecinek dziesiętny),
-  XLSX, GeoJSON i GeoPackage; import drzew z CSV / XLSX / GeoJSON: „Sprawdź plik” (błędy po polsku z numerem
-  wiersza) → „Importuj drzewa” (wszystko albo nic, każdy wiersz = nowe drzewo). Schemat pól: `TreeExchangeField`
-  (`docs/discovery/etap-23-import-export.md`)
-- 🗺️ **QGIS (V1)** - GeoPackage (warstwa `trees`, POINT, EPSG:4326) i GeoJSON do otwarcia w QGIS; powrót przez
-  GeoJSON jako nowe drzewa. Instrukcja: `docs/integrations/qgis.md` (pliki sprawdzone GDAL-em, nie w samym QGIS)
-- 📡 **GPS urządzenia (V1)** - „Użyj GPS urządzenia” w lokalizacji drzewa: pomiar przez Geolocation API przeglądarki,
-  dokładność z oceną, wysokość, zapis ze źródłem `DEVICE_GNSS` (mapa: `MAP`, formularz: `MANUAL`). Bez RTK i odbiorników
-  Bluetooth (`docs/discovery/etap-25-gnss.md`)
-- 📴 **Praca offline (V1)** - ostatnio pobrane dane działają bez sieci (kopie w IndexedDB, powłoka z service workera);
-  dodanie/edycja drzewa, lokalizacja i prace zapisują się na urządzeniu i synchronizują po połączeniu (pasek stanu,
-  „Synchronizuj teraz”, „Spróbuj ponownie” / „Pomiń”). Zdjęcia wymagają połączenia (`docs/discovery/etap-26-offline.md`)
-- 🌳 **Waloryzacja (V1)** - sekcja „Waloryzacja” w karcie drzewa: zapis oceny arborysty - ocena ogólna V1 (Niska /
-  Średnia / Wysoka / Bardzo wysoka, to nie skala branżowa) i opisy wartości wiekowej, przyrodniczej, ekologicznej,
-  kulturowej i krajobrazowej z dyktowaniem. Aplikacja niczego nie wylicza (bez wzorów i kwot). Filtr na liście
-  drzew, tryb mapy „Waloryzacja”, PDF, eksport, offline (`docs/discovery/etap-27-waloryzacja.md`)
-- 🪓 **Gospodarka drzewostanem (V1)** - rozszerzenie „Zaleceń i prac”: status (Zalecenie / Zaplanowana / Wykonana /
-  Anulowana, dowolne przejścia), priorytet organizacyjny (Niski / Normalny / Wysoki / Pilny - nie standard
-  branżowy), termin i data wykonania (także w przeszłości), „Oznacz jako wykonaną”. Zakładka projektu „Gospodarka
-  drzewostanem” (wszystkie prace, filtry status / priorytet / drzewo), tryb mapy „Gospodarka drzewostanem”, sekcja
-  w PDF, arkusz XLSX „Prace”, CSV prac, atrybuty GIS, offline (`docs/discovery/etap-28-gospodarka-drzewostanem.md`)
-- 🎤 **Dyktowanie (Voice V1)** - przycisk „Dyktuj” przy polach opisowych (stan, zagrożenia, notatki drzewa, opis
-  pracy): Web Speech API przeglądarki, `pl-PL`, tekst dopisywany do pola do poprawienia przed zapisem, bez
-  autozapisu, bez nagrań audio i bez AI. Przeglądarka bez wsparcia (np. Firefox) - przycisk ukryty
-- ♿ **Podstawy dostępności** - etykiety pól, `alt` zdjęć, okna dialogowe z Escape, pułapką fokusu i powrotem fokusu
+Ocena stanu wg metody arborystycznej (VTA, klasy ryzyka), metoda waloryzacji i wycena pieniężna, słowniki gatunków i
+rodzajów prac, harmonogram / kosztorysy / wykonawcy, DOCX, DWG / QGZ / import formatu projektu aplikacji terenowej,
+WMS / Geoportal / ortofotomapy (także offline), PostGIS, RTK i odbiorniki zewnętrzne, zdjęcia i grupy drzew offline,
+powiadomienia e-mail / SMS, usuwanie drzew i projektów, praca zespołowa nad projektem (organizacje, urząd ↔ wykonawca).
+Pełny rejestr: [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md) → „Rejestr braków”.
 
 ---
 
-## 🗂️ Struktura backendu
+## 🛠️ Szybki start (deweloperski)
 
-Architektura: **kontroler → fasada → handlery**.
+1. **Baza** - PostgreSQL na `localhost:5432` (`pgDB` / `user` / `password`, schemat `arbomachine` zakłada Hibernate):
+   `docker compose up -d` (albo `docker start offerbrowserprototype-postgres-1`, jeśli kontener istnieje - nie oba naraz).
+2. **Sekrety** - `src/main/resources/arbomachine-secrets.properties` (w `.gitignore`, wzór `*.example`): SMTP i sekret JWT.
+   Bez SMTP: `app.registration.email-confirmation-required=false`.
+3. **Backend** (JDK 25): `./mvnw spring-boot:run` - port `ARBOMACHINE_PORT` (domyślnie 8080).
+4. **Frontend**: `cd frontend && npm install && npm run build` - backend serwuje aplikację pod `http://localhost:<port>/`.
+   Hot reload: `npm run dev` (http://localhost:5173, `/api` przekierowane na `API_PROXY_TARGET`, domyślnie :8080).
+5. **Dane do pokazu** (konto musi istnieć):
+   `node scripts/demo/seed-demo-project.mjs --base http://localhost:<port> --email ... --password ... [--sheet plik.xlsx] [--drawing plik.dxf]`
 
-- Każdy moduł ma folder `facade/` z fasadami (`XxxFacade`). Kontrolery wstrzykują **wyłącznie fasady**.
-- Folder `service/` zawiera podfoldery nazwane **dokładnie jak fasada, małymi literami**
-  (`TreeFacade` → `service/treefacade/`). W środku leżą handlery, z których składa się dana fasada.
-- Handler = jedna operacja = **jedna publiczna metoda `handle(...)`**. Brak wielometodowych serwisów.
-- Reguły pilnuje test `FacadeHandlerArchitectureTest` (build nie przejdzie, jeśli ktoś je złamie).
+Build wydania jednym poleceniem: `powershell -File scripts/build-release.ps1` albo `bash scripts/build-release.sh`
+(testy + frontend + JAR). Wdrożenie, kopie zapasowe i wycofanie wersji: [`docs/WYDANIE.md`](docs/WYDANIE.md).
 
-```
-com.example.arbomachine
-├── domain.user
-│   ├── entity      UserAccount, EmailConfirmationToken, PasswordResetToken
-│   ├── enums       UserRole, AssignableUserRole (role do wyboru - bez ADMIN)
-│   ├── dto         UserProfileDto, UserAccountDto, LoginRequestDto, ...
-│   ├── facade      UserAccountFacade (własne konto), UserAuthenticationFacade (rejestracja, e-mail, logowanie),
-│   │               PasswordResetFacade, AdminUserAccountFacade, RolePanelWelcomeFacade
-│   ├── service
-│   │   ├── useraccountfacade        GetCurrentUserAccountHandler, UpdateCurrentUserProfileHandler,
-│   │   │                            DeleteCurrentUserAccountHandler, FindUserAccountByEmailHandler, ...,
-│   │   │                            UserAccountDeletionGuard (punkt rozszerzenia dla innych modułów)
-│   │   ├── userauthenticationfacade RegisterNewUserAccountHandler, ConfirmEmailUsingTokenHandler,
-│   │   │                            LoginAndIssueAccessTokenHandler
-│   │   ├── passwordresetfacade      SendPasswordResetLinkIfAccountExistsHandler, ResetPasswordUsingTokenHandler, ...
-│   │   ├── adminuseraccountfacade   ListUserAccountsHandler, ChangeUserRoleHandler, SetAccountLockedByAdminHandler, ...
-│   │   └── rolepanelwelcomefacade   BuildRolePanelWelcomeHandler
-│   ├── mapper      UserAccountMapper
-│   └── exception   wyjątki domenowe (każdy opisuje swój status HTTP)
-├── domain.project
-│   ├── entity      Project (owner -> UserAccount)
-│   ├── dto         CreateProjectRequest, UpdateProjectRequest, ProjectResponse
-│   ├── facade      ProjectFacade
-│   ├── service.projectfacade  CreateProjectHandler, GetProjectsOfCurrentUserHandler, GetProjectOfCurrentUserHandler,
-│   │                          UpdateProjectHandler, FindProjectOwnedByCurrentUserHandler (jedyne miejsce
-│   │                          sprawdzania własności), ProjectOwnerAccountDeletionGuard
-│   ├── mapper      ProjectMapper
-│   └── exception   ProjectNotFoundException
-├── domain.tree       (zależy od domain.project; własność drzewa = własność projektu)
-│   ├── entity      Tree (project -> Project; bez własnego ownera)
-│   ├── entity      + TreeEditableAttributes (komplet pól edytowalnych - porównanie "czy coś się zmieniło")
-│   ├── dto         CreateTreeRequest, UpdateTreeRequest (oba: TreeEditableFieldsRequest), TreeResponse
-│   ├── facade      TreeFacade
-│   ├── service.treefacade  CreateTreeHandler, GetTreesOfProjectHandler, GetTreeHandler, UpdateTreeHandler,
-│   │                       FindTreeInProjectOwnedByCurrentUserHandler, TreeEditableAttributesNormalizer
-│   ├── mapper      TreeMapper
-│   └── exception   TreeNotFoundException
-├── domain.treephoto  (zależy od domain.tree; własność = Tree -> Project -> owner)
-│   ├── entity      TreePhoto (tree -> Tree; tylko metadane, plik w PhotoStorage),
-│   │               TreePhotoAnnotation (treePhoto -> TreePhoto, 1:1; dokument JSON + klucz spłaszczonego PNG)
-│   ├── annotation  PhotoAnnotationElementType, PhotoAnnotationColor, PhotoAnnotationStrokeSize, PhotoAnnotationLimits
-│   ├── config      TreePhotoProperties (app.tree-photos.*: limit rozmiaru, katalog storage)
-│   ├── storage     PhotoStorage (store/load/delete po kluczu) + PhotoStorageException
-│   ├── dto         TreePhotoUpload (wejście bez MultipartFile), TreePhotoResponse, TreePhotoContent, ProjectPhotoResponse,
-│   │               PhotoAnnotationDocumentRequest, PhotoAnnotationElementDto, NormalizedPointDto,
-│   │               PhotoAnnotationResponse, RenderedAnnotationImageUpload
-│   ├── facade      TreePhotoFacade, TreePhotoAnnotationFacade
-│   ├── service.treephotofacade  UploadTreePhotoHandler, GetTreePhotosHandler, GetTreePhotoContentHandler,
-│   │                            DeleteTreePhotoHandler, FindTreePhotoOfTreeInProjectOwnedByCurrentUserHandler,
-│   │                            SupportedTreePhotoType (typ z sygnatury pliku), GetProjectPhotosHandler
-│   ├── service.treephotoannotationfacade  GetTreePhotoAnnotationHandler, SaveTreePhotoAnnotationHandler,
-│   │                            DeleteTreePhotoAnnotationHandler, GetTreePhotoAnnotationContentHandler,
-│   │                            GetTreePhotoDocumentationContentHandler, PhotoAnnotationDocumentValidator
-│   ├── mapper      TreePhotoMapper
-│   └── exception   TreePhotoNotFoundException, TreePhotoFileMissingException, TreePhotoFileTooLargeException,
-│                   UnsupportedTreePhotoTypeException, TreePhotoAnnotationNotFoundException,
-│                   InvalidPhotoAnnotationException, InvalidRenderedAnnotationImageException
-├── domain.treevaluation  (waloryzacja drzewa 1:1 - ocena arborysty, bez obliczen; etap 27)
-│   ├── entity      TreeValuation, TreeValuationCategory (V1, nie skala branzowa)
-│   ├── dto         TreeValuationRequest, TreeValuationResponse
-│   ├── facade      TreeValuationFacade
-│   └── service.treevaluationfacade  Get/Save/DeleteTreeValuationHandler, GetTreeValuationsOfProjectHandler
-├── domain.dataexchange  (import/eksport drzew; czyta tree i treework - etapy 23-24)
-│   ├── schema      TreeExchangeField - JEDYNE mapowanie: nazwa techniczna / GIS / polski naglowek, SCHEMA_VERSION
-│   ├── export      ProjectExportData, TreeExportData, ProjectExportDataAssembler, TreeCsvExporter,
-│   │               TreeXlsxExporter, TreeGeoJsonExporter, TreeGeoPackageExporter, ExportedFile
-│   ├── imports     TreeImportParser (Csv/Xlsx/GeoJson), TabularTreeImportRows, TreeImportRowValidator,
-│   │               TreeImportAnalyzer, TreeImportIssue(+Code), ValidatedTreeRow
-│   ├── crs         CoordinateTransformer (V1: Wgs84CoordinateTransformer - EPSG:4326 bez zmian)
-│   ├── dto         TreeImportValidationResponse, TreeImportPreviewRowResponse, TreeImportResultResponse, TreeImportUpload
-│   ├── facade      DataExchangeFacade
-│   └── service.dataexchangefacade  ExportTreesAsCsv/Xlsx/GeoJson/GeoPackageHandler, ValidateTreeImportHandler,
-│                                   ImportTreesHandler
-├── domain.projectdocument  (dokumenty projektu; czyta tree, treework, treephoto - etap 22)
-│   ├── data        ProjectDocumentData (+ Tree/Location/Work/PhotoData, DocumentImageContent) - model bez JPA
-│   ├── assembler   ProjectDocumentDataAssembler (4 zapytania na projekt, leniwe zdjęcia)
-│   ├── generator   DocumentGenerator (interfejs), ProjectReportPdfGenerator (Thymeleaf -> openhtmltopdf),
-│   │               ProjectReportFormatter, ReportImageScaler, GeneratedDocument, DocumentGenerationException
-│   ├── facade      ProjectDocumentFacade
-│   └── service.projectdocumentfacade  GenerateProjectReportHandler
-├── domain.projectsummary  (read-model; zależy od project, tree, treephoto, treework - tylko przez COUNT w repozytoriach)
-│   ├── dto         ProjectSummaryResponse
-│   ├── facade      ProjectSummaryFacade
-│   └── service.projectsummaryfacade  GetProjectSummaryHandler (własność przez FindProjectOwnedByCurrentUserHandler)
-├── domain.treework   (zależy od domain.tree; własność = Tree -> Project -> owner)
-│   ├── entity      TreeWork (tree -> Tree; name + description)
-│   ├── dto         CreateTreeWorkRequest, UpdateTreeWorkRequest (oba: TreeWorkFieldsRequest), TreeWorkResponse
-│   ├── facade      TreeWorkFacade
-│   ├── service.treeworkfacade  CreateTreeWorkHandler, GetTreeWorksHandler, GetTreeWorkHandler, UpdateTreeWorkHandler,
-│   │                           DeleteTreeWorkHandler, FindTreeWorkOfTreeInProjectOwnedByCurrentUserHandler,
-│   │                           TreeWorkFieldsNormalizer
-│   ├── mapper      TreeWorkMapper
-│   └── exception   TreeWorkNotFoundException
-├── domain.mapsymbol  (katalog symboli w kodzie - bez tabeli)
-│   ├── catalog     MapSymbolCatalog (walidacja kodów dla tree i treework), MapSymbolDefinition, MapSymbolShape
-│   ├── dto         MapSymbolResponse, MapSymbolRequest
-│   ├── facade      MapSymbolFacade
-│   └── service.mapsymbolfacade  GetMapSymbolsHandler
-└── infrastructure
-    ├── api         ApiExceptionHandler (wspólny) + podpakiety modułów:
-    │   ├── user      UserAccountController
-    │   ├── admin     AdminUserAccountController, AdminPanelController
-    │   ├── arborist  ArboristPanelController
-    │   ├── official  OfficialPanelController
-    │   ├── project   ProjectController, ProjectApiExceptionHandler
-    │   ├── projectsummary ProjectSummaryController, ProjectSummaryApiExceptionHandler
-    │   ├── tree      TreeController, TreeApiExceptionHandler
-    │   ├── treephoto TreePhotoController, TreePhotoApiExceptionHandler
-    │   └── treework  TreeWorkController, TreeWorkApiExceptionHandler
-    ├── security    SecurityConfig (reguły dostępu), JwtTokenService, JwtAuthenticationFilter, ...
-    ├── repository  repozytoria Spring Data
-    ├── storage     FileSystemPhotoStorage (PhotoStorage na dysku), TreePhotoUploadConfig (limit multipart z limitu zdjęcia)
-    └── service     EmailSenderService (maile z szablonów Thymeleaf)
-```
+### Konfiguracja (zmienne środowiskowe / properties)
 
-Każdy moduł ma własne pliki. Moduły projektów i drzew korzystają z modułu użytkowników tylko przez
-`FindUserAccountByEmailHandler`, a moduł drzew sprawdza własność projektu wyłącznie przez
-`FindProjectOwnedByCurrentUserHandler`. Moduły zdjęć i prac sprawdzają całą hierarchię wyłącznie przez
-`FindTreeInProjectOwnedByCurrentUserHandler` (drzewo z URL w projekcie z URL należącym do zalogowanego), a potem
-szukają zdjęcia/pracy zawężonego do tego drzewa (`findByIdAndTreeId`) - nigdy samym `findById`. Blokadę usuwania kont moduł projektów dostarcza przez interfejs
-`UserAccountDeletionGuard` - moduł użytkowników nie wie nic o projektach.
-
-## 🗂️ Struktura frontendu
-
-```
-frontend/src
-├── api          httpClient (wspólna warstwa HTTP + JWT), authenticationApi, currentUserAccountApi,
-│                apiDataTypes, userFacingErrorMessages
-├── auth         AuthenticationContext (sesja, logowanie), routeGuards, userRoles
-├── components   wspólne klocki UI (bez wiedzy o konkretnych modułach)
-├── map          openLayersBaseMap - wspólna techniczna konfiguracja OpenLayers (podkład OSM, widok, styl markera);
-│                symbole: mapSymbolShapeSpec (geometria + rozmieszczenie znaczków), mapSymbolStyleFactory (OpenLayers),
-│                MapSymbolSwatch (miniatura SVG), MapSymbolPicker, mapSymbolLegend, useMapSymbolCatalog, mapSymbolsApi
-├── speech       dyktowanie: browserSpeechRecognition (jedyne miejsce znające Web Speech API), DictationController
-│                (logika bez Reacta, jedna sesja naraz), useSpeechDictation, VoiceInputButton,
-│                VoiceEnabledTextAreaField, appendTranscription (dopisywanie bez kasowania)
-└── pages
-    ├── arborist   ArboristDashboardPage + arboristPanelApi
-    ├── projects   ProjectsPage, NewProjectDialog, EditProjectDialog, ProjectPage (workspace: breadcrumb, zakładki,
-    │   │          sekcje jako trasy zagnieżdżone), RedirectToProjectSummary + projectsApi, projectDataTypes
-    │   └── summary   ProjectSummaryPage, projectSummaryStatistics (kafelki), projectSummaryApi
-    ├── trees      ProjectTreesSection, NewTreeDialog (sam numer -> karta), TreePage (karta drzewa: sekcje),
-    │   │          TreeFieldForm (formularz terenowy w sekcjach) + treeFormValues (wartości, przecinek dziesiętny,
-    │   │          walidacja) + treesApi, treeDataTypes
-    │   ├── location  TreeLocationSection (tryby: podgląd / ręczny formularz / wybór na mapie), TreeLocationForm,
-    │   │             TreeLocationMap, RemoveTreeLocationDialog, treeLocationMapCoordinates (WGS84 <-> mapa),
-    │   │             treeLocationValidRange, treeLocationFormValues
-    │   ├── map       ProjectTreeMapSection (trasa /map: dane i stany UI), ProjectTreeMap (OpenLayers),
-    │   │             treeMapPoints (drzewa -> punkty mapy)
-    │   ├── photos    TreePhotosSection (galeria), AddTreePhotoDialog, TreePhotoTile, DeleteTreePhotoDialog,
-    │   │             useTreePhotoObjectUrl (treść z tokenem -> blob:), treePhotoFileRules + treePhotosApi;
-    │   │             annotations/: TreePhotoAnnotationDialog, PhotoAnnotationCanvas, PhotoAnnotationToolbar +
-    │   │             logika: annotationCoordinates, annotationElements, annotationHistory, annotationRenderer
-    │   └── works     TreeWorksSection (lista + edycja w miejscu), TreeWorkForm, DeleteTreeWorkDialog,
-    │                 TreeWorkMeta, treeWorkFormValues (walidacja), workManagement (statusy, filtr, mapa;
-    │                 etap 28) + treeWorksApi; projects/management/ProjectManagementPage (etap 28)
-    ├── (src/gnss)    deviceGnss - pomiar Geolocation API, ocena dokładności, polskie komunikaty (etap 25)
-    ├── (src/offline) offlineQueue (kolejka + synchronizacja, testy), offlineService, indexedDbOfflineStore,
-    │                 OfflineStatusBar, useOfflineState, serviceWorkerRegistration + public/sw.js (etap 26)
-    ├── official   OfficialDashboardPage + officialPanelApi
-    ├── admin      AdminDashboardPage, AdminUserAccountsPage + adminPanelApi, adminUserAccountsApi
-    └── ...        logowanie, rejestracja, reset hasła, MyProfilePage
-```
-
----
-
-## 🛠️ Uruchomienie
-
-### 1. Baza danych
-
-Ten sam kontener Postgres co w pozostałych projektach (`pgDB` / `user` / `password` na `localhost:5432`).
-Dane leżą na dysku hosta w `~/apps/postgres` (nie w kontenerze) - usunięcie kontenera ich nie kasuje.
-
-Jeśli aplikacja nie startuje (`Connection to localhost:5432 refused`):
-
-```bash
-docker ps -a                                    # czy kontener bazy istnieje?
-docker start offerbrowserprototype-postgres-1   # istnieje, ale jest zatrzymany (np. po restarcie Dockera)
-docker compose up -d                            # kontenera nie ma - tworzy nowy na tych samych danych (~/apps/postgres)
-```
-
-Uwaga: nie uruchamiaj obu naraz - oba kontenery używają portu 5432 i tego samego katalogu danych.
-Po nieczystym zamknięciu PostgreSQL sam odtwarza bazę przy starcie ("automatic recovery in progress").
-
-ArboMachine trzyma swoje tabele (`user_account`, `email_confirmation_token`, `password_reset_token`)
-we własnym schemacie `arbomachine` - Hibernate zakłada go przy starcie, więc tabele nie kolidują
-z innymi projektami w tej samej bazie.
-
-### 2. Sekrety
-
-Login/hasło SMTP i sekret JWT leżą w `src/main/resources/arbomachine-secrets.properties` (w `.gitignore`).
-Wzór: `arbomachine-secrets.properties.example`. Jeśli SMTP nie działa, dopisz tam
-`app.registration.email-confirmation-required=false` - konta będą aktywowane od razu, bez maila.
-
-### 3. Backend
-
-Wymaga **JDK 25** (w IntelliJ: Project SDK = 25).
-
-```bash
-./mvnw spring-boot:run
-```
-
-Po `npm run build` w `frontend/` backend serwuje też aplikację: `http://localhost:<port>/` (logowanie, projekty,
-wszystkie trasy React - także po F5). Bez zbudowanego frontendu główny adres przekierowuje do Swagger UI.
-Do pracy nad frontendem z hot reload służy `npm run dev` (punkt 4).
-
-Opcjonalne zmienne środowiskowe:
-
-| Zmienna | Domyślnie | Znaczenie |
+| Ustawienie | Domyślnie | Znaczenie |
 |---|---|---|
-| `ARBOMACHINE_PORT` | `8080` | port backendu (na tym komputerze 8080 zajmuje `AgentService.exe` - użyj np. 8081) |
-| `ARBOMACHINE_DB_URL` / `_DB_USER` / `_DB_PASSWORD` | `jdbc:postgresql://localhost:5432/pgDB` / `user` / `password` | baza danych |
-| `ARBOMACHINE_FRONTEND_BASE_URL` | `http://localhost:5173` | adres frontendu wstawiany do linków w mailach |
-| `ARBOMACHINE_TREE_PHOTOS_DIRECTORY` | `storage/tree-photos` | katalog plików zdjęć drzew (względny = od katalogu roboczego; w `.gitignore`) |
-| `ARBOMACHINE_TREE_PHOTO_MAX_FILE_SIZE` | `15MB` | limit jednego zdjęcia (`app.tree-photos.max-file-size`); z niego liczony jest też limit multipart serwera |
+| `ARBOMACHINE_PORT` | `8080` | port aplikacji |
+| `ARBOMACHINE_DB_URL` / `_DB_USER` / `_DB_PASSWORD` | lokalny PostgreSQL | baza danych |
+| `ARBOMACHINE_FRONTEND_BASE_URL` | adres aplikacji | adres w linkach z maili |
+| `ARBOMACHINE_TREE_PHOTOS_DIRECTORY` / `_TREE_PHOTO_MAX_FILE_SIZE` | `storage/tree-photos` / `15MB` | pliki zdjęć |
+| `app.push.vapid-public-key` / `app.push.vapid-private-key` | brak = klucze wygenerowane i zapisane w bazie | stałe klucze Web Push (zmiana = utrata subskrypcji) |
+| `app.push.vapid-subject` | `mailto:powiadomienia@arbomachine.example` | kontakt dla usług push - **ustaw prawdziwy adres** |
+| `app.push.allowed-endpoint-hosts` | FCM, Mozilla, Microsoft, Apple | dozwolone usługi push (ochrona przed SSRF) |
+| `app.notifications.work-reminders.enabled` / `.cron` | `true` / `0 0 7 * * *` (czas polski) | codzienne przypomnienia o pracach na jutro |
 
-Pozostałe ustawienia aplikacji (`application.properties`): `auth.jwt.token-validity-days`,
-`app.password-reset.link-validity-minutes`, `app.mail.sender-display-name`.
+Web Push wymaga HTTPS (albo `localhost`) i zbudowanej aplikacji (service worker nie działa w `npm run dev`).
 
-### 4. Frontend
+---
 
-```bash
-cd frontend
-npm install
-npm run dev          # http://localhost:5173
+## 🏗️ Architektura w skrócie
+
+**Kontroler → fasada (`domain/<moduł>/facade/XxxFacade`) → handlery (`service/xxxfacade/*Handler`, jedna operacja =
+jedna metoda `handle`)**. Reguły pilnuje `FacadeHandlerArchitectureTest`. Moduły komunikują się przez handlery
+wyszukujące z kontrolą własności (`FindProjectOwnedByCurrentUserHandler`, `FindTreeInProjectOwnedByCurrentUserHandler`)
+albo zdarzenia (`TreeMonitoringRecordSavedEvent` → powiadomienia) i punkty rozszerzeń (`UserAccountDeletionGuard`,
+`UserAccountDataCleaner`). Opis modułów, przepływów (dokument, import/eksport, offline, Web Push) i decyzji:
+[`docs/ARCHITEKTURA.md`](docs/ARCHITEKTURA.md).
+
 ```
-
-Vite przekierowuje `/api` na `http://localhost:8080`. Przy innym porcie backendu:
-`API_PROXY_TARGET=http://localhost:8081 npm run dev`.
-
-```bash
-npm test             # testy logiki (node --test, bez dodatkowych zależności)
-npm run build        # tsc + build do src/main/resources/static (serwuje go Spring Boot)
+domain/  user · project · tree · treephoto · treework · treevaluation · treemonitoring · treestand
+         mapsymbol · projectsummary · projectdocument · dataexchange (schema, imports, export, gis, crs) · notification
+infrastructure/  api (kontrolery + obsługa błędów) · security · repository · storage · service (e-mail)
+frontend/src/  api · auth · components · map · speech · gnss · offline · notifications
+               pages/projects (summary, management, stands, dataexchange, documentation, integrations) · pages/trees (...)
 ```
-
-### 🗺️ Mapa (OpenLayers)
-
-Jedyną biblioteką mapową jest **OpenLayers** (`ol`) - wybrana pod przyszły workflow GIS (WMS, Geoportal,
-układy PL-2000/PL-1992, QGIS), które jednak **nie są jeszcze zaimplementowane**. Podkład V1 to OpenStreetMap.
-
-- Dane w bazie i API zostają w **WGS84** (`latitude`/`longitude`). OpenLayers renderuje w EPSG:3857 -
-  transformacja odbywa się wyłącznie na potrzeby mapy w `treeLocationMapCoordinates.ts` (jedyne miejsce zamiany;
-  OpenLayers używa kolejności `[longitude, latitude]`, API `{ latitude, longitude }`). Współrzędnych projekcji
-  mapy nigdy nie wysyłamy do backendu.
-- **Mapa projektu** korzysta z `GET /api/projects/{projectId}/trees` (odpowiedź zawiera już `location`) -
-  bez osobnego endpointu mapy i bez zapytań o każde drzewo. Widok dopasowuje się do markerów (jedno drzewo -
-  zoom 18, a nie ekstremalny); bez lokalizacji - widok całej Polski i komunikat „Brak drzew z zapisaną lokalizacją.”.
-  Geolokalizacja przeglądarki nie jest używana.
-- **Ustawianie lokalizacji na mapie** (karta drzewa, sekcja „Lokalizacja”): „Ustaw na mapie” / „Zmień na mapie”
-  → kliknięcie stawia tymczasowy (pomarańczowy) punkt → „Zapisz lokalizację” albo „Anuluj”. Dopiero zapis wysyła
-  istniejące `PUT .../trees/{treeId}/location`; po sukcesie UI pokazuje punkt zwrócony przez backend
-  (backend zaokrągla do 7 miejsc). Ręczny formularz („Wpisz współrzędne”) zostaje i zmienia ten sam `TreeLocation`;
-  karta drzewa trzyma jedno źródło prawdy o drzewie, więc mapa i formularz zawsze pokazują te same dane.
 
 ---
 
 ## 🔌 REST API
 
-| Metoda | Ścieżka | Dostęp | Opis |
-|---|---|---|---|
-| POST | `/api/users/register` | publiczny | Rejestracja `{ profile, password, accountType: ARBORIST \| OFFICIAL }` |
-| GET | `/api/users/confirm?token=` | publiczny | Potwierdzenie adresu e-mail |
-| POST | `/api/users/login` | publiczny | Logowanie → `{ accessToken }` |
-| POST | `/api/users/password-reset/request` | publiczny | Wysłanie linku resetu `{ email }` (zawsze 200) |
-| GET | `/api/users/password-reset/validate?token=` | publiczny | Sprawdzenie tokenu resetu |
-| POST | `/api/users/password-reset/confirm` | publiczny | Nowe hasło `{ resetToken, newPassword }` |
-| GET / PUT / DELETE | `/api/users/me` | każdy zalogowany | Własne konto |
-| GET | `/api/arborist/panel` | ARBORIST | Panel arborysty |
-| GET | `/api/official/panel` | OFFICIAL | Panel urzędnika |
-| GET | `/api/admin/panel`, `/api/admin/stats` | ADMIN | Panel admina i statystyki kont |
-| GET | `/api/admin/users[?role=]`, `/api/admin/users/{userAccountId}` | ADMIN | Lista kont / pojedyncze konto |
-| PUT | `/api/admin/users/{userAccountId}` | ADMIN | Edycja danych profilu |
-| PATCH | `/api/admin/users/{userAccountId}/role` | ADMIN | `{ newRole: ARBORIST \| OFFICIAL }` |
-| PATCH | `/api/admin/users/{userAccountId}/locked` | ADMIN | `{ lockedByAdmin: true \| false }` |
-| POST | `/api/admin/users/{userAccountId}/confirm-email` | ADMIN | Potwierdzenie e-maila w imieniu użytkownika |
-| DELETE | `/api/admin/users/{userAccountId}` | ADMIN | Usunięcie konta |
-| POST | `/api/projects` | każdy zalogowany | Nowy projekt `{ name, description? }` → 201; właścicielem zostaje zalogowany użytkownik |
-| GET | `/api/projects` | każdy zalogowany | Tylko własne projekty (najnowsze pierwsze) |
-| GET | `/api/projects/{projectId}` | każdy zalogowany | Własny projekt; cudzy albo nieistniejący → 404 |
-| PATCH | `/api/projects/{projectId}` | każdy zalogowany | Zmiana `name` i/lub `description` własnego projektu; cudzy → 404 |
-| POST | `/api/projects/{projectId}/trees` | każdy zalogowany | Nowe drzewo `{ inventoryNumber, speciesLatin?, speciesPolish?, trunkCircumferenceCm?, heightM?, crownDiameterM?, notes?, conditionNotes?, hazardNotes? }` → 201; cudzy/nieistniejący projekt → 404 |
-| GET | `/api/projects/{projectId}/trees` | każdy zalogowany | Drzewa własnego projektu w kolejności dodawania |
-| GET | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Drzewo tylko z tego projektu; drzewo z innego projektu → 404 |
-| PATCH | `/api/projects/{projectId}/trees/{treeId}` | każdy zalogowany | Edycja - te same pola co przy tworzeniu → 200 z aktualnym drzewem. Wysyłany jest zawsze komplet pól: pominięte/puste pole opcjonalne = wyczyszczenie. Nie da się przenieść drzewa do innego projektu; `updatedAt` zmienia się tylko przy realnej zmianie |
-| GET | `/api/projects/{projectId}/summary` | każdy zalogowany | Podsumowanie własnego projektu `{ treeCount, treeWithLocationCount, treeWithoutLocationCount, photoCount, workCount }` (COUNT w bazie); cudzy → 404 |
-| PUT | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Ustawienie/zamiana punktu `{ latitude, longitude }` (WGS84, oba wymagane) → 200 z drzewem; używają go i mapa, i ręczny formularz |
-| DELETE | `/api/projects/{projectId}/trees/{treeId}/location` | każdy zalogowany | Usunięcie lokalizacji (`location: null`) → 200 z drzewem |
-| GET | `/api/map-symbols` | każdy zalogowany | Katalog symboli V1 `[{ code, displayName, shape, fillColor, strokeColor }]` |
-| PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/map-symbol` | każdy zalogowany | Symbol drzewa `{ symbolCode }` / usunięcie → 200 z drzewem; kod spoza katalogu → 400 |
-| PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}/map-symbol` | każdy zalogowany | Symbol pracy (bez edycji nazwy/opisu) → 200 z pracą |
-| GET | `/api/projects/{projectId}/works` | każdy zalogowany | Prace wszystkich drzew projektu jednym zapytaniem (mapa, legenda, „Gospodarka drzewostanem”); opcjonalnie `?status=PLANNED&status=RECOMMENDED&priority=URGENT` (wiele wartości = dowolna z nich) |
-| POST | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Dodanie zdjęcia: `multipart/form-data`, pole `file` (JPEG/PNG/WebP) → 201 z metadanymi; brak pliku → 400, zły typ → 415, za duży → 413 |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos` | każdy zalogowany | Metadane zdjęć drzewa `{ id, treeId, originalFileName, contentType, fileSizeBytes, hasAnnotation, annotationUpdatedAt, createdAt }` (bez ścieżek plików) |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/content` | każdy zalogowany | Treść zdjęcia (`Content-Disposition: inline`) |
-| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}` | każdy zalogowany | Usunięcie zdjęcia (rekord i plik, także adnotacja i jej PNG) → 204 |
-| GET / PUT / DELETE | `/api/projects/{projectId}/trees/{treeId}/valuation` | każdy zalogowany | Waloryzacja drzewa: odczyt (brak = `hasValuation: false`), zapis całej oceny (pusta → 400), usunięcie → 204 |
-| GET | `/api/projects/{projectId}/valuations` | każdy zalogowany | Waloryzacje drzew projektu (lista drzew z filtrem, mapa) |
-| GET | `/api/projects/{projectId}/exports/trees.csv` / `.xlsx` / `.geojson` / `.gpkg` | każdy zalogowany | Eksport drzew (CSV, XLSX z arkuszem „Prace”, GeoJSON i GeoPackage - tylko drzewa z lokalizacją, EPSG:4326) |
-| GET | `/api/projects/{projectId}/exports/works.csv` | każdy zalogowany | Prace projektu jako CSV - jeden wiersz = jedna praca (etap 28) |
-| POST | `/api/projects/{projectId}/imports/trees/validate` | każdy zalogowany | Sprawdzenie pliku importu (multipart `file`: CSV/XLSX/GeoJSON) - nic nie zapisuje |
-| POST | `/api/projects/{projectId}/imports/trees` | każdy zalogowany | Import drzew - wszystko albo nic: 201 `{ importedTreeCount }` albo 400 z wynikiem sprawdzenia |
-| GET | `/api/projects/{projectId}/documents/project-report` | każdy zalogowany | „Dokument projektu” - PDF generowany na żądanie (`attachment; filename="arbomachine-projekt-{id}.pdf"`); cudzy projekt → 404 |
-| GET | `/api/projects/{projectId}/photos` | każdy zalogowany | Zdjęcia wszystkich drzew projektu jednym zapytaniem `{ photoId, treeId, inventoryNumber, …, hasAnnotation, annotationUpdatedAt }` |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Dokument adnotacji `{ photoId, schemaVersion, elements, createdAt, updatedAt }`; brak adnotacji → 404 |
-| PUT | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Utworzenie/zastąpienie: `multipart/form-data` z częściami `document` (JSON) i `renderedImage` (PNG) → 200; zły dokument → 400, nie-PNG → 415 |
-| DELETE | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation` | każdy zalogowany | Usunięcie adnotacji i jej PNG (oryginał zostaje) → 204 |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/annotation/content` | każdy zalogowany | Spłaszczony PNG adnotacji |
-| GET | `/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/documentation-content` | każdy zalogowany | Zdjęcie do dokumentacji: PNG z adnotacją, jeśli istnieje, inaczej oryginał |
-| POST | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Nowa praca `{ name, description?, status?, priority?, plannedDate?, completedDate? }` (brak statusu = `RECOMMENDED`) → 201 |
-| GET | `/api/projects/{projectId}/trees/{treeId}/works` | każdy zalogowany | Prace drzewa w kolejności dodawania |
-| GET | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Pojedyncza praca |
-| PATCH | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Edycja - komplet pól `{ name, description?, status?, priority?, plannedDate?, completedDate? }` (pominięte pole = wyczyszczenie, status = `RECOMMENDED`) → 200 |
-| DELETE | `/api/projects/{projectId}/trees/{treeId}/works/{workId}` | każdy zalogowany | Usunięcie pracy → 204 |
+Wszystko pod `/api`, poza rejestracją/logowaniem/resetem wymaga tokenu (`Authorization: Bearer …`). Pełny opis z
+przykładami: Swagger UI `http://localhost:<port>/swagger-ui.html`. Brak tokenu → 401, zła rola → 403, cudzy albo
+nieistniejący zasób → 404, błędy walidacji → 400 z mapą pól.
 
-Brak tokenu → 401, zła rola → 403. Cudzy projekt → 404 (tak samo jak nieistniejący - API nie zdradza,
-że projekt istnieje). To samo dotyczy drzewa spoza projektu z URL oraz zdjęcia/pracy spoza drzewa z URL. Konta, które jest właścicielem projektów, nie da się usunąć → 409 (tymczasowa
-polityka do czasu ustalenia archiwizacji / przenoszenia własności).
+| Metoda | Ścieżka | Opis |
+|---|---|---|
+| POST | `/users/register`, `/users/login` | rejestracja, logowanie → `{ accessToken }` |
+| GET / POST | `/users/confirm`, `/users/password-reset/*` | potwierdzenie e-mail, reset hasła |
+| GET / PUT / DELETE | `/users/me` | własne konto (konto z projektami → 409) |
+| GET | `/arborist/panel`, `/official/panel`, `/admin/*` | panele ról, administracja kontami (ADMIN) |
+| GET / POST | `/projects` | własne projekty / nowy `{ name, description?, clientName?, siteAddress?, orderDate? }` |
+| GET / PATCH | `/projects/{p}` | projekt; PATCH: pominięte pole = bez zmian, pusty tekst = usunięcie danych zlecenia |
+| GET | `/projects/{p}/summary` | liczby projektu |
+| GET / POST | `/projects/{p}/trees` | drzewa projektu / nowe drzewo |
+| GET / PATCH | `/projects/{p}/trees/{t}` | drzewo / edycja (komplet pól) |
+| PUT / DELETE | `/projects/{p}/trees/{t}/location` | lokalizacja WGS 84 (+ dokładność, wysokość, źródło) |
+| PUT / DELETE | `/projects/{p}/trees/{t}/map-symbol`, `.../works/{w}/map-symbol` | symbole na mapie; katalog: `GET /map-symbols` |
+| GET / POST / DELETE | `/projects/{p}/trees/{t}/photos[/{id}[/content]]` | zdjęcia (multipart `file`) |
+| GET / PUT / DELETE | `/projects/{p}/trees/{t}/photos/{id}/annotation[/content]` | adnotacje zdjęć |
+| GET | `/projects/{p}/photos` | zdjęcia projektu (dokumentacja) |
+| GET / PUT / DELETE | `/projects/{p}/trees/{t}/valuation` | waloryzacja drzewa; `GET /projects/{p}/valuations` - całego projektu |
+| GET / POST / PATCH / DELETE | `/projects/{p}/trees/{t}/works[/{w}]` | zalecenia i prace (status, priorytet, terminy) |
+| GET | `/projects/{p}/works[?status=&priority=]` | prace całego projektu |
+| GET / POST / PUT / DELETE | `/projects/{p}/trees/{t}/monitoring[/{r}]` | kontrole stanu drzewa (najnowsza pierwsza) |
+| GET | `/projects/{p}/monitoring/latest` | ostatnia kontrola każdego drzewa |
+| GET / POST / PUT / DELETE | `/projects/{p}/stands[/{s}]` | grupy drzew `{ name, notes?, geometry (GeoJSON Polygon), treeIds, assignTreesInside? }` |
+| POST | `/projects/{p}/stands/{s}/assign-trees-inside` | przypisz drzewa leżące w obszarze |
+| GET | `/projects/{p}/exports/trees.csv` · `.xlsx` · `.geojson` · `.gpkg` | eksport drzew (GPKG: warstwy `trees` i `stands`) |
+| GET | `/projects/{p}/exports/works.csv` · `stands.geojson` · `shapefile.zip` · `calendar.ics` | prace, grupy drzew, Shapefile, kalendarz prac |
+| POST | `/projects/{p}/imports/trees[/validate]` | import drzew: CSV, XLSX, GeoJSON, `.zip` (Shapefile), `.gpkg`, `.dxf` |
+| POST | `/projects/{p}/imports/stands[/validate]` | import grup drzew (obszarów): DXF, Shapefile ZIP, GeoJSON, GeoPackage |
+| GET | `/projects/{p}/documents/project-report` | „Dokument projektu” PDF |
+| GET | `/notifications` | ostatnie powiadomienia zalogowanego |
+| GET | `/notifications/push/config` | klucz publiczny VAPID |
+| PUT · POST | `/notifications/push/subscription` · `.../removal` · `.../status` | Web Push na tym urządzeniu: włącz / wyłącz / stan |
+| POST | `/notifications/test` | powiadomienie testowe → `{ deliveredDeviceCount }` |
+
+Import zawsze „wszystko albo nic” (najpierw `validate`, błędy → 400 z wynikiem), każdy obiekt pliku = nowe drzewo /
+nowa grupa. Identyfikatory projektu, drzewa i właściciela nigdy nie pochodzą z pliku ani z treści żądania.
 
 ---
 
 ## 🧪 Testy
 
 ```bash
-./mvnw test
+./mvnw test                 # backend: testy jednostkowe i integracyjne (H2, prawdziwy SecurityConfig i JWT)
+cd frontend && npm test     # frontend: testy logiki (node --test)
+npm run build               # tsc + build do src/main/resources/static
 ```
 
-- `SecurityRulesTest` sprawdza reguły dostępu na prawdziwym `SecurityConfig` (np. arborysta i urzędnik
-  nie wejdą w `/api/admin/**` ani do cudzego panelu).
-- Pozostałe testy kontrolerów działają w profilu `test`, w którym `PermitAllTestSecurityConfig`
-  przepuszcza wszystkie żądania - dzięki temu sprawdzają logikę, a nie uprawnienia.
-- `JwtTokenServiceTest` pilnuje m.in., żeby czas wystawienia tokenu nie wypadał w przyszłości
-  (wcześniejszy błąd strefy czasowej).
-- `ProjectApiIntegrationTest` i `ProjectOwnerAccountDeletionIntegrationTest` przechodzą pełną ścieżkę
-  API projektów na prawdziwym `SecurityConfig` i prawdziwych tokenach JWT (użytkownicy A i B: własność,
-  walidacja, brak dostępu dla niezalogowanych, blokada usuwania konta z projektami).
-- `TreeApiIntegrationTest` - to samo dla drzew, w tym edycja (błędny `projectId`, cudzy projekt,
-  czyszczenie pól opcjonalnych, `updatedAt` tylko przy realnej zmianie).
-- `TreePhotoApiIntegrationTest` - zdjęcia: upload/lista/treść/usuwanie, właściciel vs użytkownik B, zdjęcie innego
-  drzewa w URL, zły typ (także plik `.jpg` z inną zawartością), za duży plik, brak pliku, niebezpieczna nazwa pliku.
-  Pliki trafiają do katalogu tymczasowego (`@TempDir`), nigdy do developerskiego storage.
-- `FileSystemPhotoStorageTest` - zapis/odczyt/usuwanie, brak nadpisywania, odrzucanie kluczy typu `../`.
-- `TreeWorkApiIntegrationTest` - prace: CRUD, walidacja nazwy/opisu, użytkownik B, praca innego drzewa w URL,
-  nieistniejący projekt/drzewo/praca.
-- `ProjectSummaryApiIntegrationTest` - podsumowanie: pusty projekt, przykład milestone'u (3 drzewa → 3/2/1/3/3),
-  suma lokalizacji = liczba drzew, brak wpływu innych projektów, stała liczba zapytań SQL (brak N+1), własność.
-- `MilestoneOwnershipRegressionIntegrationTest` - użytkownik B próbuje każdego endpointu na danych A
-  (projekt, podsumowanie, drzewo, lokalizacja, zdjęcie i jego treść, praca) → zawsze 404, dane A bez zmian;
-  bez tokenu → 401.
-- `MapSymbolApiIntegrationTest` - katalog, symbol drzewa i pracy (ustawienie, zmiana, usunięcie, niedozwolone kody
-  w tym SVG/URL/ścieżki), użytkownik B, praca innego drzewa w URL, lista prac projektu bez przecieków.
-- `FacadeHandlerArchitectureTest` - reguły architektury kontroler → fasada → handler.
+Najważniejsze zestawy: `*ApiIntegrationTest` dla każdego modułu (CRUD, walidacja, **IDOR** - użytkownik B na danych A),
+`MilestoneOwnershipRegressionIntegrationTest`, `SecurityRulesTest`, `FacadeHandlerArchitectureTest`,
+`GisImportApiIntegrationTest` (DXF w PL-2000, arkusz z aplikacji terenowej, pętle eksport → import SHP / GPKG),
+`WebPushCryptographyTest` (wektor z RFC 8291, VAPID), `NotificationApiIntegrationTest` (fałszywa usługa push, SSRF),
+`PolishGridCrsTest` (wzorce PROJ), testy offline (`offlineQueue.test.ts`). Testy E2E w przeglądarce (headless Chrome)
+były uruchamiane przy każdym etapie poza repozytorium - opis wyników w raportach etapów.
+
+---
 
 ## 🗄️ Schemat bazy
 
-Brak Flyway/Liquibase - schemat tworzy i aktualizuje Hibernate (`spring.jpa.hibernate.ddl-auto=update`)
-w schemacie `arbomachine`. Nowa tabela pojawia się przy pierwszym starcie aplikacji po dodaniu encji.
-Tabela `project`: `id bigint PK`, `owner_id bigint NOT NULL FK -> user_account(id)` (indeks),
-`name varchar(255) NOT NULL`, `description text NULL`, `created_at` / `updated_at timestamptz NOT NULL`.
-Tabela `tree`: `id bigint PK`, `project_id bigint NOT NULL FK -> project(id)` (indeks),
-`inventory_number varchar(100) NOT NULL`, `species_latin varchar(255) NULL`, `species_polish varchar(255) NULL`,
-`trunk_circumference_cm integer NULL` (1-5000), `height_m numeric(5,2) NULL` (>0 do 150),
-`crown_diameter_m numeric(5,2) NULL` (>0 do 200), `notes text NULL`, `condition_notes text NULL` (stan drzewa, V1),
-`hazard_notes text NULL` (zagrożenia, V1), `map_symbol_code varchar(64) NULL` (symbol na mapie, etap 19),
-`location_altitude_m numeric(7,2) NULL`, `location_accuracy_m numeric(7,2) NULL`, `location_source varchar(32) NULL`
-(dane pomiaru lokalizacji: MANUAL / MAP / DEVICE_GNSS / IMPORT, etap 25),
-`created_at` / `updated_at timestamptz NOT NULL`.
-Jednostka pomiaru jest w nazwie kolumny. Bez `owner_id` i bez unikalności numeru - zasady numeracji
-nie są jeszcze ustalone. Nowe pola drzewa są nullable (dane terenowe mogą być uzupełniane później), więc
-`ddl-auto=update` dodaje je do istniejącej tabeli bez utraty danych.
-Tabela `tree_photo`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks),
-`original_file_name varchar(255) NOT NULL`, `storage_key varchar(64) NOT NULL UNIQUE`, `content_type varchar(100) NOT NULL`,
-`file_size_bytes bigint NOT NULL`, `created_at timestamptz NOT NULL` - sam plik leży poza bazą.
-Tabela `tree_work`: `id bigint PK`, `tree_id bigint NOT NULL FK -> tree(id)` (indeks), `name varchar(255) NOT NULL`,
-`description text NULL`, `map_symbol_code varchar(64) NULL`, `status varchar(32) NULL` (RECOMMENDED / PLANNED /
-COMPLETED / CANCELLED; null = praca sprzed etapu 28 = RECOMMENDED), `priority varchar(32) NULL` (LOW / NORMAL / HIGH /
-URGENT), `planned_date date NULL`, `completed_date date NULL` (etap 28), `created_at` / `updated_at timestamptz NOT NULL`.
-Tabela `tree_photo_annotation` (etap 20): `id bigint PK`, `tree_photo_id bigint NOT NULL UNIQUE FK -> tree_photo(id)`,
-`schema_version integer NOT NULL`, `document_json text NOT NULL`, `rendered_storage_key varchar(64) NOT NULL`,
-`rendered_content_type varchar(100) NOT NULL`, `rendered_file_size_bytes bigint NOT NULL`,
-`created_at` / `updated_at timestamptz NOT NULL` - spłaszczony PNG leży w tym samym katalogu co zdjęcia.
-Tabela `tree_valuation` (etap 27): `id bigint PK`, `tree_id bigint NOT NULL UNIQUE FK -> tree(id)`,
-`overall_category varchar(32) NULL`, `age_value`, `natural_value`, `ecological_value`, `cultural_value`,
-`landscape_value`, `justification`, `notes` (`text NULL`), `created_at` / `updated_at timestamptz NOT NULL`.
-Tabele bez `owner_id`.
+Brak Flyway/Liquibase - schemat tworzy i rozszerza Hibernate (`ddl-auto=update`) w schemacie `arbomachine`; wszystkie
+nowe kolumny są opcjonalne, więc aktualizacja nie traci danych. Tabele (bez `owner_id` poza `project`):
 
-## 🧭 Trasy frontendu projektów
+| Tabela | Zawartość |
+|---|---|
+| `user_account`, `email_confirmation_token`, `password_reset_token` | konta i tokeny |
+| `project` | `owner_id`, `name`, `description`, `client_name`, `site_address`, `order_date`, daty |
+| `tree` | `project_id`, numer, gatunki, pomiary (`trunk_circumference_cm`, `height_m`, `crown_diameter_m`), opisy, `map_symbol_code`, lokalizacja (`latitude`, `longitude`, `location_accuracy_m`, `location_altitude_m`, `location_source`) |
+| `tree_photo`, `tree_photo_annotation` | metadane zdjęć (pliki na dysku), adnotacje (JSON + PNG) |
+| `tree_work` | prace: `name`, `description`, `map_symbol_code`, `status`, `priority`, `planned_date`, `completed_date` |
+| `tree_valuation` | waloryzacja 1:1 z drzewem: `overall_category` + opisy |
+| `tree_monitoring_record` | kontrole: `inspection_date`, `health_status`, `notes` (indeks `tree_id, inspection_date`) |
+| `tree_stand`, `tree_stand_tree` | grupy drzew: `geometry_geojson` (Polygon WGS 84), `area_square_meters`, `source`; przypisane drzewa |
+| `user_notification`, `web_push_subscription`, `web_push_server_key` | powiadomienia (z kluczem deduplikacji), subskrypcje push, klucze VAPID |
 
-| Trasa | Dostęp | Zawartość |
-|---|---|---|
-| `/projects` | ARBORIST | Lista własnych projektów, przycisk „Nowy projekt” (okno tworzenia) |
-| `/projects/:projectId` | ARBORIST | **Podsumowanie projektu** (strona główna projektu): liczby i szybkie akcje |
-| `/projects/:projectId/trees` | ARBORIST | Sekcja „Drzewa”: lista drzew i „Dodaj drzewo” |
-| `/projects/:projectId/trees/:treeId` | ARBORIST | Karta drzewa: podgląd i edycja (Zapisz / Anuluj) oraz sekcje „Lokalizacja” (mapa + ręczny formularz), „Zdjęcia” i „Zalecenia i prace” |
-| `/projects/:projectId/map` | ARBORIST | Sekcja „Mapa”: mapa OpenLayers z markerami drzew projektu; tryby „Drzewa i symbole prac”, „Waloryzacja”, „Gospodarka drzewostanem” |
-| `/projects/:projectId/management` | ARBORIST | Sekcja „Gospodarka drzewostanem”: prace wszystkich drzew, liczniki, filtry, „Oznacz jako wykonaną” (etap 28) |
-| `/projects/:projectId/import-export` | ARBORIST | Sekcja „Import i eksport”: eksport CSV/XLSX/GeoJSON/GeoPackage, blok QGIS, import drzew z pliku |
-| `/projects/:projectId/documentation` | ARBORIST | Sekcja „Dokumentacja”: „Generuj dokument PDF” (Dokument projektu) oraz materiały do dokumentacji - zdjęcia projektu pogrupowane po drzewie (wersja z adnotacją, jeśli istnieje) |
+---
 
-Trasy korzystają z tego samego strażnika roli (`RequireSignedInUserWithRole`) i layoutu panelu co `/arborist`.
-Kolejny moduł projektu dostanie własną trasę zagnieżdżoną w `/projects/:projectId` -
-bez zmian w `ProjectPage`.
+## 🧭 Trasy frontendu (arborysta)
+
+| Trasa | Zawartość |
+|---|---|
+| `/projects` | lista projektów, „Nowy projekt” |
+| `/projects/:id` | podsumowanie projektu |
+| `/projects/:id/trees` · `/trees/:treeId` | lista drzew z filtrami (waloryzacja, stan, grupa, iglaste/liściaste) · karta drzewa |
+| `/projects/:id/stands` | grupy drzew (rysowanie obszaru, przypisywanie drzew) |
+| `/projects/:id/map` | mapa: tryby, grupy drzew, legendy |
+| `/projects/:id/management` | gospodarka drzewostanem |
+| `/projects/:id/documentation` | dokument PDF i materiały zdjęciowe |
+| `/projects/:id/import-export` | import drzew i grup drzew, eksporty |
+| `/projects/:id/integrations` | kalendarz ICS, powiadomienia push, ostatnie powiadomienia |
+| `/arborist/profile` | profil, powiadomienia na tym urządzeniu |
+
+---
+
+## 📚 Dokumentacja
+
+- [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md) - pytania do arborystów, decyzje V1, rejestr braków i długu
+- [`docs/ARCHITEKTURA.md`](docs/ARCHITEKTURA.md) - moduły, przepływy, bezpieczeństwo
+- [`docs/WYDANIE.md`](docs/WYDANIE.md) - build, uruchomienie, wydanie, kopie zapasowe, wycofanie wersji
+- [`docs/integrations/qgis.md`](docs/integrations/qgis.md) - wymiana danych z QGIS
+- [`docs/discovery/`](docs/discovery) - discovery i decyzje poszczególnych etapów

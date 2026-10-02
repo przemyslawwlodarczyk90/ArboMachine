@@ -30,6 +30,8 @@ interface EditorState {
   redrawToken: number;
 }
 
+const byNaturalName = (first: TreeStand, second: TreeStand) => first.name.localeCompare(second.name, 'pl', { numeric: true });
+
 const errorText = (error: unknown) => (error instanceof ApiRequestError ? error.message : 'Nieoczekiwany błąd.');
 
 /**
@@ -49,7 +51,9 @@ export function ProjectStandsPage() {
     if (projectId === null) return;
     let isResponseStillWanted = true;
     Promise.all([treeStandsApi.listStands(projectId), treesApi.listTreesOfProject(projectId)])
-      .then(([stands, trees]) => { if (isResponseStillWanted) setPageState({ status: 'loaded', stands, trees }); })
+      .then(([stands, trees]) => {
+        if (isResponseStillWanted) setPageState({ status: 'loaded', stands: [...stands].sort(byNaturalName), trees });
+      })
       .catch((loadingError) => { if (isResponseStillWanted) setPageState({ status: 'failed', errorMessage: errorText(loadingError) }); });
     return () => { isResponseStillWanted = false; };
   }, [projectId]);
@@ -70,7 +74,7 @@ export function ProjectStandsPage() {
   }
 
   const replaceStands = (change: (stands: TreeStand[]) => TreeStand[]) => setPageState((current) => (current.status === 'loaded'
-    ? { ...current, stands: change(current.stands).sort((first, second) => first.name.localeCompare(second.name, 'pl')) } : current));
+    ? { ...current, stands: change(current.stands).sort(byNaturalName) } : current));
 
   const startEditing = (stand: TreeStand | null) => {
     setMessage(null);

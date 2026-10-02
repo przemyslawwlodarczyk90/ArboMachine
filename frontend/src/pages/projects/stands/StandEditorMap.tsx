@@ -54,10 +54,13 @@ export function StandEditorMap({ trees, otherStands, initialGeometry, redrawToke
     const map = createMapWithOpenStreetMapBase(containerRef.current, [
       new VectorLayer({ source: otherSource, style: OTHER_STAND_STYLE }),
       new VectorLayer({ source: editSource, style: EDITED_STAND_STYLE }),
+      new VectorLayer({ source: treeSource, style: TREE_STYLE }),
+      // Numery osobno: przy setkach drzew OpenLayers pomija kolidujace etykiety (declutter), punkty zostaja wszystkie.
       new VectorLayer({
         source: treeSource,
-        style: (feature) => [TREE_STYLE, new Style({ text: new Text({ text: String(feature.get('label') ?? ''), offsetY: -16,
-          font: '600 11px sans-serif', fill: new Fill({ color: '#1b4d2a' }), stroke: new Stroke({ color: '#fff', width: 3 }) }) })],
+        declutter: true,
+        style: (feature) => new Style({ text: new Text({ text: String(feature.get('label') ?? ''), offsetY: -16,
+          font: '600 11px sans-serif', fill: new Fill({ color: '#1b4d2a' }), stroke: new Stroke({ color: '#fff', width: 3 }) }) }),
       }),
     ]);
     mapRef.current = map;

@@ -121,6 +121,7 @@ public class ProjectDocumentDataAssembler {
                         .map(stand -> new ProjectDocumentStandData(stand.getName(), stand.getAreaSquareMeters(),
                                 stand.getTrees().stream().sorted(java.util.Comparator.comparing(Tree::getId)).map(Tree::getInventoryNumber).toList(),
                                 stand.getNotes()))
+                        .sorted(java.util.Comparator.comparing(ProjectDocumentStandData::name, NaturalTextOrder.INSTANCE))
                         .toList());
     }
 
