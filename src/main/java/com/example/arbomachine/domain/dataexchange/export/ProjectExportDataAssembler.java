@@ -5,6 +5,7 @@ import com.example.arbomachine.domain.tree.entity.Tree;
 import com.example.arbomachine.domain.treework.entity.TreeWork;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.domain.treevaluation.entity.TreeValuation;
+import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository;
 import com.example.arbomachine.infrastructure.repository.TreeValuationRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import org.springframework.stereotype.Component;
@@ -17,20 +18,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): trzy zapytania - drzewa,
- * prace i waloryzacje calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
+ * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): cztery zapytania - drzewa,
+ * prace, waloryzacje i kontrole stanu calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
  */
 @Component
 public class ProjectExportDataAssembler {
     private final TreeRepository treeRepository;
     private final TreeWorkRepository treeWorkRepository;
     private final TreeValuationRepository treeValuationRepository;
+    private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
 
     public ProjectExportDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
-                                      TreeValuationRepository treeValuationRepository) {
+                                      TreeValuationRepository treeValuationRepository,
+                                      TreeMonitoringRecordRepository treeMonitoringRecordRepository) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treeValuationRepository = treeValuationRepository;
+        this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
     }
 
     @Transactional(readOnly = true)
@@ -41,8 +45,15 @@ public class ProjectExportDataAssembler {
                         Collectors.mapping(ProjectExportDataAssembler::workDataOf, Collectors.toList())));
         Map<Long, TreeValuation> valuationByTreeId = treeValuationRepository.findAllByTreeProjectId(ownedProject.getId()).stream()
                 .collect(Collectors.toMap(valuation -> valuation.getTree().getId(), Function.identity()));
+        Map<Long, List<TreeMonitoringExportData>> monitoringByTreeId = treeMonitoringRecordRepository
+                .findAllOfProjectNewestFirst(ownedProject.getId()).stream()
+                .collect(Collectors.groupingBy(record -> record.getTree().getId(), Collectors.mapping(
+                        record -> new TreeMonitoringExportData(record.getId(), record.getInspectionDate(),
+                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
+                        Collectors.toList())));
         List<TreeExportData> trees = treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(ownedProject.getId()).stream()
-                .map(tree -> treeDataOf(tree, worksByTreeId.getOrDefault(tree.getId(), List.of()), valuationByTreeId.get(tree.getId())))
+                .map(tree -> treeDataOf(tree, worksByTreeId.getOrDefault(tree.getId(), List.of()), valuationByTreeId.get(tree.getId()),
+                        monitoringByTreeId.getOrDefault(tree.getId(), List.of())))
                 .toList();
         return new ProjectExportData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 exportedAt, trees);
@@ -61,7 +72,8 @@ public class ProjectExportDataAssembler {
                 valuation.getLandscapeValue(), valuation.getJustification());
     }
 
-    private static TreeExportData treeDataOf(Tree tree, List<TreeWorkExportData> works, TreeValuation valuation) {
+    private static TreeExportData treeDataOf(Tree tree, List<TreeWorkExportData> works, TreeValuation valuation,
+                                             List<TreeMonitoringExportData> monitoringRecords) {
         return new TreeExportData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(), tree.getSpeciesLatin(),
                 tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(), tree.getNotes(),
                 tree.getConditionNotes(), tree.getHazardNotes(),
@@ -70,6 +82,6 @@ public class ProjectExportDataAssembler {
                 tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
                 tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
                 tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
-                tree.getMapSymbolCode(), works, valuationDataOf(valuation));
+                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords);
     }
 }

@@ -5,6 +5,7 @@ import com.example.arbomachine.domain.dataexchange.dto.TreeImportUpload;
 import com.example.arbomachine.domain.dataexchange.dto.TreeImportValidationResponse;
 import com.example.arbomachine.domain.dataexchange.export.ExportedFile;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeWorksAsCsvHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeWorksAsIcsHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsCsvHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsGeoJsonHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsGeoPackageHandler;
@@ -26,12 +27,14 @@ public class DataExchangeFacade {
     private final ValidateTreeImportHandler validateTreeImportHandler;
     private final ImportTreesHandler importTreesHandler;
     private final ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler;
+    private final ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler;
 
     public DataExchangeFacade(ExportTreesAsCsvHandler exportTreesAsCsvHandler, ExportTreesAsXlsxHandler exportTreesAsXlsxHandler,
                               ExportTreesAsGeoJsonHandler exportTreesAsGeoJsonHandler,
                               ExportTreesAsGeoPackageHandler exportTreesAsGeoPackageHandler,
                               ValidateTreeImportHandler validateTreeImportHandler, ImportTreesHandler importTreesHandler,
-                              ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler) {
+                              ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler,
+                              ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler) {
         this.exportTreesAsCsvHandler = exportTreesAsCsvHandler;
         this.exportTreesAsXlsxHandler = exportTreesAsXlsxHandler;
         this.exportTreesAsGeoJsonHandler = exportTreesAsGeoJsonHandler;
@@ -39,6 +42,7 @@ public class DataExchangeFacade {
         this.validateTreeImportHandler = validateTreeImportHandler;
         this.importTreesHandler = importTreesHandler;
         this.exportTreeWorksAsCsvHandler = exportTreeWorksAsCsvHandler;
+        this.exportTreeWorksAsIcsHandler = exportTreeWorksAsIcsHandler;
     }
 
     public ExportedFile exportTreesAsCsvOfCurrentUser(String currentUserEmail, Long projectId) {
@@ -59,6 +63,10 @@ public class DataExchangeFacade {
 
     public ExportedFile exportTreeWorksAsCsvOfCurrentUser(String currentUserEmail, Long projectId) {
         return exportTreeWorksAsCsvHandler.handle(currentUserEmail, projectId);
+    }
+
+    public ExportedFile exportTreeWorksAsIcsOfCurrentUser(String currentUserEmail, Long projectId) {
+        return exportTreeWorksAsIcsHandler.handle(currentUserEmail, projectId);
     }
 
     public TreeImportValidationResponse validateTreeImportOfCurrentUser(String currentUserEmail, Long projectId, TreeImportUpload upload) {

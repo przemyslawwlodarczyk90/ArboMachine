@@ -239,6 +239,20 @@ class TreeWorkManagementApiIntegrationTest {
     }
 
     @Test
+    void calendarExportContainsOpenWorksWithDatesOfOwnProjectOnly() throws Exception {
+        createWork(treeIdA1, "{\"name\":\"Cięcia sanitarne\",\"status\":\"PLANNED\",\"plannedDate\":\"2026-11-15\"}");
+        createWork(treeIdA2, "{\"name\":\"Bez terminu\",\"status\":\"PLANNED\"}");
+        var response = performAs(userAccountA, get("/api/projects/{p}/exports/calendar.ics", projectIdA))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(response.getContentType()).startsWith("text/calendar");
+        assertThat(response.getHeader("Content-Disposition")).contains(".ics");
+        String ics = response.getContentAsString(StandardCharsets.UTF_8).replace("\r\n ", "");
+        assertThat(ics).contains("BEGIN:VCALENDAR", "DTSTART;VALUE=DATE:20261115", "SUMMARY:Cięcia sanitarne – drzewo G-1")
+                .doesNotContain("Bez terminu");
+        performAs(userAccountB, get("/api/projects/{p}/exports/calendar.ics", projectIdA)).andExpect(status().isNotFound());
+    }
+
+    @Test
     void managementDataAppearsInExportsAndProjectDocument() throws Exception {
         createWork(treeIdA1, "{\"name\":\"Cięcia sanitarne\",\"description\":\"Posusz\",\"status\":\"PLANNED\",\"priority\":\"URGENT\",\"plannedDate\":\"2026-11-15\"}");
         createWork(treeIdA1, "{\"name\":\"Kontrola\",\"status\":\"RECOMMENDED\",\"plannedDate\":\"2027-04-01\"}");

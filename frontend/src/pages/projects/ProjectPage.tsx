@@ -26,6 +26,7 @@ const WORKSPACE_SECTION_LINKS = [
   { relativePath: 'management', label: 'Gospodarka drzewostanem', matchExactPathOnly: false },
   { relativePath: 'documentation', label: 'Dokumentacja', matchExactPathOnly: false },
   { relativePath: 'import-export', label: 'Import i eksport', matchExactPathOnly: false },
+  { relativePath: 'integrations', label: 'Integracje', matchExactPathOnly: false },
 ];
 
 /**

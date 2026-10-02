@@ -53,7 +53,13 @@ public class DataExchangeController {
         return fileResponse(dataExchangeFacade.exportTreeWorksAsCsvOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
-    @Operation(summary = "Drzewa projektu jako XLSX (arkusz \"Drzewa\" i \"Projekt\")")
+    @Operation(summary = "Kalendarz prac projektu (.ics, RFC 5545): prace do wykonania z terminem jako wydarzenia calodniowe (etap 30)")
+    @GetMapping("/exports/calendar.ics")
+    public ResponseEntity<byte[]> exportTreeWorksAsIcs(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
+        return fileResponse(dataExchangeFacade.exportTreeWorksAsIcsOfCurrentUser(authenticatedUser.getUsername(), projectId));
+    }
+
+    @Operation(summary = "Drzewa projektu jako XLSX (arkusze \"Drzewa\", \"Prace\", \"Monitoring\" i \"Projekt\")")
     @GetMapping("/exports/trees.xlsx")
     public ResponseEntity<byte[]> exportTreesAsXlsx(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
         return fileResponse(dataExchangeFacade.exportTreesAsXlsxOfCurrentUser(authenticatedUser.getUsername(), projectId));

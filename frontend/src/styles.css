@@ -725,3 +725,28 @@ th.right, td.right { text-align: right; }
 .map-legend-neutral { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #2f6b3c; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); }
 .map-selected-tree-works { list-style: none; margin: 0.25rem 0 0; padding: 0; display: grid; gap: 0.2rem; font-size: 0.9rem; }
 .map-selected-tree-works li { display: flex; align-items: center; gap: 0.35rem; }
+
+/* Monitoring stanu (etap 29) - kolory umowne V1; nazwa zawsze obok koloru. */
+.health-status-badge { border: 1px solid transparent; }
+.health-status-GOOD { background: #d3f9d8; color: #1b5e20; border-color: #8ce99a; }
+.health-status-FAIR { background: #fff3bf; color: #7a5200; border-color: #ffd43b; }
+.health-status-POOR { background: #ffe3e3; color: #a51111; border-color: #ff8787; }
+.health-status-NONE { background: var(--surface-muted); color: var(--text-muted); border-color: var(--border); }
+.monitoring-form { margin-bottom: 0.75rem; }
+
+/* Pole wyboru z etykieta obok (filtry, ustawienia powiadomien) - duzy obszar dotyku. */
+.checkbox-row { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; cursor: pointer; }
+.checkbox-row input { width: 1.2rem; height: 1.2rem; }
+
+/* Powiadomienia (etapy 29-30) */
+.notification-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.notification-item { display: grid; gap: 0.2rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); overflow-wrap: anywhere; }
+.notification-item-header { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+
+/* Etap 30: wiecej zakladek projektu - na szerokim ekranie zawijaja sie do drugiego wiersza zamiast przewijania. */
+@media (min-width: 900px) {
+  .workspace-tabs { flex-wrap: wrap; overflow-x: visible; }
+}
+.health-status-badge, .tree-work-item-text .badge { justify-self: start; width: fit-content; }
+.integrations-block { padding: 0.75rem 0; border-top: 1px solid var(--border); }

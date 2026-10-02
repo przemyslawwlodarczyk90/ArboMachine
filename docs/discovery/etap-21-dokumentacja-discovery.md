@@ -23,7 +23,7 @@ Celem nie jest zastąpienie całego procesu tworzenia dokumentacji arborystyczne
 ## Jak obecnie arborysta tworzy dokument
 
 Na podstawie dotychczasowych materiałów (konspekty): dane z terenu trafiają do arkuszy (XLS), szkice i mapy
-powstają w ZWCAD / ArboMap / QGIS, a dokument końcowy jest składany ręcznie w edytorze tekstu (Word).
+powstają w ZWCAD / aplikacji terenowej / QGIS, a dokument końcowy jest składany ręcznie w edytorze tekstu (Word).
 Szczegóły — jakie sekcje są stałe, co jest pisane ręcznie, ile zdjęć trafia do dokumentu — wymagają rozmowy
 z arborystą na działającym przykładzie (pytania niżej).
 

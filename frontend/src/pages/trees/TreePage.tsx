@@ -15,6 +15,7 @@ import type { Tree } from './treeDataTypes';
 import { TreeFieldForm } from './TreeFieldForm';
 import { TreeMapSymbolSection } from './TreeMapSymbolSection';
 import { treesApi } from './treesApi';
+import { TreeMonitoringSection } from './monitoring/TreeMonitoringSection';
 import { TreeValuationSection } from './valuation/TreeValuationSection';
 import { TreeWorksSection } from './works/TreeWorksSection';
 
@@ -27,8 +28,8 @@ type TreeLoadingState =
 
 /**
  * Karta drzewa (/projects/:projectId/trees/:treeId) - ekran pracy przy jednym drzewie. Strona tylko laduje drzewo
- * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Symbol drzewa na mapie, Zdjecia,
- * Zalecenia i prace.
+ * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Waloryzacja, Monitoring stanu,
+ * Symbol drzewa na mapie, Zdjecia, Zalecenia i prace.
  * Kazda sekcja ma wlasny stan i wlasne operacje zapisu; drzewo z odpowiedzi backendu jest jednym zrodlem prawdy
  * dla formularza i lokalizacji. Wlasnosci nie sprawdzamy w React.
  */
@@ -138,6 +139,7 @@ export function TreePage() {
                      onUnsavedChangesChange={setHasUnsavedTreeChanges} />
       <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
       <TreeValuationSection key={`valuation-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
+      <TreeMonitoringSection key={`monitoring-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       {isCreatedOffline ? (
         <p className="muted tree-offline-note">Symbol na mapie i zdjęcia można dodać po synchronizacji drzewa z serwerem.</p>
       ) : (

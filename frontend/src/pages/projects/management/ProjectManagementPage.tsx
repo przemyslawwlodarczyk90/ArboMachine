@@ -13,7 +13,7 @@ import { TreeWorkMeta } from '../../trees/works/TreeWorkMeta';
 import { treeWorksApi } from '../../trees/works/treeWorksApi';
 import {
   countWorks, DEFAULT_WORK_FILTER, filterWorks, formatWorkDate, isOpenWorkStatus, isWorkPastPlannedDate, sortWorksForManagement,
-  todayIsoDate, TREE_WORK_PRIORITIES, TREE_WORK_STATUSES, workPriorityLabel, workStatusLabel, type WorkFilter,
+  todayIsoDate, TREE_WORK_PRIORITIES, TREE_WORK_STATUSES, UPCOMING_DAYS, workPriorityLabel, workStatusLabel, type WorkFilter,
 } from '../../trees/works/workManagement';
 
 type ManagementDataState =
@@ -113,7 +113,10 @@ export function ProjectManagementPage() {
     <div className="stack">
       <div className="section-header-row">
         <h2>Gospodarka drzewostanem</h2>
-        <Link to="../map" relative="path" className="btn btn-secondary btn-small">Pokaż na mapie</Link>
+        <div className="form-actions">
+          <Link to="../map" relative="path" className="btn btn-secondary btn-small">Pokaż na mapie</Link>
+          <Link to="../integrations" relative="path" className="btn btn-secondary btn-small">Kalendarz (ICS)</Link>
+        </div>
       </div>
       <p className="muted small">
         Zalecenia i prace wszystkich drzew projektu. Statusy i priorytety to robocze oznaczenia wersji V1. Prace dodajesz
@@ -162,8 +165,14 @@ export function ProjectManagementPage() {
                 {treesWithWorks.map((tree) => <option key={tree.id} value={tree.id}>{tree.inventoryNumber}</option>)}
               </select>
             </div>
+            <label className="checkbox-row">
+              <input type="checkbox" checked={workFilter.onlyUpcoming}
+                     onChange={(changeEvent) => changeFilter({ onlyUpcoming: changeEvent.target.checked })} />
+              <span>Tylko najbliższe terminy ({UPCOMING_DAYS} dni)</span>
+            </label>
             <span className="muted small">Pokazano {visibleWorks.length} z {counts.ALL}</span>
-            {(workFilter.status !== DEFAULT_WORK_FILTER.status || workFilter.priority !== 'ALL' || workFilter.treeId !== 'ALL') && (
+            {(workFilter.status !== DEFAULT_WORK_FILTER.status || workFilter.priority !== 'ALL' || workFilter.treeId !== 'ALL'
+              || workFilter.onlyUpcoming) && (
               <button type="button" className="btn btn-ghost btn-small" onClick={() => setWorkFilter(DEFAULT_WORK_FILTER)}>
                 Wyczyść filtry
               </button>

@@ -3,6 +3,7 @@ package com.example.arbomachine.domain.projectdocument.assembler;
 import com.example.arbomachine.domain.project.entity.Project;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentLocationData;
+import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentMonitoringData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentPhotoData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentTreeData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentWorkData;
@@ -11,6 +12,7 @@ import com.example.arbomachine.domain.treephoto.entity.TreePhoto;
 import com.example.arbomachine.domain.treephoto.entity.TreePhotoAnnotation;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorage;
 import com.example.arbomachine.domain.treework.entity.TreeWork;
+import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoRepository;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
@@ -31,7 +33,7 @@ import java.util.stream.Collectors;
 
 /**
  * Sklada ProjectDocumentData z danych WLASNEGO projektu (wlasnosc sprawdza wczesniej handler). Stala liczba zapytan
- * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec - laczone w pamieci
+ * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec, kontrole stanu - laczone w pamieci
  * (brak N+1). Plikow zdjec NIE czyta - daje tylko leniwy dostep do tresci (wersja z adnotacja, jesli istnieje,
  * jak .../documentation-content). Kolejnosc: drzewa, prace i zdjecia w kolejnosci dodania.
  */
@@ -47,18 +49,21 @@ public class ProjectDocumentDataAssembler {
     private final TreePhotoAnnotationRepository treePhotoAnnotationRepository;
     private final PhotoStorage photoStorage;
     private final TreeValuationRepository treeValuationRepository;
+    private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
 
     public ProjectDocumentDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                         TreePhotoRepository treePhotoRepository,
                                         TreePhotoAnnotationRepository treePhotoAnnotationRepository,
                                         PhotoStorage photoStorage,
-                                        TreeValuationRepository treeValuationRepository) {
+                                        TreeValuationRepository treeValuationRepository,
+                                        TreeMonitoringRecordRepository treeMonitoringRecordRepository) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treePhotoRepository = treePhotoRepository;
         this.treePhotoAnnotationRepository = treePhotoAnnotationRepository;
         this.photoStorage = photoStorage;
         this.treeValuationRepository = treeValuationRepository;
+        this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +82,13 @@ public class ProjectDocumentDataAssembler {
         Map<Long, TreeValuation> valuationByTreeId = treeValuationRepository.findAllByTreeProjectId(ownedProject.getId()).stream()
                 .collect(Collectors.toMap(valuation -> valuation.getTree().getId(), Function.identity()));
 
+        Map<Long, List<ProjectDocumentMonitoringData>> monitoringByTreeId = treeMonitoringRecordRepository
+                .findAllOfProjectNewestFirst(ownedProject.getId()).stream()
+                .collect(Collectors.groupingBy(record -> record.getTree().getId(), Collectors.mapping(
+                        record -> new ProjectDocumentMonitoringData(record.getInspectionDate(),
+                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
+                        Collectors.toList())));
+
         int[] nextPhotoNumber = {1};
         List<ProjectDocumentTreeData> treeData = new ArrayList<>(trees.size());
         for (Tree tree : trees) {
@@ -94,7 +106,8 @@ public class ProjectDocumentDataAssembler {
                             : new ProjectDocumentLocationData(tree.getLocation().getLatitude(), tree.getLocation().getLongitude(),
                             tree.getLocation().getAccuracyM(),
                             tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name()),
-                    valuationDataOf(valuationByTreeId.get(tree.getId())), treeWorkData, treePhotoData));
+                    valuationDataOf(valuationByTreeId.get(tree.getId())), treeWorkData, treePhotoData,
+                    monitoringByTreeId.getOrDefault(tree.getId(), List.of())));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 ownedProject.getCreatedAt(), ownedProject.getUpdatedAt(), generatedAt, treeData);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  buildManagementLegend, countWorks, DEFAULT_WORK_FILTER, filterWorks, formatWorkDate, isOpenWorkStatus, isWorkPastPlannedDate,
+  addDaysToIsoDate, buildManagementLegend, countWorks, DEFAULT_WORK_FILTER, filterWorks, isWorkUpcoming, formatWorkDate, isOpenWorkStatus, isWorkPastPlannedDate,
   managementSummaryByTreeId, sortWorksForManagement, todayIsoDate, workPriorityLabel, workStatusLabel,
 } from './workManagement.ts';
 import type { TreeWorkPriority, TreeWorkStatus } from './treeWorkDataTypes.ts';
@@ -31,10 +31,10 @@ test('polskie nazwy statusow i priorytetow; brak statusu = zalecenie', () => {
 
 test('filtr: domyslnie prace do wykonania; status, priorytet (takze brak priorytetu) i drzewo', () => {
   assert.deepEqual(filterWorks(works, DEFAULT_WORK_FILTER).map((item) => item.id), [1, 2, 5]);
-  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'URGENT', treeId: 'ALL' }).map((item) => item.id), [2, 3]);
-  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'NONE', treeId: 'ALL' }).map((item) => item.id), [1, 4]);
-  assert.deepEqual(filterWorks(works, { status: 'COMPLETED', priority: 'ALL', treeId: 'ALL' }).map((item) => item.id), [3]);
-  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'ALL', treeId: 11 }).map((item) => item.id), [3, 4]);
+  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'URGENT', treeId: 'ALL', onlyUpcoming: false }).map((item) => item.id), [2, 3]);
+  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'NONE', treeId: 'ALL', onlyUpcoming: false }).map((item) => item.id), [1, 4]);
+  assert.deepEqual(filterWorks(works, { status: 'COMPLETED', priority: 'ALL', treeId: 'ALL', onlyUpcoming: false }).map((item) => item.id), [3]);
+  assert.deepEqual(filterWorks(works, { status: 'ALL', priority: 'ALL', treeId: 11, onlyUpcoming: false }).map((item) => item.id), [3, 4]);
 });
 
 test('kolejnosc: do wykonania najpierw, potem termin, priorytet, id', () => {
@@ -62,4 +62,21 @@ test('stan drzewa na mapie: pilna praca do wykonania > prace do wykonania > tylk
   assert.equal(summaries.get(13), undefined);
   const legend = buildManagementLegend([...summaries.values()].map((management) => ({ management })));
   assert.deepEqual(legend.map((entry) => entry.count), [1, 1, 1, 0]);
+});
+
+test('etap 30: najblizsze terminy - prace do wykonania z terminem od dzis do dzis + 7 dni', () => {
+  assert.equal(addDaysToIsoDate('2026-12-28', 7), '2027-01-04');
+  assert.equal(addDaysToIsoDate('2026-02-25', 7), '2026-03-04');
+  const today = '2026-10-02';
+  assert.ok(isWorkUpcoming({ status: 'PLANNED', plannedDate: '2026-10-02' }, today));
+  assert.ok(isWorkUpcoming({ status: 'RECOMMENDED', plannedDate: '2026-10-09' }, today));
+  assert.ok(!isWorkUpcoming({ status: 'PLANNED', plannedDate: '2026-10-10' }, today));
+  assert.ok(!isWorkUpcoming({ status: 'PLANNED', plannedDate: '2026-10-01' }, today), 'po terminie to nie "najblizsze"');
+  assert.ok(!isWorkUpcoming({ status: 'COMPLETED', plannedDate: '2026-10-03' }, today));
+  assert.ok(!isWorkUpcoming({ status: 'PLANNED', plannedDate: null }, today));
+  const upcomingWorks = [
+    { id: 1, treeId: 1, status: 'PLANNED' as const, priority: null, plannedDate: '2026-10-05' },
+    { id: 2, treeId: 1, status: 'PLANNED' as const, priority: null, plannedDate: '2026-11-05' },
+  ];
+  assert.deepEqual(filterWorks(upcomingWorks, { ...DEFAULT_WORK_FILTER, onlyUpcoming: true }, today).map((item) => item.id), [1]);
 });

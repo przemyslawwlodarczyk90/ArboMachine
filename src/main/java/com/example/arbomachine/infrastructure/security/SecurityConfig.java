@@ -22,7 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>/api/admin/** - tylko ADMIN (jedyne miejsce, w ktorym mozna ruszac cudze konta),</li>
  *   <li>/api/arborist/** - tylko ARBORIST, /api/official/** - tylko OFFICIAL,</li>
  *   <li>/api/users/** (wlasne konto) - kazdy zalogowany,</li>
- *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje FindProjectOwnedByCurrentUserHandler.</li>
+ *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje FindProjectOwnedByCurrentUserHandler,</li>
+ *   <li>/api/notifications/** (wlasne powiadomienia i Web Push) - kazdy zalogowany.</li>
  * </ul>
  * Brak tokenu = 401, zla rola = 403.
  */
@@ -54,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/projects", "/api/projects/**").authenticated()
                         .requestMatchers("/api/map-symbols").authenticated()
+                        .requestMatchers("/api/notifications", "/api/notifications/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * <p>
  * To TECHNICZNE style (ksztalt + kolor), a nie typy prac arborystycznych: "RED_CROSS" nie oznacza wycinki.
  * Znaczenie nadaje uzytkownik, przypisujac symbol konkretnej pracy; legenda bierze tekst z nazwy pracy.
- * Wlasciwa biblioteka symboli arborysty (SVG, ZWCAD/ArboMap) - docs/DO_DOPRECYZOWANIA.md.
+ * Wlasciwa biblioteka symboli arborysty (SVG, ZWCAD / aplikacja terenowa) - docs/DO_DOPRECYZOWANIA.md.
  * Waski kontrakt dla modulow tree i treework (walidacja kodu przy zapisie).
  */
 @Component

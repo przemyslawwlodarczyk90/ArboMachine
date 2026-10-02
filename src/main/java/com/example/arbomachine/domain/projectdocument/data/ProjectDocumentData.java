@@ -45,6 +45,17 @@ public record ProjectDocumentData(
         return trees.stream().flatMap(tree -> tree.works().stream()).filter(work -> "COMPLETED".equals(work.status())).count();
     }
 
+    /** Drzewa z co najmniej jedna kontrola stanu (etap 29). */
+    public long monitoredTreeCount() {
+        return trees.stream().filter(tree -> !tree.monitoringRecords().isEmpty()).count();
+    }
+
+    /** Drzewa, ktorych OSTATNIA kontrola ma ocene "zly" (POOR). */
+    public long poorHealthTreeCount() {
+        return trees.stream().map(ProjectDocumentTreeData::latestMonitoringRecord)
+                .filter(record -> record != null && "POOR".equals(record.healthStatus())).count();
+    }
+
     public long workCount() {
         return trees.stream().mapToLong(tree -> tree.works().size()).sum();
     }

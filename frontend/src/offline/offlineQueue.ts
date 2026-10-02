@@ -14,12 +14,15 @@ export const treePhotosPath = (projectId: number, treeId: number) => `${treePath
 export const projectWorksPath = (projectId: number) => `/api/projects/${projectId}/works`;
 export const treeValuationPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/valuation`;
 export const projectValuationsPath = (projectId: number) => `/api/projects/${projectId}/valuations`;
+export const treeMonitoringPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/monitoring`;
+export const projectLatestMonitoringPath = (projectId: number) => `/api/projects/${projectId}/monitoring/latest`;
 
 /** Pusta waloryzacja (jak GET backendu dla drzewa bez waloryzacji). */
 const emptyValuationOf = (treeId: number) => ({ treeId, hasValuation: false });
 
 /** Sciezki obiektow istniejacych tylko na urzadzeniu (tymczasowe id < 0) - nigdy nie ida do serwera. */
-export const isLocalOnlyPath = (path: string) => /\/trees\/-\d+(\/|$)/.test(path) || /\/works\/-\d+(\/|$)/.test(path);
+export const isLocalOnlyPath = (path: string) => /\/trees\/-\d+(\/|$)/.test(path) || /\/works\/-\d+(\/|$)/.test(path)
+  || /\/monitoring\/-\d+(\/|$)/.test(path);
 
 let localIdSequence = 0;
 /** Tymczasowe id obiektu utworzonego offline: ujemne, unikalne na urzadzeniu. */
@@ -39,6 +42,15 @@ const workFieldsOf = (body: Record<string, unknown>) => {
   return fields;
 };
 
+/** Pola wpisu monitoringu (etap 29) - komplet, jak PUT backendu. */
+const MONITORING_EDITABLE_FIELDS = ['inspectionDate', 'healthStatus', 'notes'] as const;
+
+const monitoringFieldsOf = (body: Record<string, unknown>) => {
+  const fields: Record<string, unknown> = {};
+  for (const field of MONITORING_EDITABLE_FIELDS) fields[field] = body[field] ?? null;
+  return fields;
+};
+
 type CachedRecord = Record<string, unknown> & { id: number };
 
 export interface QueuedChangeDraft {
@@ -47,11 +59,13 @@ export interface QueuedChangeDraft {
   kind: PendingChangeKind;
   treeId?: number;
   workId?: number;
+  monitoringRecordId?: number;
   body?: unknown;
 }
 
 /** Zadanie HTTP zmiany (id juz rozwiazane do id z serwera). */
-export function toPendingChangeRequest(change: PendingChange, treeId: number, workId?: number): PendingChangeRequest {
+export function toPendingChangeRequest(change: PendingChange, treeId: number, workId?: number,
+                                       monitoringRecordId?: number): PendingChangeRequest {
   switch (change.kind) {
     case 'CREATE_TREE':
       return { httpMethod: 'POST', path: treesListPath(change.projectId), body: change.body };
@@ -71,6 +85,12 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
       return { httpMethod: 'PUT', path: treeValuationPath(change.projectId, treeId), body: change.body };
     case 'DELETE_TREE_VALUATION':
       return { httpMethod: 'DELETE', path: treeValuationPath(change.projectId, treeId) };
+    case 'CREATE_TREE_MONITORING_RECORD':
+      return { httpMethod: 'POST', path: treeMonitoringPath(change.projectId, treeId), body: change.body };
+    case 'UPDATE_TREE_MONITORING_RECORD':
+      return { httpMethod: 'PUT', path: `${treeMonitoringPath(change.projectId, treeId)}/${monitoringRecordId}`, body: change.body };
+    case 'DELETE_TREE_MONITORING_RECORD':
+      return { httpMethod: 'DELETE', path: `${treeMonitoringPath(change.projectId, treeId)}/${monitoringRecordId}` };
   }
 }
 
@@ -116,6 +136,29 @@ async function removeFromCachedList(store: OfflineStore, path: string, removedId
   if (list) await store.writeCachedResponse(path, list.filter((item) => item.id !== removedId));
 }
 
+/** Historia kontroli drzewa: najnowsza pierwsza (data, potem kolejnosc dodania). */
+const byInspectionNewestFirst = (first: CachedRecord, second: CachedRecord) =>
+  String(second.inspectionDate ?? '').localeCompare(String(first.inspectionDate ?? '')) || Math.abs(second.id) - Math.abs(first.id);
+
+/**
+ * Wpis monitoringu w kopiach: historia drzewa (zastap / dopisz / usun) i "ostatnia kontrola" drzewa w liscie
+ * projektu (przeliczana z historii). record null + removedId = usuniecie wpisu.
+ */
+async function cacheMonitoring(store: OfflineStore, projectId: number, treeId: number, record: CachedRecord | null,
+                               replacedId: number, removedId?: number) {
+  const path = treeMonitoringPath(projectId, treeId);
+  const history = (await readList(store, path)) ?? [];
+  // record.id tez - odpowiedz serwera na zmiane wpisu z tymczasowym id ma juz id z serwera.
+  let updated = history.filter((item) => item.id !== replacedId && item.id !== removedId && item.id !== record?.id);
+  if (record) updated = [...updated, record];
+  updated.sort(byInspectionNewestFirst);
+  await store.writeCachedResponse(path, updated);
+  const latestList = await store.readCachedResponse(projectLatestMonitoringPath(projectId));
+  if (!Array.isArray(latestList)) return;
+  const others = (latestList as Record<string, unknown>[]).filter((item) => item.treeId !== treeId);
+  await store.writeCachedResponse(projectLatestMonitoringPath(projectId), updated.length > 0 ? [...others, updated[0]] : others);
+}
+
 async function cacheWork(store: OfflineStore, projectId: number, treeId: number, work: CachedRecord, replacedId = work.id,
                          append = false) {
   await upsertInCachedList(store, treeWorksPath(projectId, treeId), work, replacedId, append);
@@ -126,7 +169,8 @@ async function cacheWork(store: OfflineStore, projectId: number, treeId: number,
  * Zapisuje zmiane w kolejce i od razu nanosi ja na kopie odczytow (lista drzew, karta drzewa, prace), wiec ekrany
  * pokazuja nowy stan bez polaczenia. Zwraca obiekt jak z backendu, oznaczony offlinePending.
  */
-export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft, now: Date = new Date()): Promise<unknown> {
+export async function queueChange(store: OfflineStore, queuedDraft: QueuedChangeDraft, now: Date = new Date()): Promise<unknown> {
+  let draft = queuedDraft;
   const timestamp = now.toISOString();
   const projectId = draft.projectId;
   let treeId = draft.treeId ?? 0;
@@ -144,6 +188,30 @@ export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft,
       await store.writeCachedResponse(treeWorksPath(projectId, treeId), []);
       await store.writeCachedResponse(treePhotosPath(projectId, treeId), []);
       await store.writeCachedResponse(treeValuationPath(projectId, treeId), emptyValuationOf(treeId));
+      await store.writeCachedResponse(treeMonitoringPath(projectId, treeId), []);
+      break;
+    }
+    case 'CREATE_TREE_MONITORING_RECORD': {
+      const recordId = createLocalId();
+      draft = { ...draft, monitoringRecordId: recordId };
+      result = { id: recordId, treeId, ...monitoringFieldsOf((draft.body ?? {}) as Record<string, unknown>),
+        createdAt: timestamp, updatedAt: timestamp, offlinePending: true };
+      await cacheMonitoring(store, projectId, treeId, result, recordId);
+      break;
+    }
+    case 'UPDATE_TREE_MONITORING_RECORD': {
+      const recordId = draft.monitoringRecordId ?? 0;
+      const cachedRecord = ((await readList(store, treeMonitoringPath(projectId, treeId))) ?? []).find((item) => item.id === recordId)
+        ?? { id: recordId, treeId, createdAt: timestamp };
+      result = { ...cachedRecord, ...monitoringFieldsOf((draft.body ?? {}) as Record<string, unknown>), updatedAt: timestamp,
+        offlinePending: true };
+      await cacheMonitoring(store, projectId, treeId, result, recordId);
+      break;
+    }
+    case 'DELETE_TREE_MONITORING_RECORD': {
+      const recordId = draft.monitoringRecordId ?? 0;
+      result = { id: recordId, treeId, offlinePending: true };
+      await cacheMonitoring(store, projectId, treeId, null, recordId, recordId);
       break;
     }
     case 'UPSERT_TREE_VALUATION': {
@@ -200,8 +268,8 @@ export async function queueChange(store: OfflineStore, draft: QueuedChangeDraft,
     }
   }
 
-  await store.addChange({ ownerEmail: draft.ownerEmail, projectId, kind: draft.kind, treeId, workId, body: draft.body,
-    createdAt: timestamp, failure: null });
+  await store.addChange({ ownerEmail: draft.ownerEmail, projectId, kind: draft.kind, treeId, workId,
+    monitoringRecordId: draft.monitoringRecordId, body: draft.body, createdAt: timestamp, failure: null });
   return result;
 }
 
@@ -236,6 +304,7 @@ export async function syncPendingChanges(store: OfflineStore, ownerEmail: string
   for (const change of changes) {
     const treeId = await resolveId(store, 'tree', change.treeId);
     const workId = await resolveId(store, 'work', change.workId);
+    const monitoringRecordId = await resolveId(store, 'monitoring', change.monitoringRecordId);
     if (change.kind !== 'CREATE_TREE' && treeId === undefined) {
       const failedChange = { ...change, failure: { httpStatus: 0, message: 'Drzewo tej zmiany nie zostało jeszcze utworzone na serwerze.' } };
       await store.updateChange(failedChange);
@@ -243,7 +312,7 @@ export async function syncPendingChanges(store: OfflineStore, ownerEmail: string
     }
     let response: unknown;
     try {
-      response = await send(toPendingChangeRequest(change, treeId ?? 0, workId));
+      response = await send(toPendingChangeRequest(change, treeId ?? 0, workId, monitoringRecordId));
     } catch (sendingError) {
       const httpStatus = httpStatusOf(sendingError);
       if (httpStatus === 0) return { status: 'offline', syncedCount };
@@ -267,6 +336,21 @@ async function applyServerResponse(store: OfflineStore, change: PendingChange, r
     await cacheValuation(store, change.projectId, serverTreeId, valuation, change.treeId);
     return;
   }
+  if (change.kind === 'DELETE_TREE_MONITORING_RECORD') {
+    const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
+    const serverRecordId = await resolveId(store, 'monitoring', change.monitoringRecordId) ?? change.monitoringRecordId ?? 0;
+    await cacheMonitoring(store, change.projectId, serverTreeId, null, serverRecordId, serverRecordId);
+    return;
+  }
+  if (change.kind === 'CREATE_TREE_MONITORING_RECORD' || change.kind === 'UPDATE_TREE_MONITORING_RECORD') {
+    if (typeof response !== 'object' || response === null || !('id' in response)) return;
+    const record = response as CachedRecord;
+    if (change.kind === 'CREATE_TREE_MONITORING_RECORD' && change.monitoringRecordId !== undefined) {
+      await store.writeIdMapping('monitoring', change.monitoringRecordId, record.id);
+    }
+    await cacheMonitoring(store, change.projectId, Number(record.treeId), record, change.monitoringRecordId ?? record.id);
+    return;
+  }
   if (change.kind === 'DELETE_TREE_WORK') {
     // Kopie zaktualizowane przy zapisie; po synchronizacji usuwamy jeszcze z list pod id z serwera.
     const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
@@ -285,6 +369,8 @@ async function applyServerResponse(store: OfflineStore, change: PendingChange, r
     await store.writeCachedResponse(treePhotosPath(change.projectId, record.id), []);
     const localValuation = await store.readCachedResponse(treeValuationPath(change.projectId, change.treeId));
     await store.writeCachedResponse(treeValuationPath(change.projectId, record.id), localValuation ?? emptyValuationOf(record.id));
+    const localMonitoring = await store.readCachedResponse(treeMonitoringPath(change.projectId, change.treeId));
+    await store.writeCachedResponse(treeMonitoringPath(change.projectId, record.id), localMonitoring ?? []);
   } else if (change.kind === 'CREATE_TREE_WORK' || change.kind === 'UPDATE_TREE_WORK') {
     const serverTreeId = Number(record.treeId);
     if (change.kind === 'CREATE_TREE_WORK' && change.workId !== undefined) await store.writeIdMapping('work', change.workId, record.id);
@@ -304,7 +390,9 @@ export async function discardChange(store: OfflineStore, changeId: number): Prom
   if (!discarded) return 0;
   const dependent = changes.filter((change) => change.id !== changeId && (
     (discarded.kind === 'CREATE_TREE' && change.treeId === discarded.treeId)
-    || (discarded.kind === 'CREATE_TREE_WORK' && change.workId !== undefined && change.workId === discarded.workId)));
+    || (discarded.kind === 'CREATE_TREE_WORK' && change.workId !== undefined && change.workId === discarded.workId)
+    || (discarded.kind === 'CREATE_TREE_MONITORING_RECORD' && change.monitoringRecordId !== undefined
+      && change.monitoringRecordId === discarded.monitoringRecordId)));
   for (const change of [discarded, ...dependent]) await store.removeChange(change.id!);
   return 1 + dependent.length;
 }
@@ -322,5 +410,8 @@ export function describePendingChange(change: PendingChange): string {
     case 'DELETE_TREE_WORK': return 'Usunięcie pracy';
     case 'UPSERT_TREE_VALUATION': return 'Waloryzacja drzewa';
     case 'DELETE_TREE_VALUATION': return 'Usunięcie waloryzacji drzewa';
+    case 'CREATE_TREE_MONITORING_RECORD': return `Nowa kontrola stanu (${String(body.inspectionDate ?? '')})`;
+    case 'UPDATE_TREE_MONITORING_RECORD': return `Zmiana kontroli stanu (${String(body.inspectionDate ?? '')})`;
+    case 'DELETE_TREE_MONITORING_RECORD': return 'Usunięcie kontroli stanu';
   }
 }

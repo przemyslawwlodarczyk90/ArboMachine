@@ -194,7 +194,8 @@ class DataExchangeApiIntegrationTest {
                 "Zagrożenia", "Szerokość geograficzna", "Długość geograficzna", "Dokładność lokalizacji [m]", "Wysokość n.p.m. [m]",
                 "Źródło lokalizacji", "Zalecenia i prace", "Waloryzacja - ocena ogólna", "Wartość wiekowa",
                 "Wartość przyrodnicza", "Wartość ekologiczna", "Wartość kulturowa", "Wartość krajobrazowa", "Uzasadnienie waloryzacji",
-                "Prace do wykonania (liczba)", "Najbliższy termin pracy");
+                "Prace do wykonania (liczba)", "Najbliższy termin pracy", "Najbliższa praca", "Data ostatniej kontroli",
+                "Ocena stanu (ostatnia kontrola)", "Uwagi z ostatniej kontroli");
         assertThat(records).hasSize(4);
         CSVRecord full = records.get(1);
         assertThat(full.get(1)).isEqualTo("L-1");

@@ -2,7 +2,7 @@
 
 /**
  * Operacje, ktore V1 potrafi zapisac bez polaczenia i wyslac pozniej (te same endpointy co online).
- * Poza kolejka (wymagaja polaczenia): zdjecia, adnotacje, symbole mapowe, usuwanie prac, projekty, dokumenty, import.
+ * Poza kolejka (wymagaja polaczenia): zdjecia, adnotacje, symbole mapowe, projekty, dokumenty, import, grupy drzew.
  */
 export type PendingChangeKind =
   | 'CREATE_TREE'
@@ -14,7 +14,11 @@ export type PendingChangeKind =
   | 'DELETE_TREE_WORK'
   /** etap 27: zapis (PUT - utworz albo zastap) i usuniecie waloryzacji drzewa */
   | 'UPSERT_TREE_VALUATION'
-  | 'DELETE_TREE_VALUATION';
+  | 'DELETE_TREE_VALUATION'
+  /** etap 29: wpisy monitoringu (kontrole stanu) drzewa */
+  | 'CREATE_TREE_MONITORING_RECORD'
+  | 'UPDATE_TREE_MONITORING_RECORD'
+  | 'DELETE_TREE_MONITORING_RECORD';
 
 /** Blad wyslania zmiany (walidacja, brak zasobu, blad serwera) - synchronizacja stoi do decyzji uzytkownika. */
 export interface PendingChangeFailure {
@@ -33,6 +37,8 @@ export interface PendingChange {
   kind: PendingChangeKind;
   treeId: number;
   workId?: number;
+  /** etap 29: wpis monitoringu (id < 0 = utworzony offline) */
+  monitoringRecordId?: number;
   body?: unknown;
   createdAt: string;
   failure?: PendingChangeFailure | null;
@@ -45,7 +51,7 @@ export interface PendingChangeRequest {
   body?: unknown;
 }
 
-export type IdMappingEntity = 'tree' | 'work';
+export type IdMappingEntity = 'tree' | 'work' | 'monitoring';
 
 /** Magazyn danych offline: kopie odpowiedzi GET, kolejka zmian, mapowanie tymczasowych id na id z serwera. */
 export interface OfflineStore {

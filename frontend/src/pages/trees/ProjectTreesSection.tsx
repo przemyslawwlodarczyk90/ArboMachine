@@ -5,6 +5,10 @@ import { Alert } from '../../components/Alert';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useOfflineState } from '../../offline/useOfflineState';
 import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRouteParam';
+import { HealthStatusBadge } from './monitoring/HealthStatusBadge';
+import { HEALTH_STATUS_OPTIONS, NOT_INSPECTED_LABEL, type TreeMonitoringRecord } from './monitoring/monitoringDataTypes';
+import { filterTreesByMonitoring, latestRecordByTreeId, type MonitoringFilter } from './monitoring/monitoringFormValues';
+import { treeMonitoringApi } from './monitoring/treeMonitoringApi';
 import { NewTreeDialog } from './NewTreeDialog';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
@@ -31,6 +35,9 @@ export function ProjectTreesSection() {
   // Waloryzacje projektu jednym zapytaniem (etap 27); blad nie blokuje listy - drzewa bez odznak i bez filtra.
   const [valuations, setValuations] = useState<TreeValuation[] | null>(null);
   const [valuationFilter, setValuationFilter] = useState<ValuationFilter>('ALL');
+  // Ostatnia kontrola stanu kazdego drzewa (etap 29); blad nie blokuje listy.
+  const [latestRecords, setLatestRecords] = useState<TreeMonitoringRecord[] | null>(null);
+  const [monitoringFilter, setMonitoringFilter] = useState<MonitoringFilter>('ALL');
 
   useEffect(() => {
     if (projectId === null) return;
@@ -39,6 +46,9 @@ export function ProjectTreesSection() {
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
+    treeMonitoringApi.listLatestRecordsOfProject(projectId)
+      .then((loadedRecords) => { if (isResponseStillWanted) setLatestRecords(loadedRecords); })
+      .catch(() => { if (isResponseStillWanted) setLatestRecords(null); });
     treesApi.listTreesOfProject(projectId)
       .then((trees) => {
         if (isResponseStillWanted) setTreeListState({ status: 'loaded', trees });
@@ -54,10 +64,12 @@ export function ProjectTreesSection() {
   }, [projectId, syncGeneration]);
 
   const categoryByTreeId = useMemo(() => valuationCategoryByTreeId(valuations ?? []), [valuations]);
+  const latestByTreeId = useMemo(() => latestRecordByTreeId(latestRecords ?? []), [latestRecords]);
 
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
   const visibleTrees = treeListState.status === 'loaded'
-    ? filterTreesByValuation(treeListState.trees, categoryByTreeId, valuationFilter) : [];
+    ? filterTreesByMonitoring(filterTreesByValuation(treeListState.trees, categoryByTreeId, valuationFilter), latestByTreeId, monitoringFilter)
+    : [];
 
   const openNewTreeDialog = () => setIsNewTreeDialogOpen(true);
 
@@ -81,9 +93,9 @@ export function ProjectTreesSection() {
         </div>
       )}
 
-      {treeListState.status === 'loaded' && treeListState.trees.length > 0 && valuations !== null && (
+      {treeListState.status === 'loaded' && treeListState.trees.length > 0 && (valuations !== null || latestRecords !== null) && (
         <div className="tree-list-filters">
-          <div className="field">
+          {valuations !== null && <div className="field">
             <label htmlFor="tree-valuation-filter">Waloryzacja</label>
             <select id="tree-valuation-filter" value={valuationFilter}
                     onChange={(changeEvent) => setValuationFilter(changeEvent.target.value as ValuationFilter)}>
@@ -91,13 +103,25 @@ export function ProjectTreesSection() {
               <option value="NOT_ASSESSED">Nieocenione</option>
               {VALUATION_CATEGORY_OPTIONS.map(({ category, label }) => <option key={category} value={category}>{label}</option>)}
             </select>
-          </div>
+          </div>}
+          {latestRecords !== null && (
+            <div className="field">
+              <label htmlFor="tree-monitoring-filter">Stan (ostatnia kontrola)</label>
+              <select id="tree-monitoring-filter" value={monitoringFilter}
+                      onChange={(changeEvent) => setMonitoringFilter(changeEvent.target.value as MonitoringFilter)}>
+                <option value="ALL">Wszystkie</option>
+                <option value="NOT_INSPECTED">{NOT_INSPECTED_LABEL}</option>
+                {HEALTH_STATUS_OPTIONS.map(({ status, label }) => <option key={status} value={status}>{label}</option>)}
+                <option value="NOT_SPECIFIED">Bez oceny</option>
+              </select>
+            </div>
+          )}
           <span className="muted small">Pokazano {visibleTrees.length} z {treeListState.trees.length}</span>
         </div>
       )}
 
       {treeListState.status === 'loaded' && treeListState.trees.length > 0 && visibleTrees.length === 0 && (
-        <p className="muted">Żadne drzewo nie pasuje do wybranego filtra.</p>
+        <p className="muted">Żadne drzewo nie pasuje do wybranych filtrów.</p>
       )}
 
       {treeListState.status === 'loaded' && visibleTrees.length > 0 && (
@@ -112,6 +136,7 @@ export function ProjectTreesSection() {
                 {/* Pokazujemy tylko brak - to drzewa, ktore wymagaja jeszcze ustalenia punktu. */}
                 {!tree.location && <span className="tree-list-item-no-location">Brak lokalizacji</span>}
                 {categoryByTreeId.get(tree.id) && <ValuationBadge category={categoryByTreeId.get(tree.id)} prefix="Waloryzacja: " />}
+                {latestByTreeId.get(tree.id) && <HealthStatusBadge status={latestByTreeId.get(tree.id)!.healthStatus} prefix="Stan: " />}
                 {pendingTreeIds.has(tree.id) && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
               </Link>
             </li>

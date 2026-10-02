@@ -28,7 +28,9 @@ public record TreeExportData(
         String locationSource,
         String mapSymbolCode,
         List<TreeWorkExportData> works,
-        TreeValuationExportData valuation
+        TreeValuationExportData valuation,
+        /** etap 29: kontrole stanu, najnowsza pierwsza (pusta lista = drzewo nie sprawdzone) */
+        List<TreeMonitoringExportData> monitoringRecords
 ) {
 
     /** Separator nazw prac w jednej kolumnie / atrybucie. */
@@ -54,6 +56,31 @@ public record TreeExportData(
             case COMPLETED_DATE -> work.completedDate() == null ? null : work.completedDate().toString();
             case WORK_SYMBOL_CODE -> work.mapSymbolCode();
         };
+    }
+
+    /** Wartosc kolumny arkusza "Monitoring" (MonitoringExchangeColumn) dla jednej kontroli tego drzewa. */
+    public Object monitoringValueOf(TreeMonitoringExportData record,
+                                    com.example.arbomachine.domain.dataexchange.schema.MonitoringExchangeColumn column) {
+        return switch (column) {
+            case TREE_ID -> treeId;
+            case INVENTORY_NUMBER -> inventoryNumber;
+            case SPECIES_POLISH -> speciesPolish;
+            case RECORD_ID -> record.recordId();
+            case INSPECTION_DATE -> record.inspectionDate().toString();
+            case HEALTH_STATUS -> record.healthStatus();
+            case NOTES -> record.notes();
+        };
+    }
+
+    /** Praca do wykonania z najblizszym terminem (pierwsza dodana przy rownych terminach) albo null. */
+    public TreeWorkExportData nextPlannedWork() {
+        return works.stream().filter(TreeWorkExportData::isOpen).filter(work -> work.plannedDate() != null)
+                .min(java.util.Comparator.comparing(TreeWorkExportData::plannedDate)).orElse(null);
+    }
+
+    /** Ostatnia kontrola stanu albo null (drzewo nie sprawdzone). */
+    public TreeMonitoringExportData latestMonitoringRecord() {
+        return monitoringRecords.isEmpty() ? null : monitoringRecords.getFirst();
     }
 
     /** Wartosc pola: String, Long/Integer, BigDecimal albo null (brak danych). */
@@ -85,9 +112,11 @@ public record TreeExportData(
             case VALUATION_LANDSCAPE_VALUE -> valuation == null ? null : valuation.landscapeValue();
             case VALUATION_JUSTIFICATION -> valuation == null ? null : valuation.justification();
             case OPEN_WORK_COUNT -> (int) works.stream().filter(TreeWorkExportData::isOpen).count();
-            case NEXT_PLANNED_WORK_DATE -> works.stream().filter(TreeWorkExportData::isOpen)
-                    .map(TreeWorkExportData::plannedDate).filter(java.util.Objects::nonNull).min(java.util.Comparator.naturalOrder())
-                    .map(java.time.LocalDate::toString).orElse(null);
+            case NEXT_PLANNED_WORK_DATE -> nextPlannedWork() == null ? null : nextPlannedWork().plannedDate().toString();
+            case NEXT_PLANNED_WORK_NAME -> nextPlannedWork() == null ? null : nextPlannedWork().name();
+            case LAST_MONITORING_DATE -> latestMonitoringRecord() == null ? null : latestMonitoringRecord().inspectionDate().toString();
+            case LAST_HEALTH_STATUS -> latestMonitoringRecord() == null ? null : latestMonitoringRecord().healthStatus();
+            case LAST_MONITORING_NOTES -> latestMonitoringRecord() == null ? null : latestMonitoringRecord().notes();
         };
     }
 }

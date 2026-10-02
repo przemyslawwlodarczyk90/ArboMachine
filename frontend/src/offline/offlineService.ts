@@ -99,11 +99,11 @@ export const offlineService = {
   async mutate<T>(draft: Omit<QueuedChangeDraft, 'ownerEmail'>): Promise<T> {
     const change: PendingChange = { ...draft, ownerEmail: currentUserEmail ?? '', treeId: draft.treeId ?? 0, createdAt: '' };
     const sendOnline = () => {
-      const request = toPendingChangeRequest(change, change.treeId, change.workId);
+      const request = toPendingChangeRequest(change, change.treeId, change.workId, change.monitoringRecordId);
       return sendApiRequest<T>(request.path, { httpMethod: request.httpMethod, requestBody: request.body, sendAccessToken: true });
     };
     if (!currentUserEmail) return sendOnline();
-    const usesLocalId = (draft.treeId ?? 0) < 0 || (draft.workId ?? 0) < 0;
+    const usesLocalId = (draft.treeId ?? 0) < 0 || (draft.workId ?? 0) < 0 || (draft.monitoringRecordId ?? 0) < 0;
     if (state.isOnline && browserOnline() && !usesLocalId && state.pendingChangeCount === 0) {
       try {
         return await sendOnline();

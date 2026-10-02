@@ -38,7 +38,8 @@ class UserAccountHandlersTest {
     private final UpdateCurrentUserProfileHandler updateCurrentUserProfileHandler = new UpdateCurrentUserProfileHandler(
             findUserAccountByEmailHandler, updateUserProfileHandler, getCurrentUserAccountHandler);
     private final DeleteUserAccountByIdHandler deleteUserAccountByIdHandler = new DeleteUserAccountByIdHandler(
-            userAccountRepository, emailConfirmationTokenRepository, passwordResetTokenRepository, List.of(userAccountDeletionGuard));
+            userAccountRepository, emailConfirmationTokenRepository, passwordResetTokenRepository, List.of(userAccountDeletionGuard),
+            List.of());
     private final DeleteCurrentUserAccountHandler deleteCurrentUserAccountHandler =
             new DeleteCurrentUserAccountHandler(findUserAccountByEmailHandler, deleteUserAccountByIdHandler);
 

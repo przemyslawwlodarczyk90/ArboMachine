@@ -18,6 +18,7 @@ import { ProjectSummaryPage } from './pages/projects/summary/ProjectSummaryPage'
 import { ProjectTreeMapSection } from './pages/trees/map/ProjectTreeMapSection';
 import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
 import { ProjectManagementPage } from './pages/projects/management/ProjectManagementPage';
+import { ProjectIntegrationsPage } from './pages/projects/integrations/ProjectIntegrationsPage';
 import { TreePage } from './pages/trees/TreePage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -62,6 +63,8 @@ export default function App() {
                 {/* Dokument projektu (PDF) i materialy do dokumentacji (zdjecia projektu w wersji z adnotacja). */}
                 <Route path="documentation" element={<ProjectDocumentationPage />} />
                 <Route path="import-export" element={<ProjectDataExchangePage />} />
+                {/* Etap 30: kalendarz prac (ICS) i powiadomienia. */}
+                <Route path="integrations" element={<ProjectIntegrationsPage />} />
               </Route>
             </Route>
           </Route>

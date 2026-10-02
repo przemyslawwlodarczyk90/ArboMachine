@@ -42,7 +42,14 @@ public enum TreeExchangeField {
     VALUATION_JUSTIFICATION("valuationJustification", "val_justif", "Uzasadnienie waloryzacji", ValueType.TEXT, false),
     // Gospodarka drzewostanem (etap 28) - podsumowanie prac drzewa; szczegoly prac: arkusz "Prace" / CSV prac / works w GeoJSON.
     OPEN_WORK_COUNT("openWorkCount", "works_open", "Prace do wykonania (liczba)", ValueType.INTEGER, false),
-    NEXT_PLANNED_WORK_DATE("nextPlannedWorkDate", "work_next", "Najbliższy termin pracy", ValueType.TEXT, false);
+    NEXT_PLANNED_WORK_DATE("nextPlannedWorkDate", "work_next", "Najbliższy termin pracy", ValueType.TEXT, false),
+    // Etap 30: nazwa pracy do wykonania z najblizszym terminem (pierwsza dodana przy rownych terminach).
+    NEXT_PLANNED_WORK_NAME("nextPlannedWorkName", "work_nextn", "Najbliższa praca", ValueType.TEXT, false),
+    // Monitoring stanu (etap 29) - ostatnia kontrola; ocena jako kod GOOD / FAIR / POOR (NIE skala branzowa).
+    // Pelna historia kontroli: arkusz XLSX "Monitoring". Uwagi tylko w CSV/XLSX (dlugi tekst - nie do GIS).
+    LAST_MONITORING_DATE("lastMonitoringDate", "mon_date", "Data ostatniej kontroli", ValueType.TEXT, false),
+    LAST_HEALTH_STATUS("lastHealthStatus", "mon_status", "Ocena stanu (ostatnia kontrola)", ValueType.TEXT, false),
+    LAST_MONITORING_NOTES("lastMonitoringNotes", "mon_notes", "Uwagi z ostatniej kontroli", ValueType.TEXT, false);
 
     /** Wersja schematu wymiany - zapisywana w eksportach (GeoJSON, XLSX, GeoPackage). */
     public static final String SCHEMA_VERSION = "1";
@@ -52,7 +59,8 @@ public enum TreeExchangeField {
             SPECIES_POLISH, SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES,
             HAZARD_NOTES, LATITUDE, LONGITUDE, LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, WORK_NAMES,
             VALUATION_CATEGORY, VALUATION_AGE_VALUE, VALUATION_NATURAL_VALUE, VALUATION_ECOLOGICAL_VALUE,
-            VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION, OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE);
+            VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION, OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE,
+            NEXT_PLANNED_WORK_NAME, LAST_MONITORING_DATE, LAST_HEALTH_STATUS, LAST_MONITORING_NOTES);
 
     /**
      * Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). Z waloryzacji tylko kategoria -
@@ -61,7 +69,7 @@ public enum TreeExchangeField {
     public static final List<TreeExchangeField> GIS_ATTRIBUTES = List.of(TREE_ID, INVENTORY_NUMBER, SPECIES_POLISH,
             SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES, HAZARD_NOTES,
             LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES, VALUATION_CATEGORY,
-            OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE);
+            OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE, NEXT_PLANNED_WORK_NAME, LAST_MONITORING_DATE, LAST_HEALTH_STATUS);
 
     public enum ValueType { TEXT, INTEGER, DECIMAL }
 

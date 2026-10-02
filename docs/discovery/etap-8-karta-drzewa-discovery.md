@@ -98,7 +98,7 @@ Do tego czasu bez refaktoru.
 ### 4.2 Numer drzewa (8.6)
 
 1. Czy numer jest nadawany ręcznie?
-2. Czy ArboMap nadaje go automatycznie?
+2. Czy obecna aplikacja terenowa arborysty nadaje go automatycznie?
 3. Czy numeracja startuje od 1?
 4. Czy jest osobna dla projektu?
 5. Czy dopuszczalne są numery typu A1, A2?

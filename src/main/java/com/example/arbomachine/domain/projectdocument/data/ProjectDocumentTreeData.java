@@ -3,7 +3,7 @@ package com.example.arbomachine.domain.projectdocument.data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Drzewo w dokumencie: dane z karty drzewa (wartosci null = nie podano), lokalizacja, waloryzacja (null = brak), prace i zdjecia. */
+/** Drzewo w dokumencie: dane z karty drzewa (wartosci null = nie podano), lokalizacja, waloryzacja (null = brak), prace, zdjecia i kontrole stanu. */
 public record ProjectDocumentTreeData(
         long treeId,
         String inventoryNumber,
@@ -18,5 +18,12 @@ public record ProjectDocumentTreeData(
         ProjectDocumentLocationData location,
         ProjectDocumentValuationData valuation,
         List<ProjectDocumentWorkData> works,
-        List<ProjectDocumentPhotoData> photos
-) {}
+        List<ProjectDocumentPhotoData> photos,
+        /** etap 29: kontrole stanu, najnowsza pierwsza (pusta lista = brak monitoringu) */
+        List<ProjectDocumentMonitoringData> monitoringRecords
+) {
+
+    public ProjectDocumentMonitoringData latestMonitoringRecord() {
+        return monitoringRecords.isEmpty() ? null : monitoringRecords.getFirst();
+    }
+}

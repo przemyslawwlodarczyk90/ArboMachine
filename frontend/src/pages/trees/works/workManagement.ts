@@ -43,15 +43,32 @@ export interface WorkFilter {
   status: 'ALL' | 'OPEN' | TreeWorkStatus;
   priority: 'ALL' | 'NONE' | TreeWorkPriority;
   treeId: 'ALL' | number;
+  /** etap 30: tylko prace do wykonania z terminem w najblizszych UPCOMING_DAYS dniach (od dzis) */
+  onlyUpcoming: boolean;
 }
 
-export const DEFAULT_WORK_FILTER: WorkFilter = { status: 'OPEN', priority: 'ALL', treeId: 'ALL' };
+export const UPCOMING_DAYS = 7;
 
-export function filterWorks<T extends Pick<TreeWork, 'treeId' | 'status' | 'priority'>>(works: T[], filter: WorkFilter): T[] {
+export const DEFAULT_WORK_FILTER: WorkFilter = { status: 'OPEN', priority: 'ALL', treeId: 'ALL', onlyUpcoming: false };
+
+/** 'YYYY-MM-DD' + liczba dni (kalendarzowo, bez stref czasowych). */
+export const addDaysToIsoDate = (isoDate: string, days: number) => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return todayIsoDate(new Date(year, month - 1, day + days));
+};
+
+/** Praca do wykonania z terminem od dzis do dzis + UPCOMING_DAYS (wlacznie). */
+export const isWorkUpcoming = (work: Pick<TreeWork, 'status' | 'plannedDate'>, today: string) =>
+  isOpenWorkStatus(work.status) && !!work.plannedDate && work.plannedDate >= today
+  && work.plannedDate <= addDaysToIsoDate(today, UPCOMING_DAYS);
+
+export function filterWorks<T extends Pick<TreeWork, 'treeId' | 'status' | 'priority' | 'plannedDate'>>(works: T[], filter: WorkFilter,
+                                                                                                     today: string = todayIsoDate()): T[] {
   return works.filter((work) =>
     (filter.status === 'ALL' || (filter.status === 'OPEN' ? isOpenWorkStatus(work.status) : (work.status ?? 'RECOMMENDED') === filter.status))
     && (filter.priority === 'ALL' || (filter.priority === 'NONE' ? !work.priority : work.priority === filter.priority))
-    && (filter.treeId === 'ALL' || work.treeId === filter.treeId));
+    && (filter.treeId === 'ALL' || work.treeId === filter.treeId)
+    && (!filter.onlyUpcoming || isWorkUpcoming(work, today)));
 }
 
 const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 };

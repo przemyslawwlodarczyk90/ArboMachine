@@ -4,27 +4,19 @@ import { Alert } from '../../../components/Alert';
 import type { ProjectSummary } from '../summary/projectSummaryDataTypes';
 import { projectSummaryApi } from '../summary/projectSummaryApi';
 import { dataExchangeApi, projectExportFileName } from './dataExchangeApi';
+import { saveBlobAsFile } from './saveBlobAsFile';
 import type { ProjectExportFile } from './dataExchangeDataTypes';
 
 const TABULAR_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'csv', label: 'Pobierz CSV' },
   { format: 'xlsx', label: 'Pobierz XLSX' },
   { format: 'works-csv', label: 'Pobierz prace (CSV)' },
+  { format: 'calendar-ics', label: 'Pobierz kalendarz prac (ICS)' },
 ];
 const GIS_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'geojson', label: 'Pobierz GeoJSON' },
   { format: 'gpkg', label: 'Pobierz GeoPackage' },
 ];
-
-/** Plik z bloba - pobranie przez tymczasowy link (token JWT nie trafia do adresu URL). */
-function saveBlobAsFile(blob: Blob, fileName: string) {
-  const objectUrl = URL.createObjectURL(blob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = objectUrl;
-  downloadLink.download = fileName;
-  downloadLink.click();
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
-}
 
 /**
  * Eksport danych drzew: CSV i XLSX (tabela, wszystkie drzewa) oraz QGIS - GeoJSON i GeoPackage (tylko drzewa
@@ -68,7 +60,7 @@ export function TreesExportSection({ projectId }: { projectId: number }) {
       <h3 id="trees-export-heading">Eksport danych</h3>
       <p className="muted">
         Tabela wszystkich drzew projektu do otwarcia w Excelu albo LibreOffice. CSV: separator „;”, kodowanie UTF-8,
-        przecinek dziesiętny. XLSX: arkusze „Drzewa”, „Prace” i „Projekt”. „Pobierz prace (CSV)” - jeden wiersz na
+        przecinek dziesiętny. XLSX: arkusze „Drzewa”, „Prace”, „Monitoring” i „Projekt”. „Pobierz prace (CSV)” - jeden wiersz na
         zalecenie lub pracę (status, priorytet, termin, data wykonania).
       </p>
       <div className="form-actions data-exchange-actions">{TABULAR_EXPORTS.map(exportButton)}</div>

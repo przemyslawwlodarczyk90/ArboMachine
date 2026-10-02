@@ -93,6 +93,8 @@
   <tr><td>Zalecenia i prace</td><td class="num" th:text="${document.workCount()}">0</td></tr>
   <tr><td>Prace do wykonania (zalecone lub zaplanowane)</td><td class="num" th:text="${document.openWorkCount()}">0</td></tr>
   <tr><td>Prace wykonane</td><td class="num" th:text="${document.completedWorkCount()}">0</td></tr>
+  <tr><td>Drzewa z kontrolą stanu (monitoring)</td><td class="num" th:text="${document.monitoredTreeCount()}">0</td></tr>
+  <tr><td>Drzewa w złym stanie (wg ostatniej kontroli)</td><td class="num" th:text="${document.poorHealthTreeCount()}">0</td></tr>
 </table>
 
 <!-- 4. Mapa (V1: bez obrazu mapy) -->
@@ -112,6 +114,7 @@
     <th class="num">Wysokość [m]</th>
     <th class="num">Średnica korony [m]</th>
     <th>Waloryzacja</th>
+    <th>Ostatnia kontrola</th>
   </tr>
   </thead>
   <tbody>
@@ -123,6 +126,8 @@
     <td class="num" th:text="${format.number(tree.heightM())}">—</td>
     <td class="num" th:text="${format.number(tree.crownDiameterM())}">—</td>
     <td th:text="${tree.valuation() == null ? '—' : format.valuationCategory(tree.valuation().overallCategory())}">—</td>
+    <td th:text="${tree.latestMonitoringRecord() == null ? '—' : format.localDate(tree.latestMonitoringRecord().inspectionDate())
+          + ' – ' + format.healthStatus(tree.latestMonitoringRecord().healthStatus())}">—</td>
   </tr>
   </tbody>
 </table>
@@ -202,6 +207,14 @@
       <tr th:if="${format.hasText(tree.valuation().justification())}"><th>Uzasadnienie</th><td class="multiline" th:text="${tree.valuation().justification()}">-</td></tr>
       <tr th:if="${format.hasText(tree.valuation().notes())}"><th>Uwagi</th><td class="multiline" th:text="${tree.valuation().notes()}">-</td></tr>
     </table>
+
+    <h4>Monitoring stanu</h4>
+    <p th:if="${tree.monitoringRecords().isEmpty()}" class="muted">Brak przeprowadzonego monitoringu.</p>
+    <div class="work" th:each="record : ${tree.monitoringRecords()}">
+      <span class="work-name" th:text="${format.localDate(record.inspectionDate())}">01.10.2026</span>
+      <span class="small" th:text="${' — ocena stanu: ' + format.healthStatus(record.healthStatus())}"> — ocena stanu: Dobry</span>
+      <div th:if="${format.hasText(record.notes())}" class="multiline" th:text="${record.notes()}">Uwagi z kontroli</div>
+    </div>
 
     <h4>Zalecenia i prace</h4>
     <p th:if="${tree.works().isEmpty()}" class="muted">Brak zapisanych zaleceń.</p>

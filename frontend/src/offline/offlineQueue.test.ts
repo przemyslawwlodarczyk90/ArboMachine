@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createMemoryOfflineStore } from './memoryOfflineStore.ts';
 import {
   describePendingChange, discardChange, isLocalOnlyPath, projectValuationsPath, projectWorksPath, queueChange, syncPendingChanges,
-  treePath, treesListPath, treeValuationPath, treeWorksPath,
+  projectLatestMonitoringPath, treeMonitoringPath, treePath, treesListPath, treeValuationPath, treeWorksPath,
 } from './offlineQueue.ts';
 import type { PendingChangeRequest } from './offlineTypes.ts';
 
@@ -17,6 +17,7 @@ function fakeServer(options: { failAt?: number; failure?: { httpStatus: number; 
   const requests: PendingChangeRequest[] = [];
   let nextTreeId = 500;
   let nextWorkId = 900;
+  let nextMonitoringRecordId = 700;
   const send = async (request: PendingChangeRequest) => {
     const index = requests.length;
     requests.push(request);
@@ -29,6 +30,8 @@ function fakeServer(options: { failAt?: number; failure?: { httpStatus: number; 
     const treeIdInPath = Number(request.path.match(/\/trees\/(\d+)/)?.[1]);
     if (request.httpMethod === 'POST' && request.path.endsWith('/trees')) return { id: nextTreeId++, projectId: PROJECT, ...body, location: null };
     if (request.httpMethod === 'POST' && request.path.endsWith('/works')) return { id: nextWorkId++, treeId: treeIdInPath, ...body };
+    if (request.httpMethod === 'POST' && request.path.endsWith('/monitoring')) return { id: nextMonitoringRecordId++, treeId: treeIdInPath, ...body };
+    if (request.path.includes('/monitoring/')) return { id: Number(request.path.split('/').pop()), treeId: treeIdInPath, ...body };
     if (request.path.endsWith('/location')) return { id: treeIdInPath, projectId: PROJECT, inventoryNumber: 'X', location: request.httpMethod === 'PUT' ? body : null };
     if (request.path.includes('/works/')) return { id: Number(request.path.split('/').pop()), treeId: treeIdInPath, ...body };
     return { id: treeIdInPath, projectId: PROJECT, ...body };
@@ -194,4 +197,51 @@ test('praca offline z etapu 28: status, priorytet i terminy w kopiach; usuniecie
   ]);
   assert.deepEqual((await store.readCachedResponse(treeWorksPath(PROJECT, TREE)) as { id: number }[]).map((work) => work.id), [900],
     'po synchronizacji usunieta praca nie wraca do kopii');
+});
+
+test('kontrola stanu offline (etap 29): od razu w historii i ostatniej kontroli projektu; synchronizacja POST/PUT/DELETE', async () => {
+  const store = createMemoryOfflineStore();
+  const TREE = 41;
+  await store.writeCachedResponse(treeMonitoringPath(PROJECT, TREE), [{ id: 300, treeId: TREE, inspectionDate: '2026-05-01', healthStatus: 'GOOD' }]);
+  await store.writeCachedResponse(projectLatestMonitoringPath(PROJECT), [{ id: 300, treeId: TREE, inspectionDate: '2026-05-01', healthStatus: 'GOOD' }]);
+
+  const created = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE_MONITORING_RECORD', treeId: TREE,
+    body: { inspectionDate: '2026-10-02', healthStatus: 'POOR', notes: 'Pęknięcie' } }) as Record<string, unknown> & { id: number };
+  assert.ok(created.id < 0);
+  assert.equal(created.offlinePending, true);
+  const history = await store.readCachedResponse(treeMonitoringPath(PROJECT, TREE)) as { id: number; inspectionDate: string }[];
+  assert.deepEqual(history.map((record) => record.inspectionDate), ['2026-10-02', '2026-05-01'], 'najnowsza pierwsza');
+  assert.equal((await store.readCachedResponse(projectLatestMonitoringPath(PROJECT)) as { healthStatus: string }[])[0].healthStatus, 'POOR');
+
+  // edycja wpisu utworzonego offline (tymczasowe id) i usuniecie wpisu z serwera
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE_MONITORING_RECORD', treeId: TREE,
+    monitoringRecordId: created.id, body: { inspectionDate: '2026-10-02', healthStatus: 'FAIR' } });
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'DELETE_TREE_MONITORING_RECORD', treeId: TREE, monitoringRecordId: 300 });
+  const afterDelete = await store.readCachedResponse(treeMonitoringPath(PROJECT, TREE)) as { id: number; healthStatus: string; notes: unknown }[];
+  assert.deepEqual(afterDelete.map((record) => record.id), [created.id]);
+  assert.equal(afterDelete[0].healthStatus, 'FAIR');
+  assert.equal(afterDelete[0].notes, null, 'PUT = komplet pol, pominiete uwagi = brak');
+  assert.equal(describePendingChange((await store.listChanges())[0]), 'Nowa kontrola stanu (2026-10-02)');
+  assert.ok(isLocalOnlyPath(`${treeMonitoringPath(PROJECT, TREE)}/${created.id}`));
+
+  const server = fakeServer();
+  assert.deepEqual(await syncPendingChanges(store, OWNER, server.send), { status: 'completed', syncedCount: 3 });
+  assert.deepEqual(server.requests.map((request) => `${request.httpMethod} ${request.path}`), [
+    `POST /api/projects/${PROJECT}/trees/${TREE}/monitoring`,
+    `PUT /api/projects/${PROJECT}/trees/${TREE}/monitoring/700`,
+    `DELETE /api/projects/${PROJECT}/trees/${TREE}/monitoring/300`,
+  ]);
+  assert.deepEqual((await store.readCachedResponse(treeMonitoringPath(PROJECT, TREE)) as { id: number }[]).map((record) => record.id), [700],
+    'po synchronizacji wpis ma id z serwera');
+});
+
+test('pominiecie kontroli utworzonej offline pomija tez jej edycje', async () => {
+  const store = createMemoryOfflineStore();
+  const created = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE_MONITORING_RECORD', treeId: 41,
+    body: { inspectionDate: '2026-10-02' } }) as { id: number };
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE_MONITORING_RECORD', treeId: 41,
+    monitoringRecordId: created.id, body: { inspectionDate: '2026-10-03' } });
+  const [first] = await store.listChanges();
+  assert.equal(await discardChange(store, first.id!), 2);
+  assert.equal((await store.listChanges()).length, 0);
 });

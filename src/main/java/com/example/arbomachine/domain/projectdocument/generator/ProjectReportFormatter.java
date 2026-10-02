@@ -117,6 +117,17 @@ public final class ProjectReportFormatter {
         };
     }
 
+    /** Ocena stanu z kontroli po polsku (etap 29; nie skala branzowa); brak = "Nie określono". */
+    public String healthStatus(String healthStatusCode) {
+        if (healthStatusCode == null) return "Nie określono";
+        return switch (healthStatusCode) {
+            case "GOOD" -> "Dobry";
+            case "FAIR" -> "Umiarkowany";
+            case "POOR" -> "Zły";
+            default -> MISSING_VALUE;
+        };
+    }
+
     /** Data kalendarzowa "dd.MM.yyyy"; brak = "—". */
     public String localDate(java.time.LocalDate date) {
         return date == null ? MISSING_VALUE : date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));

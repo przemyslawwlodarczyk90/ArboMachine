@@ -1,9 +1,13 @@
 package com.example.arbomachine.infrastructure.repository;
 
 import com.example.arbomachine.domain.treework.entity.TreeWork;
+import com.example.arbomachine.domain.treework.entity.TreeWorkStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,4 +32,14 @@ public interface TreeWorkRepository extends JpaRepository<TreeWork, Long> {
 
     /** Liczba prac wszystkich drzew projektu - COUNT w bazie. */
     long countByTreeProjectId(Long projectId);
+
+    /**
+     * Prace o danym statusie i terminie we WSZYSTKICH projektach, z drzewem, projektem i wlascicielem (jedno
+     * zapytanie) - tylko dla zadan systemowych (przypomnienia o pracach, etap 30), nigdy dla odpowiedzi API.
+     */
+    @Query("select work from TreeWork work join fetch work.tree tree join fetch tree.project project "
+            + "join fetch project.owner owner where work.status = :status and work.plannedDate = :plannedDate "
+            + "order by owner.id, project.id, tree.id, work.id")
+    List<TreeWork> findAllWithOwnerByStatusAndPlannedDate(@Param("status") TreeWorkStatus status,
+                                                          @Param("plannedDate") LocalDate plannedDate);
 }

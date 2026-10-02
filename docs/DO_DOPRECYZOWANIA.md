@@ -174,13 +174,13 @@ Czy kiedykolwiek potrzebna będzie wielojęzyczność (np. dla wykonawców spoza
 4. Podpisy/opisy zdjęć — czy potrzebne, kto je pisze, czy trafiają do dokumentu?
 5. EXIF (data, orientacja, GPS z fotografii) — czy odczytywać i zapisywać?
 6. Zewnętrzny aparat — jak zdjęcia trafiają z aparatu do aplikacji?
-7. Automatyczne przypisanie zdjęcia do Tree (jak w ArboMap) — na jakiej podstawie?
+7. Automatyczne przypisanie zdjęcia do Tree (jak w obecnej aplikacji terenowej arborysty) — na jakiej podstawie?
 8. Offline — czy zdjęcia muszą być robione i kolejkowane bez internetu?
 9. Storage produkcyjny — dysk serwera, S3/MinIO, kopie zapasowe, retencja?
 10. Sposób użycia zdjęć w dokumentacji (rozmiar, kadrowanie, miniatury, adnotacje).
 
 ### Dlaczego wymaga doprecyzowania
-Brak realnego workflow fotograficznego arborysty (aparat vs tablet, ArboMap, ZWCAD, dokument końcowy).
+Brak realnego workflow fotograficznego arborysty (aparat vs tablet, aplikacja terenowa, ZWCAD, dokument końcowy).
 
 ### Co przyjęto tymczasowo w V1
 - Encja `TreePhoto` = same metadane (nazwa oryginalna, typ, rozmiar, `createdAt`), bez podpisu, kategorii, zdjęcia
@@ -311,7 +311,7 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 4. Działanie dyktowania offline.
 5. Kompatybilność docelowych tabletów i przeglądarek (Safari/iPadOS, przeglądarki Android).
 6. Czy potrzebny jest fallback w postaci chmurowego speech-to-text.
-7. Czy potrzebne są nagrania audio jako załączniki (ArboMap pracuje z nagraniami).
+7. Czy potrzebne są nagrania audio jako załączniki (obecna aplikacja terenowa arborysty pracuje z nagraniami).
 8. Czy dyktowanie w opisie prac (TreeWork) jest potrzebne (V1: jest).
 9. Interpunkcja i komendy głosowe („kropka”, „nowa linia”).
 
@@ -429,7 +429,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 ### Założenia przyjęte bez potwierdzenia (NIEWIADOME — do sprawdzenia z arborystą)
 | Założenie V1 | Dlaczego niepewne |
 |---|---|
-| Katalog 6 symboli: Zielone koło, Niebieski kwadrat, Pomarańczowy trójkąt, Czerwony krzyż, Fioletowy romb, Czarny iks | Wymyślony zestaw techniczny — prawdziwa biblioteka symboli arborysty (ArboMap/ZWCAD) nieznana |
+| Katalog 6 symboli: Zielone koło, Niebieski kwadrat, Pomarańczowy trójkąt, Czerwony krzyż, Fioletowy romb, Czarny iks | Wymyślony zestaw techniczny — prawdziwa biblioteka symboli arborysty (aplikacja terenowa / ZWCAD) nieznana |
 | Kolory: `#7CB342`, `#1565C0`, `#EF6C00`, `#C62828`, `#6A1B9A`, `#212121`, biała obwódka | Dobrane „na oko”; nie sprawdzone na ortofotomapie, w druku ani dla osób z zaburzeniami widzenia barw |
 | Zielone koło rozjaśnione (`#7CB342`), bo pierwotny odcień był nie do odróżnienia od neutralnego markera (`#2f6b3c`) | Neutralny marker też jest zielony — czy drzewo bez symbolu ma w ogóle być zielone? |
 | Rozmiary: symbol drzewa 8 px, znaczek pracy 6 px | Na gęstym podkładzie OSM znaczki są małe i konkurują z ikonami POI |
@@ -445,7 +445,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Mapa i symbole mają stałe kolory także w ciemnym motywie | Nie sprawdzano czytelności w trybie ciemnym |
 
 ### Nadal OPEN
-- Rzeczywiste znaczenie symboli używanych przez arborystę i biblioteka symboli z ArboMap/ZWCAD.
+- Rzeczywiste znaczenie symboli używanych przez arborystę i biblioteka symboli z aplikacji terenowej / ZWCAD.
 - Powiązanie rodzaju pracy (przyszły WorkType) → domyślny symbol, z możliwością nadpisania.
 - Czy drzewo potrzebuje własnego symbolu, czy wystarczą symbole prac.
 - Priorytet symboli, maksymalna liczba symboli przy drzewie, symbolika wielu zaleceń.
@@ -578,11 +578,11 @@ Statusy w tej sekcji: **V1 IMPLEMENTED** — działa w V1; **OPEN DOMAIN QUESTIO
 | GeoJSON | V1 IMPLEMENTED: eksport (FeatureCollection, Point, WGS 84, schemat V1) i import (Point, CRS84/EPSG:4326). |
 | GeoPackage | V1 IMPLEMENTED: eksport `.gpkg` (warstwa `trees`, POINT, EPSG:4326; biblioteka NGA). DEFERRED: import GeoPackage. OPEN: czy arborysta potrzebuje GPKG. |
 | SHP | DEFERRED / OPEN: czy legacy SHP jest wymagany (ograniczenia DBF: nazwy pól do 10 znaków, kodowanie, typy). Nazwy GIS są już krótkie. |
-| DXF / DWG | DEFERRED / OPEN: CAD (ZWCAD / ArboMap) — format, warstwy, bloki symboli. |
+| DXF / DWG | DEFERRED / OPEN: CAD (ZWCAD / aplikacja terenowa) — format, warstwy, bloki symboli. |
 | QGZ (projekt QGIS) | DEFERRED: generowanie projektu QGIS z warstwami, stylem, podkładem, etykietami, układem wydruku. |
 | QML (styl QGIS) | DEFERRED: styl po `map_symbol` / pracach. Symbole eksportowane jako dane (kody), nie jako style. |
 | Etykiety, układ wydruku, podkłady w QGIS | OPEN DOMAIN QUESTION: jak wygląda mapa końcowa. |
-| Nazwy kolumn | V1 IMPLEMENTED: jedno źródło `TreeExchangeField` — nazwa techniczna (GeoJSON), krótka GIS (GPKG), polska etykieta (CSV/XLSX). Import akceptuje każdą z nich. OPEN: nazwy kolumn w plikach arborysty / ArboMap. |
+| Nazwy kolumn | V1 IMPLEMENTED: jedno źródło `TreeExchangeField` — nazwa techniczna (GeoJSON), krótka GIS (GPKG), polska etykieta (CSV/XLSX). Import akceptuje każdą z nich. OPEN: nazwy kolumn w plikach arborysty / aplikacji terenowej. |
 | Obowiązkowe pola | V1 IMPLEMENTED: tylko numer inwentaryzacyjny. OPEN: czy import ma wymagać gatunku / lokalizacji. |
 | Duplikaty numerów | V1 IMPLEMENTED: każdy wiersz = nowe drzewo; duplikaty (w pliku i z projektem) tylko jako ostrzeżenia. OPEN DOMAIN QUESTION: odrzucić / utworzyć duplikat / zaktualizować / zapytać / scalić? |
 | Aktualizacja istniejących drzew | NOT SUPPORTED IN V1. OPEN: strategia identyfikacji (numer? `tree_id`? z kontrolą własności i konfliktów). `treeId` z pliku jest ignorowany. |

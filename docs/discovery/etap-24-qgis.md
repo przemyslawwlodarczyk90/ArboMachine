@@ -8,7 +8,7 @@ reprojekcji w UI, stylowania i układów wydruku) — integrujemy się z QGIS, n
 
 # Co wiemy o obecnym workflow arborysty
 
-Z dotychczasowych materiałów: arborysta pracuje na ArboMap (symbole, rysunki, DXF/PDF, eksport GIS), ZWCAD
+Z dotychczasowych materiałów: arborysta pracuje w aplikacji terenowej (symbole, rysunki, DXF/PDF, eksport GIS), ZWCAD
 i QGIS; dane tabelaryczne trzyma w XLS. Nie wiemy, co dokładnie trafia do QGIS, w jakim formacie i układzie,
 co jest tam poprawiane i czy dane wracają (pytania niżej).
 
@@ -93,7 +93,7 @@ tylko EPSG:4326; brak SHP / DXF / formatów urzędowych; brak importu GeoPackage
 
 # Pytania do arborysty
 
-1. Co dokładnie trafia obecnie z ArboMap do QGIS?
+1. Co dokładnie trafia obecnie z aplikacji terenowej do QGIS?
 2. W jakim formacie?
 3. Co jest następnie ręcznie poprawiane w QGIS?
 4. Jakie warstwy powstają?

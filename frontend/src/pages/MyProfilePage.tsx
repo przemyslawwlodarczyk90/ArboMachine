@@ -7,6 +7,8 @@ import { useAuthentication } from '../auth/AuthenticationContext';
 import { USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
 import { Alert } from '../components/Alert';
 import { UserProfileForm } from '../components/UserProfileForm';
+import { NotificationList } from '../notifications/NotificationList';
+import { PushNotificationsPanel } from '../notifications/PushNotificationsPanel';
 
 /** "My profile" - ta sama strona w kazdym panelu; dziala wylacznie na WLASNYM koncie zalogowanego uzytkownika. */
 export function MyProfilePage() {
@@ -50,6 +52,13 @@ export function MyProfilePage() {
       <section className="card">
         <h2>Dane osobowe</h2>
         <UserProfileForm editedAccount={currentUserAccount} saveProfile={saveOwnProfile} />
+      </section>
+
+      <section className="card stack-tight">
+        <h2>Powiadomienia</h2>
+        <PushNotificationsPanel />
+        <h3>Ostatnie powiadomienia</h3>
+        <NotificationList />
       </section>
 
       <section className="card">

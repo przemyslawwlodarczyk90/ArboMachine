@@ -28,9 +28,15 @@ export const dataExchangeApi = {
 };
 
 /** Nazwa pobieranego pliku - jak w Content-Disposition backendu (tylko id projektu). */
-const exportPathOf = (exportFile: ProjectExportFile) => (exportFile === 'works-csv' ? 'works.csv' : `trees.${exportFile}`);
+const exportPathOf = (exportFile: ProjectExportFile) => {
+  if (exportFile === 'works-csv') return 'works.csv';
+  if (exportFile === 'calendar-ics') return 'calendar.ics';
+  return `trees.${exportFile}`;
+};
 
 /** Nazwy jak w Content-Disposition backendu (ExportedFile). */
-export const projectExportFileName = (projectId: number, exportFile: ProjectExportFile) => (exportFile === 'works-csv'
-  ? `arbomachine-projekt-${projectId}-prace.csv`
-  : `arbomachine-projekt-${projectId}-drzewa.${exportFile}`);
+export const projectExportFileName = (projectId: number, exportFile: ProjectExportFile) => {
+  if (exportFile === 'works-csv') return `arbomachine-projekt-${projectId}-prace.csv`;
+  if (exportFile === 'calendar-ics') return `arbomachine-projekt-${projectId}-kalendarz-prac.ics`;
+  return `arbomachine-projekt-${projectId}-drzewa.${exportFile}`;
+};

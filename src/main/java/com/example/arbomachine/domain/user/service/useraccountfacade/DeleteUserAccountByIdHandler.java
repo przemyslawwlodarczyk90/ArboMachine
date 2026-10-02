@@ -15,7 +15,8 @@ import java.util.List;
  * Nie sprawdza uprawnien - robia to wywolujace handlery.
  * <p>
  * Przed usunieciem pyta wszystkie {@link UserAccountDeletionGuard} z innych modulow (np. projektow),
- * czy konto nie jest jeszcze wlascicielem ich danych.
+ * czy konto nie jest jeszcze wlascicielem ich danych, a potem prosi {@link UserAccountDataCleaner} o usuniecie
+ * danych pomocniczych (np. powiadomien).
  */
 @Component
 public class DeleteUserAccountByIdHandler {
@@ -23,15 +24,18 @@ public class DeleteUserAccountByIdHandler {
     private final EmailConfirmationTokenRepository emailConfirmationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final List<UserAccountDeletionGuard> userAccountDeletionGuards;
+    private final List<UserAccountDataCleaner> userAccountDataCleaners;
 
     public DeleteUserAccountByIdHandler(UserAccountRepository userAccountRepository,
                                         EmailConfirmationTokenRepository emailConfirmationTokenRepository,
                                         PasswordResetTokenRepository passwordResetTokenRepository,
-                                        List<UserAccountDeletionGuard> userAccountDeletionGuards) {
+                                        List<UserAccountDeletionGuard> userAccountDeletionGuards,
+                                        List<UserAccountDataCleaner> userAccountDataCleaners) {
         this.userAccountRepository = userAccountRepository;
         this.emailConfirmationTokenRepository = emailConfirmationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.userAccountDeletionGuards = userAccountDeletionGuards;
+        this.userAccountDataCleaners = userAccountDataCleaners;
     }
 
     @Transactional
@@ -39,7 +43,8 @@ public class DeleteUserAccountByIdHandler {
         UserAccount userAccount = userAccountRepository.findById(userAccountId)
                 .orElseThrow(() -> new UserAccountNotFoundException("User not found"));
         userAccountDeletionGuards.forEach(deletionGuard -> deletionGuard.ensureUserAccountCanBeDeleted(userAccount));
-        // Tokeny maja klucz obcy do konta, wiec musza zniknac pierwsze.
+        // Dane pomocnicze innych modulow (np. powiadomienia) i tokeny maja klucz obcy do konta - znikaja pierwsze.
+        userAccountDataCleaners.forEach(dataCleaner -> dataCleaner.deleteDataOf(userAccount));
         emailConfirmationTokenRepository.deleteByUserAccount(userAccount);
         passwordResetTokenRepository.deleteByUserAccount(userAccount);
         userAccountRepository.delete(userAccount);
