@@ -59,7 +59,10 @@
   <div class="project-name" th:text="${document.projectName()}">Nazwa projektu</div>
   <table class="info">
     <tr><th>Rodzaj opracowania</th><td>Dokument projektu — wersja MVP</td></tr>
-    <tr><th>Zleceniodawca</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr><th>Zleceniodawca</th>
+      <td th:if="${format.hasText(document.clientName())}" th:text="${document.clientName()}">Gmina</td>
+      <td th:unless="${format.hasText(document.clientName())}" class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr th:if="${document.orderDate() != null}"><th>Data zlecenia</th><td th:text="${format.localDate(document.orderDate())}">01.10.2026</td></tr>
     <tr><th>Autor opracowania</th><td class="placeholder">Dane do uzupełnienia</td></tr>
     <tr><th>Data wygenerowania</th><td th:text="${format.dateTime(document.generatedAt())}">01.10.2026, 12:00</td></tr>
   </table>
@@ -78,7 +81,9 @@
     <td th:if="${format.hasText(document.projectDescription())}" class="multiline" th:text="${document.projectDescription()}">Opis</td>
     <td th:unless="${format.hasText(document.projectDescription())}" class="muted">Nie podano</td>
   </tr>
-  <tr><th>Obiekt / lokalizacja</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+  <tr><th>Obiekt / lokalizacja</th>
+    <td th:if="${format.hasText(document.siteAddress())}" class="multiline" th:text="${document.siteAddress()}">Adres</td>
+    <td th:unless="${format.hasText(document.siteAddress())}" class="placeholder">Dane do uzupełnienia</td></tr>
   <tr><th>Projekt utworzono</th><td th:text="${format.date(document.projectCreatedAt())}">01.10.2026</td></tr>
   <tr><th>Ostatnia zmiana projektu</th><td th:text="${format.date(document.projectUpdatedAt())}">01.10.2026</td></tr>
 </table>
@@ -95,6 +100,7 @@
   <tr><td>Prace wykonane</td><td class="num" th:text="${document.completedWorkCount()}">0</td></tr>
   <tr><td>Drzewa z kontrolą stanu (monitoring)</td><td class="num" th:text="${document.monitoredTreeCount()}">0</td></tr>
   <tr><td>Drzewa w złym stanie (wg ostatniej kontroli)</td><td class="num" th:text="${document.poorHealthTreeCount()}">0</td></tr>
+  <tr><td>Grupy drzew</td><td class="num" th:text="${document.stands().size()}">0</td></tr>
 </table>
 
 <!-- 4. Mapa (V1: bez obrazu mapy) -->
@@ -164,6 +170,24 @@
   </tbody>
 </table>
 <p class="muted small">Status i priorytet to robocze oznaczenia wersji MVP, uzgadniane z arborystami.</p>
+
+<!-- Grupy drzew (etap 29): obszary z przypisanymi drzewami -->
+<th:block th:unless="${document.stands().isEmpty()}">
+  <h2>Grupy drzew</h2>
+  <table class="works-table">
+    <thead>
+    <tr><th>Nazwa</th><th class="num">Powierzchnia (przybliżona)</th><th>Drzewa (numery)</th><th>Uwagi</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="stand : ${document.stands()}">
+      <td th:text="${stand.name()}">Szpaler</td>
+      <td class="num" th:text="${format.squareMeters(stand.areaSquareMeters())}">100 m²</td>
+      <td th:text="${format.treeNumbers(stand.treeInventoryNumbers())}">1, 2</td>
+      <td class="multiline" th:text="${format.text(stand.notes())}">—</td>
+    </tr>
+    </tbody>
+  </table>
+</th:block>
 
 <!-- 7. Karty drzew (dane, lokalizacja, waloryzacja, prace, zdjecia) -->
 <th:block th:unless="${document.trees().isEmpty()}">

@@ -53,6 +53,18 @@ public class DataExchangeController {
         return fileResponse(dataExchangeFacade.exportTreeWorksAsCsvOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
+    @Operation(summary = "Grupy drzew projektu jako GeoJSON (Polygon, WGS 84) - etap 29")
+    @GetMapping("/exports/stands.geojson")
+    public ResponseEntity<byte[]> exportTreeStandsAsGeoJson(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
+        return fileResponse(dataExchangeFacade.exportTreeStandsAsGeoJsonOfCurrentUser(authenticatedUser.getUsername(), projectId));
+    }
+
+    @Operation(summary = "Shapefile ZIP: warstwy trees (Point) i stands (Polygon), WGS 84, UTF-8 - etap 29")
+    @GetMapping("/exports/shapefile.zip")
+    public ResponseEntity<byte[]> exportProjectAsShapefile(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
+        return fileResponse(dataExchangeFacade.exportProjectAsShapefileOfCurrentUser(authenticatedUser.getUsername(), projectId));
+    }
+
     @Operation(summary = "Kalendarz prac projektu (.ics, RFC 5545): prace do wykonania z terminem jako wydarzenia calodniowe (etap 30)")
     @GetMapping("/exports/calendar.ics")
     public ResponseEntity<byte[]> exportTreeWorksAsIcs(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
@@ -77,7 +89,7 @@ public class DataExchangeController {
         return fileResponse(dataExchangeFacade.exportTreesAsGeoPackageOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
-    @Operation(summary = "Sprawdzenie pliku importu drzew (CSV/XLSX/GeoJSON, pole \"file\") - nic nie zapisuje")
+    @Operation(summary = "Sprawdzenie pliku importu drzew (CSV/XLSX/GeoJSON/Shapefile ZIP/GeoPackage/DXF, pole \"file\") - nic nie zapisuje")
     @PostMapping(value = "/imports/trees/validate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TreeImportValidationResponse> validateTreeImport(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                                            @PathVariable Long projectId,
@@ -92,6 +104,24 @@ public class DataExchangeController {
                                                                 @PathVariable Long projectId,
                                                                 @RequestPart("file") MultipartFile file) throws IOException {
         return ResponseEntity.status(HttpStatus.CREATED).body(dataExchangeFacade.importTreesOfCurrentUser(
+                authenticatedUser.getUsername(), projectId, new TreeImportUpload(file.getOriginalFilename(), file.getBytes())));
+    }
+
+    @Operation(summary = "Sprawdzenie pliku obszarow grup drzew (DXF, Shapefile ZIP, GeoJSON, GeoPackage; pole \"file\") - nic nie zapisuje")
+    @PostMapping(value = "/imports/stands/validate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<com.example.arbomachine.domain.dataexchange.dto.TreeStandImportValidationResponse> validateTreeStandImport(
+            @AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId,
+            @RequestPart("file") MultipartFile file) throws IOException {
+        return ResponseEntity.ok(dataExchangeFacade.validateTreeStandImportOfCurrentUser(authenticatedUser.getUsername(), projectId,
+                new TreeImportUpload(file.getOriginalFilename(), file.getBytes())));
+    }
+
+    @Operation(summary = "Import grup drzew - wszystko albo nic; kazdy obszar = nowa grupa, drzewa w obszarze przypisane automatycznie")
+    @PostMapping(value = "/imports/stands", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<com.example.arbomachine.domain.dataexchange.dto.TreeStandImportResultResponse> importTreeStands(
+            @AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId,
+            @RequestPart("file") MultipartFile file) throws IOException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(dataExchangeFacade.importTreeStandsOfCurrentUser(
                 authenticatedUser.getUsername(), projectId, new TreeImportUpload(file.getOriginalFilename(), file.getBytes())));
     }
 

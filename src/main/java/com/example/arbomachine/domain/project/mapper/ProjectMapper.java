@@ -13,6 +13,9 @@ public class ProjectMapper {
                 project.getId(),
                 project.getName(),
                 project.getDescription(),
+                project.getClientName(),
+                project.getSiteAddress(),
+                project.getOrderDate(),
                 project.getCreatedAt(),
                 project.getUpdatedAt()
         );

@@ -5,7 +5,11 @@ import com.example.arbomachine.domain.tree.entity.Tree;
 import com.example.arbomachine.domain.treework.entity.TreeWork;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.domain.treevaluation.entity.TreeValuation;
+import com.example.arbomachine.domain.treestand.entity.TreeStand;
+import com.example.arbomachine.domain.treestand.geometry.StandPolygon;
 import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository;
+import com.example.arbomachine.infrastructure.repository.TreeStandRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.arbomachine.infrastructure.repository.TreeValuationRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import org.springframework.stereotype.Component;
@@ -18,8 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): cztery zapytania - drzewa,
- * prace, waloryzacje i kontrole stanu calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
+ * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): piec zapytan - drzewa,
+ * prace, waloryzacje, kontrole stanu i grupy drzew calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
  */
 @Component
 public class ProjectExportDataAssembler {
@@ -27,14 +31,19 @@ public class ProjectExportDataAssembler {
     private final TreeWorkRepository treeWorkRepository;
     private final TreeValuationRepository treeValuationRepository;
     private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
+    private final TreeStandRepository treeStandRepository;
+    private final ObjectMapper objectMapper;
 
     public ProjectExportDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                       TreeValuationRepository treeValuationRepository,
-                                      TreeMonitoringRecordRepository treeMonitoringRecordRepository) {
+                                      TreeMonitoringRecordRepository treeMonitoringRecordRepository,
+                                      TreeStandRepository treeStandRepository, ObjectMapper objectMapper) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treeValuationRepository = treeValuationRepository;
         this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
+        this.treeStandRepository = treeStandRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -51,12 +60,18 @@ public class ProjectExportDataAssembler {
                         record -> new TreeMonitoringExportData(record.getId(), record.getInspectionDate(),
                                 record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
                         Collectors.toList())));
+        List<TreeStand> stands = treeStandRepository.findAllByProjectIdOrderByNameAscIdAsc(ownedProject.getId());
+        Map<Long, List<String>> standNamesByTreeId = new java.util.HashMap<>();
+        for (TreeStand stand : stands) {
+            stand.getTrees().forEach(tree -> standNamesByTreeId.computeIfAbsent(tree.getId(), id -> new java.util.ArrayList<>()).add(stand.getName()));
+        }
         List<TreeExportData> trees = treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(ownedProject.getId()).stream()
                 .map(tree -> treeDataOf(tree, worksByTreeId.getOrDefault(tree.getId(), List.of()), valuationByTreeId.get(tree.getId()),
-                        monitoringByTreeId.getOrDefault(tree.getId(), List.of())))
+                        monitoringByTreeId.getOrDefault(tree.getId(), List.of()), standNamesByTreeId.getOrDefault(tree.getId(), List.of())))
                 .toList();
         return new ProjectExportData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
-                exportedAt, trees);
+                exportedAt, trees, ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
+                stands.stream().map(this::standDataOf).toList());
     }
 
     private static TreeWorkExportData workDataOf(TreeWork work) {
@@ -72,8 +87,14 @@ public class ProjectExportDataAssembler {
                 valuation.getLandscapeValue(), valuation.getJustification());
     }
 
+    private TreeStandExportData standDataOf(TreeStand stand) {
+        return new TreeStandExportData(stand.getId(), stand.getName(), stand.getNotes(), stand.getSource().name(),
+                stand.getAreaSquareMeters(), StandPolygon.fromGeoJsonText(stand.getGeometryGeoJson(), objectMapper).rings(),
+                stand.getTrees().stream().sorted(java.util.Comparator.comparing(Tree::getId)).map(Tree::getInventoryNumber).toList());
+    }
+
     private static TreeExportData treeDataOf(Tree tree, List<TreeWorkExportData> works, TreeValuation valuation,
-                                             List<TreeMonitoringExportData> monitoringRecords) {
+                                             List<TreeMonitoringExportData> monitoringRecords, List<String> standNames) {
         return new TreeExportData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(), tree.getSpeciesLatin(),
                 tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(), tree.getNotes(),
                 tree.getConditionNotes(), tree.getHazardNotes(),
@@ -82,6 +103,6 @@ public class ProjectExportDataAssembler {
                 tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
                 tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
                 tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
-                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords);
+                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames);
     }
 }

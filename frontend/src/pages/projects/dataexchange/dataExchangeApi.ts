@@ -1,5 +1,7 @@
 import { sendApiRequest, sendApiRequestForBlob } from '../../../api/httpClient';
-import type { ProjectExportFile, TreeImportResult, TreeImportValidation } from './dataExchangeDataTypes';
+import type {
+  ProjectExportFile, TreeImportResult, TreeImportValidation, TreeStandImportResult, TreeStandImportValidation,
+} from './dataExchangeDataTypes';
 
 const projectPath = (projectId: number) => `/api/projects/${projectId}`;
 
@@ -20,6 +22,17 @@ export const dataExchangeApi = {
       httpMethod: 'POST', requestBody: fileFormData(file), sendAccessToken: true,
     }),
 
+  /** Etap 29: "Sprawdz plik" obszarow grup drzew (DXF, Shapefile ZIP, GeoJSON, GeoPackage) - nic nie zapisuje. */
+  validateStandImport: (projectId: number, file: File) =>
+    sendApiRequest<TreeStandImportValidation>(`${projectPath(projectId)}/imports/stands/validate`, {
+      httpMethod: 'POST', requestBody: fileFormData(file), sendAccessToken: true,
+    }),
+
+  importStands: (projectId: number, file: File) =>
+    sendApiRequest<TreeStandImportResult>(`${projectPath(projectId)}/imports/stands`, {
+      httpMethod: 'POST', requestBody: fileFormData(file), sendAccessToken: true,
+    }),
+
   /** Import "wszystko albo nic" - backend sprawdza plik ponownie; bledy -> 400. */
   importTrees: (projectId: number, file: File) =>
     sendApiRequest<TreeImportResult>(`${projectPath(projectId)}/imports/trees`, {
@@ -31,6 +44,8 @@ export const dataExchangeApi = {
 const exportPathOf = (exportFile: ProjectExportFile) => {
   if (exportFile === 'works-csv') return 'works.csv';
   if (exportFile === 'calendar-ics') return 'calendar.ics';
+  if (exportFile === 'shapefile-zip') return 'shapefile.zip';
+  if (exportFile === 'stands-geojson') return 'stands.geojson';
   return `trees.${exportFile}`;
 };
 
@@ -38,5 +53,7 @@ const exportPathOf = (exportFile: ProjectExportFile) => {
 export const projectExportFileName = (projectId: number, exportFile: ProjectExportFile) => {
   if (exportFile === 'works-csv') return `arbomachine-projekt-${projectId}-prace.csv`;
   if (exportFile === 'calendar-ics') return `arbomachine-projekt-${projectId}-kalendarz-prac.ics`;
+  if (exportFile === 'shapefile-zip') return `arbomachine-projekt-${projectId}-shapefile.zip`;
+  if (exportFile === 'stands-geojson') return `arbomachine-projekt-${projectId}-grupy-drzew.geojson`;
   return `arbomachine-projekt-${projectId}-drzewa.${exportFile}`;
 };

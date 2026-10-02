@@ -7,7 +7,7 @@ import type BaseLayer from 'ol/layer/Base';
 import TileLayer from 'ol/layer/Tile';
 import { fromLonLat } from 'ol/proj';
 import OSM from 'ol/source/OSM';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { Circle as CircleStyle, Fill, RegularShape, Stroke, Style } from 'ol/style';
 
 // Wspolna, techniczna konfiguracja map OpenLayers (mapa projektu i mapa lokalizacji drzewa). Tylko to, co obie
 // mapy naprawde robia tak samo - bez "frameworka mapowego". Podklad V1 to OpenStreetMap; WMS/Geoportal/ortofoto
@@ -58,14 +58,17 @@ export function fitViewToCoordinates(map: Map, mapCoordinates: Coordinate[]) {
   });
 }
 
-/** Neutralny marker drzewa (kolko). Kolorowanie wg stanu/prac/ryzyka - dopiero po discovery. */
-export function createTreeMarkerStyle(fillColor: string): Style {
+/** Ksztalt markera drzewa (etap 29): kolko = lisciaste / nieznane, gwiazdka = iglaste. */
+export type TreeMarkerShape = 'circle' | 'star';
+
+/** Marker drzewa w danym kolorze; ksztalt wg grupy gatunku (gwiazdka - iglaste). */
+export function createTreeMarkerStyle(fillColor: string, shape: TreeMarkerShape = 'circle'): Style {
+  const fill = new Fill({ color: fillColor });
+  const stroke = new Stroke({ color: '#ffffff', width: 2 });
   return new Style({
-    image: new CircleStyle({
-      radius: 8,
-      fill: new Fill({ color: fillColor }),
-      stroke: new Stroke({ color: '#ffffff', width: 2 }),
-    }),
+    image: shape === 'star'
+      ? new RegularShape({ points: 5, radius: 11, radius2: 5, angle: 0, fill, stroke })
+      : new CircleStyle({ radius: 8, fill, stroke }),
   });
 }
 

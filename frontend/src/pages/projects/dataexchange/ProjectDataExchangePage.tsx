@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { parsePositiveIdRouteParam } from '../../../routing/parsePositiveIdRouteParam';
 import { TreesExportSection } from './TreesExportSection';
+import { StandsImportSection } from './StandsImportSection';
 import { TreesImportSection } from './TreesImportSection';
 
 /**
@@ -15,6 +16,7 @@ export function ProjectDataExchangePage() {
       <h2>Import i eksport</h2>
       <TreesExportSection projectId={projectId} />
       <TreesImportSection projectId={projectId} />
+      <StandsImportSection projectId={projectId} />
     </div>
   );
 }

@@ -4,20 +4,23 @@ import type { TreeImportFormat, TreeImportIssue } from './dataExchangeDataTypes'
 // testowany przez node --test. Nigdy nie pokazujemy nazw wyjatkow ani komunikatow technicznych.
 
 const FILE_MESSAGES: Record<string, string> = {
-  UNSUPPORTED_FILE_FORMAT: 'Nieobsługiwany format pliku. Wybierz plik CSV, XLSX albo GeoJSON.',
-  FILE_TOO_LARGE: 'Plik jest za duży (maksymalnie 5 MB).',
+  UNSUPPORTED_FILE_FORMAT: 'Nieobsługiwany format pliku. Wybierz plik CSV, XLSX, GeoJSON, Shapefile (ZIP), GeoPackage albo DXF.',
+  FILE_TOO_LARGE: 'Plik jest za duży (maksymalnie 15 MB).',
   EMPTY_FILE: 'Plik jest pusty.',
   UNREADABLE_FILE: 'Nie udało się odczytać pliku. Sprawdź, czy to poprawny plik CSV / XLSX (format .xls nie jest obsługiwany).',
   INVALID_ENCODING: 'Plik CSV nie jest zapisany w kodowaniu UTF-8. Zapisz go ponownie jako „CSV UTF-8”.',
   INVALID_GEOJSON: 'Plik nie jest poprawnym plikiem GeoJSON (oczekiwano FeatureCollection albo Feature).',
   NO_DATA_ROWS: 'Plik nie zawiera żadnych drzew (jest tylko nagłówek).',
-  TOO_MANY_ROWS: 'Plik ma za dużo wierszy (maksymalnie 2000 drzew w jednym imporcie).',
+  TOO_MANY_ROWS: 'Plik ma za dużo obiektów (maksymalnie 2000 drzew albo 500 obszarów w jednym imporcie).',
+  NO_POINT_FEATURES: 'Plik nie zawiera punktów drzew - same obszary zaimportujesz jako grupy drzew (niżej).',
+  NO_SHAPEFILE_IN_ZIP: 'Archiwum ZIP nie zawiera pliku .shp z kompletem .dbf - spakuj wszystkie pliki warstwy (shp, shx, dbf, prj).',
+  NO_POLYGON_FEATURES: 'Plik nie zawiera obszarów (wielokątów). Punkty drzew zaimportujesz w sekcji „Import drzew”.',
 };
 
 /** "Wiersz 17" w CSV/XLSX, "Obiekt 3" w GeoJSON; null dla problemow calego pliku. */
 export function locationOfIssue(issue: TreeImportIssue, format: TreeImportFormat | null): string | null {
   if (issue.rowNumber === null) return null;
-  return format === 'GEOJSON' ? `Obiekt ${issue.rowNumber}` : `Wiersz ${issue.rowNumber}`;
+  return format === 'CSV' || format === 'XLSX' ? `Wiersz ${issue.rowNumber}` : `Obiekt ${issue.rowNumber}`;
 }
 
 const columnPart = (issue: TreeImportIssue) => (issue.column ? `„${issue.column}”` : 'wartość');
@@ -31,7 +34,7 @@ export function describeImportIssue(issue: TreeImportIssue, format: TreeImportFo
     case 'MISSING_REQUIRED_COLUMN':
       return `Brak wymaganej kolumny „${issue.column ?? 'Numer inwentaryzacyjny'}”.`;
     case 'UNSUPPORTED_CRS':
-      return `Nieobsługiwany układ współrzędnych${issue.column ? ` (${issue.column})` : ''}. W wersji V1 obsługiwany jest tylko WGS 84 (EPSG:4326).`;
+      return `Nieobsługiwany układ współrzędnych${issue.column && issue.column !== '?' ? ` (${issue.column})` : ''}. Obsługiwane: WGS 84 (EPSG:4326), PL-2000 (strefy 5–8) i PL-1992.`;
     case 'REQUIRED_VALUE_MISSING':
       return sentence('brak numeru inwentaryzacyjnego.');
     case 'TEXT_TOO_LONG':
@@ -47,7 +50,17 @@ export function describeImportIssue(issue: TreeImportIssue, format: TreeImportFo
     case 'INCOMPLETE_LOCATION':
       return sentence('lokalizacja wymaga obu współrzędnych - szerokości i długości geograficznej.');
     case 'UNSUPPORTED_GEOMETRY':
-      return sentence(`nieobsługiwana geometria${valuePart(issue)} - obsługiwany jest tylko punkt (Point).`);
+      return sentence(`nieobsługiwana geometria${valuePart(issue)} - drzewo musi być punktem (Point).`);
+    case 'INVALID_POLYGON':
+      return sentence('nieprawidłowy obszar - potrzeba co najmniej 3 różnych punktów i dodatniej powierzchni.');
+    case 'COORDINATES_CONVERTED':
+      return `Współrzędne przeliczono z układu ${issue.column ?? ''} do WGS 84.`;
+    case 'NUMBERS_READ_FROM_DRAWING_LABELS':
+      return 'Numery drzew odczytano z opisów na rysunku (dopasowanie odnośników) - po imporcie sprawdź numery. Pewniejszym źródłem jest arkusz XLSX/CSV z tej samej inwentaryzacji.';
+    case 'AREA_ROW_SKIPPED':
+      return sentence(`to obszar (powierzchnia ${issue.value ?? '?'} m²), a nie drzewo - pominięty. Obszary zaimportujesz z rysunku DXF jako grupy drzew.`);
+    case 'MULTI_STEM_CIRCUMFERENCE_IN_NOTES':
+      return sentence(`obwód wielopniowy („${issue.value ?? ''}”) zapisano w notatkach - pole obwodu zostaje puste (aplikacja nie przelicza obwodów wielopniowych).`);
     case 'DUPLICATE_INVENTORY_NUMBER_IN_FILE':
       return sentence(`numer „${issue.value ?? ''}” powtarza się w pliku - zostanie utworzone kolejne drzewo.`);
     case 'INVENTORY_NUMBER_EXISTS_IN_PROJECT':

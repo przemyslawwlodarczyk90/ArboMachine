@@ -16,6 +16,8 @@ const TABULAR_EXPORTS: { format: ProjectExportFile; label: string }[] = [
 const GIS_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'geojson', label: 'Pobierz GeoJSON' },
   { format: 'gpkg', label: 'Pobierz GeoPackage' },
+  { format: 'shapefile-zip', label: 'Pobierz Shapefile (ZIP)' },
+  { format: 'stands-geojson', label: 'Pobierz grupy drzew (GeoJSON)' },
 ];
 
 /**

@@ -41,6 +41,7 @@ import java.util.List;
 public class TreeGeoPackageExporter {
 
     public static final String LAYER_NAME = "trees";
+    public static final String STANDS_LAYER_NAME = "stands";
     public static final String GEOMETRY_COLUMN = "geom";
     public static final String CONTENT_TYPE = "application/geopackage+sqlite3";
 
@@ -58,6 +59,7 @@ public class TreeGeoPackageExporter {
             GeoPackageManager.create(geoPackageFile);
             try (GeoPackage geoPackage = GeoPackageManager.open(geoPackageFile)) {
                 writeTreesLayer(geoPackage, data);
+                writeStandsLayer(geoPackage, data);
             }
             return new ExportedFile(Files.readAllBytes(geoPackageFile.toPath()), CONTENT_TYPE, ExportedFile.fileNameOf(data, "gpkg"));
         } catch (IOException writingError) {
@@ -104,6 +106,50 @@ public class TreeGeoPackageExporter {
                 Object value = tree.valueOf(field);
                 row.setValue(field.gisFieldName(), value instanceof BigDecimal decimal ? decimal.doubleValue() : value);
             }
+            featureDao.insert(row);
+        }
+    }
+
+    /** Warstwa "stands" (etap 29): grupy drzew jako wielokaty WGS 84 z nazwa, polem i numerami drzew. */
+    private void writeStandsLayer(GeoPackage geoPackage, ProjectExportData data) throws SQLException {
+        SpatialReferenceSystem srs = geoPackage.getSpatialReferenceSystemDao()
+                .getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG, 4326);
+        GeometryColumns geometryColumns = new GeometryColumns();
+        geometryColumns.setId(new TableColumnKey(STANDS_LAYER_NAME, GEOMETRY_COLUMN));
+        geometryColumns.setGeometryType(GeometryType.POLYGON);
+        geometryColumns.setZ((byte) 0);
+        geometryColumns.setM((byte) 0);
+        geometryColumns.setSrs(srs);
+        List<FeatureColumn> attributeColumns = List.of(
+                FeatureColumn.createColumn("stand_id", GeoPackageDataType.INTEGER),
+                FeatureColumn.createColumn("name", GeoPackageDataType.TEXT),
+                FeatureColumn.createColumn("notes", GeoPackageDataType.TEXT),
+                FeatureColumn.createColumn("area_m2", GeoPackageDataType.REAL),
+                FeatureColumn.createColumn("tree_count", GeoPackageDataType.INTEGER),
+                FeatureColumn.createColumn("tree_nos", GeoPackageDataType.TEXT),
+                FeatureColumn.createColumn("source", GeoPackageDataType.TEXT));
+        geoPackage.createFeatureTable(FeatureTableMetadata.create(geometryColumns, attributeColumns, new BoundingBox(-180, -90, 180, 90)));
+        Contents contents = geoPackage.getContentsDao().queryForId(STANDS_LAYER_NAME);
+        contents.setIdentifier(STANDS_LAYER_NAME);
+        contents.setDescription("ArboMachine - grupy drzew projektu " + data.projectId() + " (EPSG:4326)");
+        geoPackage.getContentsDao().update(contents);
+        FeatureDao featureDao = geoPackage.getFeatureDao(STANDS_LAYER_NAME);
+        for (TreeStandExportData stand : data.stands()) {
+            mil.nga.sf.Polygon polygon = new mil.nga.sf.Polygon();
+            for (List<double[]> ring : stand.rings()) {
+                mil.nga.sf.LineString lineString = new mil.nga.sf.LineString();
+                for (double[] position : ring) lineString.addPoint(new Point(position[0], position[1]));
+                polygon.addRing(lineString);
+            }
+            FeatureRow row = featureDao.newRow();
+            row.setGeometry(GeoPackageGeometryData.create(srs.getSrsId(), polygon));
+            row.setValue("stand_id", stand.standId());
+            row.setValue("name", stand.name());
+            row.setValue("notes", stand.notes());
+            row.setValue("area_m2", stand.areaSquareMeters() == null ? null : stand.areaSquareMeters().doubleValue());
+            row.setValue("tree_count", (long) stand.treeInventoryNumbers().size());
+            row.setValue("tree_nos", stand.treeNumbersText());
+            row.setValue("source", stand.source());
             featureDao.insert(row);
         }
     }

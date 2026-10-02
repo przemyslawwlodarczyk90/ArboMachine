@@ -7,16 +7,21 @@ import java.util.List;
  * Jawny model wejsciowy generatora dokumentu projektu - proste dane skopiowane z encji przez
  * ProjectDocumentDataAssembler. Generator nie zna JPA ani repozytoriow, wiec zmiana modelu domenowego albo
  * wymiana generatora (np. na wzor programu prac konserwatorskich) nie wymaga przepisywania obu stron.
- * Celowo bez danych zleceniodawcy, autora i obiektu - nie sa jeszcze modelowane (placeholdery w szablonie).
+ * Dane zlecenia (zleceniodawca, adres obiektu, data zlecenia) od etapu 29; autor opracowania - placeholder w szablonie.
  */
 public record ProjectDocumentData(
         long projectId,
         String projectName,
         String projectDescription,
+        String clientName,
+        String siteAddress,
+        java.time.LocalDate orderDate,
         Instant projectCreatedAt,
         Instant projectUpdatedAt,
         Instant generatedAt,
-        List<ProjectDocumentTreeData> trees
+        List<ProjectDocumentTreeData> trees,
+        /** etap 29: grupy drzew projektu (wg nazwy) */
+        List<ProjectDocumentStandData> stands
 ) {
 
     public int treeCount() {

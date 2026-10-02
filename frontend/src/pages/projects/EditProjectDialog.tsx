@@ -5,10 +5,11 @@ import { LabeledInputField } from '../../components/LabeledInputField';
 import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
 import { ModalDialog } from '../../components/ModalDialog';
 import type { Project } from './projectDataTypes';
+import { ProjectOrderFields, type ProjectOrderFieldValues } from './ProjectOrderFields';
 import { projectsApi } from './projectsApi';
 
 /**
- * Okno edycji nazwy i opisu projektu (PATCH). Po sukcesie oddaje zapisany projekt (onProjectSaved) - bez GET.
+ * Okno edycji nazwy, opisu i danych zlecenia projektu (PATCH). Po sukcesie oddaje zapisany projekt (onProjectSaved) - bez GET.
  * Przy bledzie okno zostaje otwarte z wpisanymi danymi.
  */
 export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }: {
@@ -18,6 +19,9 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
 }) {
   const [projectName, setProjectName] = useState(savedProject.name);
   const [projectDescription, setProjectDescription] = useState(savedProject.description ?? '');
+  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>({
+    clientName: savedProject.clientName ?? '', siteAddress: savedProject.siteAddress ?? '', orderDate: savedProject.orderDate ?? '',
+  });
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -25,7 +29,10 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
   const isSubmissionInProgress = useRef(false);
 
   const hasUnsavedChanges = projectName.trim() !== savedProject.name
-    || projectDescription.trim() !== (savedProject.description ?? '').trim();
+    || projectDescription.trim() !== (savedProject.description ?? '').trim()
+    || orderFields.clientName.trim() !== (savedProject.clientName ?? '')
+    || orderFields.siteAddress.trim() !== (savedProject.siteAddress ?? '')
+    || orderFields.orderDate !== (savedProject.orderDate ?? '');
 
   const submitProjectChanges = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -45,6 +52,9 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
       const savedProjectFromBackend = await projectsApi.updateProjectOfCurrentUser(savedProject.id, {
         name: projectName.trim(),
         description: projectDescription.trim(),
+        clientName: orderFields.clientName.trim(),
+        siteAddress: orderFields.siteAddress.trim(),
+        orderDate: orderFields.orderDate,
       });
       onProjectSaved(savedProjectFromBackend);
     } catch (savingError) {
@@ -69,6 +79,8 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
         <LabeledTextAreaField label="Opis" value={projectDescription}
                               onChange={(changeEvent) => setProjectDescription(changeEvent.target.value)}
                               errorMessage={errorMessageByFieldName.description} />
+        <ProjectOrderFields values={orderFields} onChange={setOrderFields} errorMessageByFieldName={errorMessageByFieldName}
+                            disabled={isSaving} />
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isSaving}>Anuluj</button>
           <button type="submit" className="btn btn-primary" disabled={!hasUnsavedChanges || isSaving}>

@@ -128,6 +128,18 @@ public final class ProjectReportFormatter {
         };
     }
 
+    /** Pole powierzchni "1 234,5 m²" (przyblizone); brak = "—". */
+    public String squareMeters(BigDecimal area) {
+        if (area == null) return MISSING_VALUE;
+        java.text.DecimalFormat format = new java.text.DecimalFormat("#,##0.#", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.of("pl", "PL")));
+        return format.format(area) + " m²";
+    }
+
+    /** Lista numerow drzew "1, 2, 5" albo "—". */
+    public String treeNumbers(java.util.List<String> inventoryNumbers) {
+        return inventoryNumbers == null || inventoryNumbers.isEmpty() ? MISSING_VALUE : String.join(", ", inventoryNumbers);
+    }
+
     /** Data kalendarzowa "dd.MM.yyyy"; brak = "—". */
     public String localDate(java.time.LocalDate date) {
         return date == null ? MISSING_VALUE : date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));

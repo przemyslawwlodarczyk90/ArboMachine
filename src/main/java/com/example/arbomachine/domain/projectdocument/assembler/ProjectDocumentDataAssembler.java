@@ -4,6 +4,7 @@ import com.example.arbomachine.domain.project.entity.Project;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentLocationData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentMonitoringData;
+import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentStandData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentPhotoData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentTreeData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentWorkData;
@@ -13,6 +14,7 @@ import com.example.arbomachine.domain.treephoto.entity.TreePhotoAnnotation;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorage;
 import com.example.arbomachine.domain.treework.entity.TreeWork;
 import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository;
+import com.example.arbomachine.infrastructure.repository.TreeStandRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoRepository;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
@@ -50,13 +52,15 @@ public class ProjectDocumentDataAssembler {
     private final PhotoStorage photoStorage;
     private final TreeValuationRepository treeValuationRepository;
     private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
+    private final TreeStandRepository treeStandRepository;
 
     public ProjectDocumentDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                         TreePhotoRepository treePhotoRepository,
                                         TreePhotoAnnotationRepository treePhotoAnnotationRepository,
                                         PhotoStorage photoStorage,
                                         TreeValuationRepository treeValuationRepository,
-                                        TreeMonitoringRecordRepository treeMonitoringRecordRepository) {
+                                        TreeMonitoringRecordRepository treeMonitoringRecordRepository,
+                                        TreeStandRepository treeStandRepository) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treePhotoRepository = treePhotoRepository;
@@ -64,6 +68,7 @@ public class ProjectDocumentDataAssembler {
         this.photoStorage = photoStorage;
         this.treeValuationRepository = treeValuationRepository;
         this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
+        this.treeStandRepository = treeStandRepository;
     }
 
     @Transactional(readOnly = true)
@@ -110,7 +115,13 @@ public class ProjectDocumentDataAssembler {
                     monitoringByTreeId.getOrDefault(tree.getId(), List.of())));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
-                ownedProject.getCreatedAt(), ownedProject.getUpdatedAt(), generatedAt, treeData);
+                ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
+                ownedProject.getCreatedAt(), ownedProject.getUpdatedAt(), generatedAt, treeData,
+                treeStandRepository.findAllByProjectIdOrderByNameAscIdAsc(ownedProject.getId()).stream()
+                        .map(stand -> new ProjectDocumentStandData(stand.getName(), stand.getAreaSquareMeters(),
+                                stand.getTrees().stream().sorted(java.util.Comparator.comparing(Tree::getId)).map(Tree::getInventoryNumber).toList(),
+                                stand.getNotes()))
+                        .toList());
     }
 
     private static ProjectDocumentValuationData valuationDataOf(TreeValuation valuation) {

@@ -77,13 +77,14 @@ export function TreesImportSection({ projectId }: { projectId: number }) {
     <section className="data-exchange-card stack" aria-labelledby="trees-import-heading">
       <h3 id="trees-import-heading">Import drzew</h3>
       <p className="muted">
-        Plik CSV, XLSX albo GeoJSON z kolumną „Numer inwentaryzacyjny” (nagłówki jak w eksporcie). Pozostałe kolumny
-        są opcjonalne. Każdy wiersz tworzy nowe drzewo - istniejące drzewa nie są zmieniane. Jeżeli plik ma błędy,
-        nic nie zostanie zaimportowane.
+        Plik CSV, XLSX, GeoJSON, Shapefile (spakowany do ZIP), GeoPackage albo rysunek DXF. Arkusz potrzebuje kolumny
+        z numerem drzewa („Numer inwentaryzacyjny” albo „Etykieta” - typowy eksport aplikacji terenowej). Współrzędne
+        w PL-2000 i PL-1992 są przeliczane do WGS 84. Każdy obiekt tworzy nowe drzewo - istniejące nie są zmieniane.
+        Jeżeli plik ma błędy, nic nie zostanie zaimportowane.
       </p>
       <div className="field">
         <label htmlFor="trees-import-file">Plik z drzewami</label>
-        <input id="trees-import-file" type="file" accept=".csv,.xlsx,.geojson,.json" onChange={selectFile} disabled={isBusy} />
+        <input id="trees-import-file" type="file" accept=".csv,.xlsx,.geojson,.json,.zip,.gpkg,.dxf" onChange={selectFile} disabled={isBusy} />
         {selectedFile && <span className="field-hint">Wybrany plik: {selectedFile.name}</span>}
       </div>
       <div className="form-actions data-exchange-actions">

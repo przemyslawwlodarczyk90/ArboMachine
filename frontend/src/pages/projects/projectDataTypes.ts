@@ -5,6 +5,11 @@ export interface Project {
   id: number;
   name: string;
   description?: string | null;
+  /** etap 29: dane zlecenia (opcjonalne, wolny tekst) */
+  clientName?: string | null;
+  siteAddress?: string | null;
+  /** 'YYYY-MM-DD' */
+  orderDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,6 +18,9 @@ export interface Project {
 export interface CreateProjectRequest {
   name: string;
   description?: string;
+  clientName?: string;
+  siteAddress?: string;
+  orderDate?: string;
 }
 
 /**
@@ -22,4 +30,8 @@ export interface CreateProjectRequest {
 export interface UpdateProjectRequest {
   name?: string;
   description?: string;
+  /** pusty tekst = usuniecie (etap 29) */
+  clientName?: string;
+  siteAddress?: string;
+  orderDate?: string;
 }

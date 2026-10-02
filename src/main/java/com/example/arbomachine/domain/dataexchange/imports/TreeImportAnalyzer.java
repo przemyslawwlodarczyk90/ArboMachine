@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class TreeImportAnalyzer {
 
     /** Limity techniczne V1 (docs/DO_DOPRECYZOWANIA.md). */
-    public static final int MAXIMUM_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+    public static final int MAXIMUM_FILE_SIZE_BYTES = 15 * 1024 * 1024;
     public static final int MAXIMUM_ROW_COUNT = 2000;
     static final int PREVIEW_ROW_COUNT = 10;
 
@@ -66,7 +66,8 @@ public class TreeImportAnalyzer {
             if (result.validRow() != null) validRows.add(result.validRow());
             errors.addAll(result.errors());
         }
-        List<TreeImportIssue> warnings = duplicateWarningsOf(ownedProject, validRows);
+        List<TreeImportIssue> warnings = new ArrayList<>(parsedFile.fileWarnings());
+        warnings.addAll(duplicateWarningsOf(ownedProject, validRows));
         int invalidRowCount = rows.size() - validRows.size();
         TreeImportValidationResponse response = new TreeImportValidationResponse(fileName, format.get().name(), rows.size(),
                 validRows.size(), invalidRowCount, errors.isEmpty() && !validRows.isEmpty(), List.of(), errors, warnings,

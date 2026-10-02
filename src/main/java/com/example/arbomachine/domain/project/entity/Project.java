@@ -25,6 +25,8 @@ public class Project {
 
     /** Maksymalna dlugosc nazwy = dlugosc kolumny name (domyslne varchar(255)). */
     public static final int MAXIMUM_NAME_LENGTH = 255;
+    public static final int MAXIMUM_CLIENT_NAME_LENGTH = 255;
+    public static final int MAXIMUM_SITE_ADDRESS_LENGTH = 500;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +45,19 @@ public class Project {
      */
     @Column(columnDefinition = "text")
     private String description;
+
+    /**
+     * Dane zlecenia (etap 29) - opcjonalne, wolny tekst V1 (bez kartoteki klientow): zleceniodawca, adres obiektu
+     * i data zlecenia. Docelowy model klienta - DO_DOPRECYZOWANIA.
+     */
+    @Column(name = "client_name", length = MAXIMUM_CLIENT_NAME_LENGTH)
+    private String clientName;
+
+    @Column(name = "site_address", length = MAXIMUM_SITE_ADDRESS_LENGTH)
+    private String siteAddress;
+
+    @Column(name = "order_date")
+    private java.time.LocalDate orderDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

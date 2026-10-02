@@ -10,6 +10,9 @@ import { HEALTH_STATUS_OPTIONS, NOT_INSPECTED_LABEL, type TreeMonitoringRecord }
 import { filterTreesByMonitoring, latestRecordByTreeId, type MonitoringFilter } from './monitoring/monitoringFormValues';
 import { treeMonitoringApi } from './monitoring/treeMonitoringApi';
 import { NewTreeDialog } from './NewTreeDialog';
+import { SPECIES_GROUP_LABELS, speciesGroupOf, type SpeciesGroup } from '../../map/speciesGroup';
+import type { TreeStand } from '../projects/stands/standDataTypes';
+import { treeStandsApi } from '../projects/stands/treeStandsApi';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
 import { treeValuationsApi } from './valuation/treeValuationsApi';
@@ -38,6 +41,10 @@ export function ProjectTreesSection() {
   // Ostatnia kontrola stanu kazdego drzewa (etap 29); blad nie blokuje listy.
   const [latestRecords, setLatestRecords] = useState<TreeMonitoringRecord[] | null>(null);
   const [monitoringFilter, setMonitoringFilter] = useState<MonitoringFilter>('ALL');
+  // Etap 29: grupy drzew i grupa gatunku (iglaste / lisciaste z nazwy gatunku).
+  const [stands, setStands] = useState<TreeStand[]>([]);
+  const [standFilter, setStandFilter] = useState<'ALL' | 'NONE' | number>('ALL');
+  const [speciesGroupFilter, setSpeciesGroupFilter] = useState<'ALL' | 'UNKNOWN' | SpeciesGroup>('ALL');
 
   useEffect(() => {
     if (projectId === null) return;
@@ -46,6 +53,9 @@ export function ProjectTreesSection() {
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
+    treeStandsApi.listStands(projectId)
+      .then((loadedStands) => { if (isResponseStillWanted) setStands(loadedStands); })
+      .catch(() => { if (isResponseStillWanted) setStands([]); });
     treeMonitoringApi.listLatestRecordsOfProject(projectId)
       .then((loadedRecords) => { if (isResponseStillWanted) setLatestRecords(loadedRecords); })
       .catch(() => { if (isResponseStillWanted) setLatestRecords(null); });
@@ -67,8 +77,16 @@ export function ProjectTreesSection() {
   const latestByTreeId = useMemo(() => latestRecordByTreeId(latestRecords ?? []), [latestRecords]);
 
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
+  const treeIdsInAnyStand = new Set(stands.flatMap((stand) => stand.treeIds));
+  const selectedStandTreeIds = typeof standFilter === 'number' ? new Set(stands.find((stand) => stand.id === standFilter)?.treeIds ?? []) : null;
   const visibleTrees = treeListState.status === 'loaded'
     ? filterTreesByMonitoring(filterTreesByValuation(treeListState.trees, categoryByTreeId, valuationFilter), latestByTreeId, monitoringFilter)
+      .filter((tree) => standFilter === 'ALL' || (standFilter === 'NONE' ? !treeIdsInAnyStand.has(tree.id) : selectedStandTreeIds!.has(tree.id)))
+      .filter((tree) => {
+        if (speciesGroupFilter === 'ALL') return true;
+        const group = speciesGroupOf(tree.speciesLatin, tree.speciesPolish);
+        return speciesGroupFilter === 'UNKNOWN' ? group === null : group === speciesGroupFilter;
+      })
     : [];
 
   const openNewTreeDialog = () => setIsNewTreeDialogOpen(true);
@@ -104,6 +122,28 @@ export function ProjectTreesSection() {
               {VALUATION_CATEGORY_OPTIONS.map(({ category, label }) => <option key={category} value={category}>{label}</option>)}
             </select>
           </div>}
+          <div className="field">
+            <label htmlFor="tree-species-group-filter">Iglaste / liściaste</label>
+            <select id="tree-species-group-filter" value={speciesGroupFilter}
+                    onChange={(changeEvent) => setSpeciesGroupFilter(changeEvent.target.value as typeof speciesGroupFilter)}>
+              <option value="ALL">Wszystkie</option>
+              <option value="CONIFER">{SPECIES_GROUP_LABELS.CONIFER}</option>
+              <option value="DECIDUOUS">{SPECIES_GROUP_LABELS.DECIDUOUS}</option>
+              <option value="UNKNOWN">Gatunek nie podany</option>
+            </select>
+          </div>
+          {stands.length > 0 && (
+            <div className="field">
+              <label htmlFor="tree-stand-filter">Grupa drzew</label>
+              <select id="tree-stand-filter" value={String(standFilter)}
+                      onChange={(changeEvent) => setStandFilter(['ALL', 'NONE'].includes(changeEvent.target.value)
+                        ? changeEvent.target.value as 'ALL' | 'NONE' : Number(changeEvent.target.value))}>
+                <option value="ALL">Wszystkie</option>
+                <option value="NONE">Poza grupami</option>
+                {stands.map((stand) => <option key={stand.id} value={stand.id}>{stand.name}</option>)}
+              </select>
+            </div>
+          )}
           {latestRecords !== null && (
             <div className="field">
               <label htmlFor="tree-monitoring-filter">Stan (ostatnia kontrola)</label>

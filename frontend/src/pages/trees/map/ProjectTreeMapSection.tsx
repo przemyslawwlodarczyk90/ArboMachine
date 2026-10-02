@@ -12,6 +12,8 @@ import { treesApi } from '../treesApi';
 import type { TreeWork } from '../works/treeWorkDataTypes';
 import { treeWorksApi } from '../works/treeWorksApi';
 import { ProjectMapLegend } from './ProjectMapLegend';
+import type { TreeStand } from '../../projects/stands/standDataTypes';
+import { treeStandsApi } from '../../projects/stands/treeStandsApi';
 import { ProjectTreeMap } from './ProjectTreeMap';
 import { toTreeMapPoints } from './treeMapPoints';
 import { treeValuationsApi } from '../valuation/treeValuationsApi';
@@ -24,6 +26,9 @@ import { TreeWorkMeta } from '../works/TreeWorkMeta';
 import {
   buildManagementLegend, isOpenWorkStatus, managementColorOf, managementStateLabel, sortWorksForManagement,
 } from '../works/workManagement';
+
+/** Stala pusta lista - ukrycie warstwy nie tworzy nowej tablicy przy kazdym renderze. */
+const NO_STANDS: TreeStand[] = [];
 
 type ProjectMapDataState =
   | { status: 'loading' }
@@ -44,6 +49,9 @@ export function ProjectTreeMapSection() {
   const [viewMode, setViewMode] = useState<MapViewMode>('SYMBOLS');
   // Waloryzacje (etap 27) - osobne zapytanie; blad nie blokuje mapy (tryb "Waloryzacja" pokaze wtedy komunikat).
   const [valuations, setValuations] = useState<TreeValuation[] | null>(null);
+  // Grupy drzew (etap 29): warstwa obszarow, domyslnie widoczna, gdy projekt je ma.
+  const [stands, setStands] = useState<TreeStand[]>([]);
+  const [areStandsVisible, setAreStandsVisible] = useState(true);
 
   useEffect(() => {
     if (projectId === null) return;
@@ -53,6 +61,9 @@ export function ProjectTreeMapSection() {
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
+    treeStandsApi.listStands(projectId)
+      .then((loadedStands) => { if (isResponseStillWanted) setStands(loadedStands); })
+      .catch(() => { if (isResponseStillWanted) setStands([]); });
     Promise.all([treesApi.listTreesOfProject(projectId), treeWorksApi.listProjectWorks(projectId)])
       .then(([trees, works]) => {
         if (isResponseStillWanted) setProjectMapDataState({ status: 'loaded', trees, works });
@@ -144,13 +155,28 @@ export function ProjectTreeMapSection() {
           ))}
         </div>
       )}
+      {(stands.length > 0 || treeMapPoints.length > 0) && (
+        <div className="map-layer-toggles">
+          {stands.length > 0 && (
+            <label className="checkbox-row">
+              <input type="checkbox" checked={areStandsVisible} onChange={(changeEvent) => setAreStandsVisible(changeEvent.target.checked)} />
+              <span>Pokaż grupy drzew ({stands.length})</span>
+            </label>
+          )}
+          <span className="muted small">
+            <span className="map-legend-swatch-circle" style={{ background: '#2f6b3c' }} aria-hidden="true" /> liściaste / gatunek nie podany
+            {' · '}<span className="map-legend-star" aria-hidden="true" /> iglaste
+            {stands.length > 0 && <>{' · '}<span className="map-legend-stand" aria-hidden="true" /> grupa drzew</>}
+          </span>
+        </div>
+      )}
       {viewMode === 'VALUATION' && valuations === null && (
         <Alert variant="error">Nie udało się pobrać waloryzacji - wszystkie drzewa są pokazane jako „Nie oceniono”.</Alert>
       )}
 
       <div className="map-frame">
         <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
-                        viewMode={viewMode} />
+                        viewMode={viewMode} stands={areStandsVisible ? stands : NO_STANDS} />
         {selectedTree && (
           <div className="map-selected-tree card" role="status">
             <div className="map-selected-tree-text">

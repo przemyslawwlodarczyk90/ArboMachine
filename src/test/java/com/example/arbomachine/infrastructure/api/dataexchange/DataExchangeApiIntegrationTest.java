@@ -195,7 +195,7 @@ class DataExchangeApiIntegrationTest {
                 "Źródło lokalizacji", "Zalecenia i prace", "Waloryzacja - ocena ogólna", "Wartość wiekowa",
                 "Wartość przyrodnicza", "Wartość ekologiczna", "Wartość kulturowa", "Wartość krajobrazowa", "Uzasadnienie waloryzacji",
                 "Prace do wykonania (liczba)", "Najbliższy termin pracy", "Najbliższa praca", "Data ostatniej kontroli",
-                "Ocena stanu (ostatnia kontrola)", "Uwagi z ostatniej kontroli");
+                "Ocena stanu (ostatnia kontrola)", "Uwagi z ostatniej kontroli", "Grupa gatunku (iglaste / liściaste)", "Grupy drzew");
         assertThat(records).hasSize(4);
         CSVRecord full = records.get(1);
         assertThat(full.get(1)).isEqualTo("L-1");
@@ -299,7 +299,7 @@ class DataExchangeApiIntegrationTest {
         try {
             Files.write(geoPackageFile, geoPackageBytes);
             try (GeoPackage geoPackage = GeoPackageManager.open(geoPackageFile.toFile(), false)) {
-                assertThat(geoPackage.getFeatureTables()).containsExactly("trees");
+                assertThat(geoPackage.getFeatureTables()).containsExactlyInAnyOrder("trees", "stands");
                 FeatureDao trees = geoPackage.getFeatureDao("trees");
                 assertThat(trees.getGeometryType()).isEqualTo(GeometryType.POINT);
                 assertThat(trees.getSrs().getOrganization()).isEqualToIgnoringCase("EPSG");

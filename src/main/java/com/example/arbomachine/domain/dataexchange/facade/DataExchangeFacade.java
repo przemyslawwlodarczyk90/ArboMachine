@@ -4,7 +4,13 @@ import com.example.arbomachine.domain.dataexchange.dto.TreeImportResultResponse;
 import com.example.arbomachine.domain.dataexchange.dto.TreeImportUpload;
 import com.example.arbomachine.domain.dataexchange.dto.TreeImportValidationResponse;
 import com.example.arbomachine.domain.dataexchange.export.ExportedFile;
+import com.example.arbomachine.domain.dataexchange.dto.TreeStandImportResultResponse;
+import com.example.arbomachine.domain.dataexchange.dto.TreeStandImportValidationResponse;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeWorksAsCsvHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportProjectAsShapefileHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeStandsAsGeoJsonHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ImportTreeStandsHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ValidateTreeStandImportHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeWorksAsIcsHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsCsvHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsGeoJsonHandler;
@@ -28,13 +34,21 @@ public class DataExchangeFacade {
     private final ImportTreesHandler importTreesHandler;
     private final ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler;
     private final ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler;
+    private final ValidateTreeStandImportHandler validateTreeStandImportHandler;
+    private final ImportTreeStandsHandler importTreeStandsHandler;
+    private final ExportTreeStandsAsGeoJsonHandler exportTreeStandsAsGeoJsonHandler;
+    private final ExportProjectAsShapefileHandler exportProjectAsShapefileHandler;
 
     public DataExchangeFacade(ExportTreesAsCsvHandler exportTreesAsCsvHandler, ExportTreesAsXlsxHandler exportTreesAsXlsxHandler,
                               ExportTreesAsGeoJsonHandler exportTreesAsGeoJsonHandler,
                               ExportTreesAsGeoPackageHandler exportTreesAsGeoPackageHandler,
                               ValidateTreeImportHandler validateTreeImportHandler, ImportTreesHandler importTreesHandler,
                               ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler,
-                              ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler) {
+                              ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler,
+                              ValidateTreeStandImportHandler validateTreeStandImportHandler,
+                              ImportTreeStandsHandler importTreeStandsHandler,
+                              ExportTreeStandsAsGeoJsonHandler exportTreeStandsAsGeoJsonHandler,
+                              ExportProjectAsShapefileHandler exportProjectAsShapefileHandler) {
         this.exportTreesAsCsvHandler = exportTreesAsCsvHandler;
         this.exportTreesAsXlsxHandler = exportTreesAsXlsxHandler;
         this.exportTreesAsGeoJsonHandler = exportTreesAsGeoJsonHandler;
@@ -43,6 +57,10 @@ public class DataExchangeFacade {
         this.importTreesHandler = importTreesHandler;
         this.exportTreeWorksAsCsvHandler = exportTreeWorksAsCsvHandler;
         this.exportTreeWorksAsIcsHandler = exportTreeWorksAsIcsHandler;
+        this.validateTreeStandImportHandler = validateTreeStandImportHandler;
+        this.importTreeStandsHandler = importTreeStandsHandler;
+        this.exportTreeStandsAsGeoJsonHandler = exportTreeStandsAsGeoJsonHandler;
+        this.exportProjectAsShapefileHandler = exportProjectAsShapefileHandler;
     }
 
     public ExportedFile exportTreesAsCsvOfCurrentUser(String currentUserEmail, Long projectId) {
@@ -67,6 +85,22 @@ public class DataExchangeFacade {
 
     public ExportedFile exportTreeWorksAsIcsOfCurrentUser(String currentUserEmail, Long projectId) {
         return exportTreeWorksAsIcsHandler.handle(currentUserEmail, projectId);
+    }
+
+    public ExportedFile exportTreeStandsAsGeoJsonOfCurrentUser(String currentUserEmail, Long projectId) {
+        return exportTreeStandsAsGeoJsonHandler.handle(currentUserEmail, projectId);
+    }
+
+    public ExportedFile exportProjectAsShapefileOfCurrentUser(String currentUserEmail, Long projectId) {
+        return exportProjectAsShapefileHandler.handle(currentUserEmail, projectId);
+    }
+
+    public TreeStandImportValidationResponse validateTreeStandImportOfCurrentUser(String currentUserEmail, Long projectId, TreeImportUpload upload) {
+        return validateTreeStandImportHandler.handle(currentUserEmail, projectId, upload);
+    }
+
+    public TreeStandImportResultResponse importTreeStandsOfCurrentUser(String currentUserEmail, Long projectId, TreeImportUpload upload) {
+        return importTreeStandsHandler.handle(currentUserEmail, projectId, upload);
     }
 
     public TreeImportValidationResponse validateTreeImportOfCurrentUser(String currentUserEmail, Long projectId, TreeImportUpload upload) {

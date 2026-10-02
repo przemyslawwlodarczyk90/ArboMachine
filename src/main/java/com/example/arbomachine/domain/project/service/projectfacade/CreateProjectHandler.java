@@ -35,6 +35,9 @@ public class CreateProjectHandler {
         Instant creationTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
         Project newProject = Project.createOwnedBy(projectOwner, createProjectRequest.name(),
                 createProjectRequest.description(), creationTime);
+        newProject.setClientName(ProjectOrderFields.trimmedOrNull(createProjectRequest.clientName()));
+        newProject.setSiteAddress(ProjectOrderFields.trimmedOrNull(createProjectRequest.siteAddress()));
+        newProject.setOrderDate(createProjectRequest.orderDate());
         return projectMapper.toProjectResponse(projectRepository.save(newProject));
     }
 }

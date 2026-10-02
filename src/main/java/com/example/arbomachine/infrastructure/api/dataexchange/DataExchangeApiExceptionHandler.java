@@ -19,6 +19,12 @@ public class DataExchangeApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.TEXT_PLAIN).body(exception.getMessage());
     }
 
+    @ExceptionHandler(com.example.arbomachine.domain.dataexchange.exception.TreeStandImportRejectedException.class)
+    public ResponseEntity<com.example.arbomachine.domain.dataexchange.dto.TreeStandImportValidationResponse> handleRejectedStandImport(
+            com.example.arbomachine.domain.dataexchange.exception.TreeStandImportRejectedException exception) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(exception.validation());
+    }
+
     @ExceptionHandler(TreeImportRejectedException.class)
     public ResponseEntity<TreeImportValidationResponse> handleRejectedImport(TreeImportRejectedException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.validationResult());

@@ -29,6 +29,7 @@ public class TreeXlsxExporter {
     public static final String PROJECT_SHEET_NAME = "Projekt";
     public static final String WORKS_SHEET_NAME = "Prace";
     public static final String MONITORING_SHEET_NAME = "Monitoring";
+    public static final String STANDS_SHEET_NAME = "Grupy drzew";
     private static final DateTimeFormatter EXPORT_TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.of("Europe/Warsaw"));
 
     public ExportedFile export(ProjectExportData data) {
@@ -37,6 +38,7 @@ public class TreeXlsxExporter {
             writeTreesSheet(workbook.newWorksheet(TREES_SHEET_NAME), data);
             writeWorksSheet(workbook.newWorksheet(WORKS_SHEET_NAME), data);
             writeMonitoringSheet(workbook.newWorksheet(MONITORING_SHEET_NAME), data);
+            writeStandsSheet(workbook.newWorksheet(STANDS_SHEET_NAME), data);
             writeProjectSheet(workbook.newWorksheet(PROJECT_SHEET_NAME), data);
         } catch (IOException writingError) {
             throw new UncheckedIOException(writingError);
@@ -112,9 +114,34 @@ public class TreeXlsxExporter {
         }
     }
 
+    /** Arkusz "Grupy drzew" (etap 29): nazwa, pole, liczba i numery drzew, uwagi, zrodlo. */
+    private static void writeStandsSheet(Worksheet sheet, ProjectExportData data) {
+        String[] headers = {"ID grupy (ArboMachine)", "Nazwa", "Powierzchnia [m²]", "Liczba drzew", "Numery drzew", "Uwagi", "Źródło"};
+        for (int column = 0; column < headers.length; column++) {
+            sheet.value(0, column, headers[column]);
+            sheet.style(0, column).bold().wrapText(true).set();
+            sheet.width(column, column == 4 || column == 5 ? 40 : 18);
+        }
+        sheet.freezePane(0, 1);
+        int row = 1;
+        for (TreeStandExportData stand : data.stands()) {
+            sheet.value(row, 0, stand.standId());
+            sheet.value(row, 1, stand.name());
+            if (stand.areaSquareMeters() != null) sheet.value(row, 2, stand.areaSquareMeters());
+            sheet.value(row, 3, stand.treeInventoryNumbers().size());
+            if (stand.treeNumbersText() != null) sheet.value(row, 4, stand.treeNumbersText());
+            if (stand.notes() != null) sheet.value(row, 5, stand.notes());
+            sheet.value(row, 6, "IMPORT".equals(stand.source()) ? "Import z pliku" : "Narysowana w aplikacji");
+            row++;
+        }
+    }
+
     private static void writeProjectSheet(Worksheet sheet, ProjectExportData data) {
         String[][] rows = {
                 {"Nazwa projektu", data.projectName()},
+                {"Zleceniodawca", data.clientName() == null ? "" : data.clientName()},
+                {"Adres obiektu", data.siteAddress() == null ? "" : data.siteAddress()},
+                {"Data zlecenia", data.orderDate() == null ? "" : data.orderDate().toString()},
                 {"Opis", data.projectDescription() == null ? "" : data.projectDescription()},
                 {"Data eksportu", EXPORT_TIME.format(data.exportedAt())},
                 {"Układ współrzędnych", "WGS 84 (EPSG:4326)"},

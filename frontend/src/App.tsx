@@ -19,6 +19,7 @@ import { ProjectTreeMapSection } from './pages/trees/map/ProjectTreeMapSection';
 import { ProjectTreesSection } from './pages/trees/ProjectTreesSection';
 import { ProjectManagementPage } from './pages/projects/management/ProjectManagementPage';
 import { ProjectIntegrationsPage } from './pages/projects/integrations/ProjectIntegrationsPage';
+import { ProjectStandsPage } from './pages/projects/stands/ProjectStandsPage';
 import { TreePage } from './pages/trees/TreePage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -58,6 +59,8 @@ export default function App() {
                 <Route path="trees" element={<ProjectTreesSection />} />
                 <Route path="trees/:treeId" element={<TreePage />} />
                 <Route path="map" element={<ProjectTreeMapSection />} />
+                {/* Etap 29: grupy drzew (obszary). */}
+                <Route path="stands" element={<ProjectStandsPage />} />
                 {/* Etap 28: prace wszystkich drzew projektu z filtrami. */}
                 <Route path="management" element={<ProjectManagementPage />} />
                 {/* Dokument projektu (PDF) i materialy do dokumentacji (zdjecia projektu w wersji z adnotacja). */}

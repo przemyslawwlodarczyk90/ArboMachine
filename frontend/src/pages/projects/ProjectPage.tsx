@@ -22,6 +22,7 @@ type ProjectLoadingState =
 const WORKSPACE_SECTION_LINKS = [
   { relativePath: '', label: 'Podsumowanie', matchExactPathOnly: true },
   { relativePath: 'trees', label: 'Drzewa', matchExactPathOnly: false },
+  { relativePath: 'stands', label: 'Grupy drzew', matchExactPathOnly: false },
   { relativePath: 'map', label: 'Mapa', matchExactPathOnly: false },
   { relativePath: 'management', label: 'Gospodarka drzewostanem', matchExactPathOnly: false },
   { relativePath: 'documentation', label: 'Dokumentacja', matchExactPathOnly: false },
@@ -113,6 +114,12 @@ export function ProjectPage() {
           <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edytuj projekt</button>
         </div>
         {project.description && <p className="muted project-description">{project.description}</p>}
+        {(project.clientName || project.siteAddress || project.orderDate) && (
+          <p className="muted small project-order">
+            {[project.clientName && `Zleceniodawca: ${project.clientName}`, project.siteAddress && `Obiekt: ${project.siteAddress}`,
+              project.orderDate && `Data zlecenia: ${project.orderDate.split('-').reverse().join('.')}`].filter(Boolean).join(' · ')}
+          </p>
+        )}
       </header>
 
       <nav className="workspace-tabs" aria-label="Sekcje projektu">

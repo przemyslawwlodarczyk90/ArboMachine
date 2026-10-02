@@ -5,6 +5,7 @@ import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
 import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
 import { ModalDialog } from '../../components/ModalDialog';
+import { ProjectOrderFields, type ProjectOrderFieldValues } from './ProjectOrderFields';
 import { projectsApi } from './projectsApi';
 
 /**
@@ -21,6 +22,8 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
   // Synchroniczna blokada podwojnego wyslania: stan Reacta aktualizuje sie dopiero po renderze,
   // wiec dwa klikniecia w tym samym momencie widzialyby jeszcze isCreatingProject === false.
   const isSubmissionInProgress = useRef(false);
+
+  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>({ clientName: '', siteAddress: '', orderDate: '' });
 
   const submitNewProject = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -39,6 +42,9 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
       const createdProject = await projectsApi.createProject({
         name: projectName.trim(),
         description: projectDescription.trim() ? projectDescription.trim() : undefined,
+        clientName: orderFields.clientName.trim() || undefined,
+        siteAddress: orderFields.siteAddress.trim() || undefined,
+        orderDate: orderFields.orderDate || undefined,
       });
       navigate(`/projects/${createdProject.id}`);
     } catch (creationError) {
@@ -64,6 +70,8 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
         <LabeledTextAreaField label="Opis" value={projectDescription}
                               onChange={(changeEvent) => setProjectDescription(changeEvent.target.value)}
                               errorMessage={errorMessageByFieldName.description} />
+        <ProjectOrderFields values={orderFields} onChange={setOrderFields} errorMessageByFieldName={errorMessageByFieldName}
+                            disabled={isCreatingProject} />
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isCreatingProject}>
             Anuluj

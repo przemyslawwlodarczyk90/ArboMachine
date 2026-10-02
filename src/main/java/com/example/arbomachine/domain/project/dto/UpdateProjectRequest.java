@@ -14,5 +14,23 @@ public record UpdateProjectRequest(
         @Size(max = Project.MAXIMUM_NAME_LENGTH, message = "Project name must have at most 255 characters")
         String name,
 
-        String description
-) {}
+        String description,
+
+        /** Zleceniodawca: null = bez zmian, pusty tekst = usuniecie (etap 29). */
+        @Size(max = Project.MAXIMUM_CLIENT_NAME_LENGTH, message = "Client name must have at most 255 characters")
+        String clientName,
+
+        /** Adres obiektu: null = bez zmian, pusty tekst = usuniecie. */
+        @Size(max = Project.MAXIMUM_SITE_ADDRESS_LENGTH, message = "Site address must have at most 500 characters")
+        String siteAddress,
+
+        /** Data zlecenia RRRR-MM-DD: null = bez zmian, pusty tekst = usuniecie (tekst, bo pustej daty JSON nie wyrazi). */
+        @Pattern(regexp = "|\\d{4}-\\d{2}-\\d{2}", message = "Order date must have format YYYY-MM-DD")
+        String orderDate
+) {
+
+    /** Dotychczasowe wywolania (nazwa i opis). */
+    public UpdateProjectRequest(String name, String description) {
+        this(name, description, null, null, null);
+    }
+}

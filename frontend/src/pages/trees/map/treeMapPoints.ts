@@ -2,6 +2,7 @@ import type { Coordinate } from 'ol/coordinate.js';
 // Rozszerzenia .ts: modul jest testowany bezposrednio w Node (node --test) - patrz treeLocationMapCoordinates.
 import { toMapCoordinate } from '../location/treeLocationMapCoordinates.ts';
 import { isTreeLocationWithinValidRange } from '../location/treeLocationValidRange.ts';
+import { speciesGroupOf, type SpeciesGroup } from '../../../map/speciesGroup.ts';
 import type { Tree } from '../treeDataTypes';
 import type { TreeValuationCategory } from '../valuation/valuationDataTypes';
 import type { TreeWorkPriority, TreeWorkStatus } from '../works/treeWorkDataTypes';
@@ -24,6 +25,8 @@ export interface TreeMapPoint {
   openWorkSymbolCodes: string[];
   /** etap 28: stan prac drzewa (kolor markera w trybie "Gospodarka drzewostanem") */
   management: TreeManagementSummary;
+  /** etap 29: iglaste (gwiazdka) / lisciaste (kolko) / null (gatunek nie podany - kolko) */
+  speciesGroup: SpeciesGroup | null;
 }
 
 /** Minimum danych pracy potrzebne mapie (TreeWork z GET /api/projects/{projectId}/works). */
@@ -64,6 +67,7 @@ export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = [],
       valuationCategory: valuationCategoryByTreeId.get(tree.id) ?? null,
       openWorkSymbolCodes: openWorkSymbolCodesByTreeId.get(tree.id) ?? [],
       management: managementByTreeId.get(tree.id) ?? NO_WORKS_SUMMARY,
+      speciesGroup: speciesGroupOf(tree.speciesLatin, tree.speciesPolish),
     }]
     : []);
 };

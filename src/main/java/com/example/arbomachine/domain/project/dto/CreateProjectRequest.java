@@ -13,5 +13,22 @@ public record CreateProjectRequest(
         @Size(max = Project.MAXIMUM_NAME_LENGTH, message = "Project name must have at most 255 characters")
         String name,
 
-        String description
-) {}
+        String description,
+
+        /** Zleceniodawca (etap 29, opcjonalny). */
+        @Size(max = Project.MAXIMUM_CLIENT_NAME_LENGTH, message = "Client name must have at most 255 characters")
+        String clientName,
+
+        /** Adres obiektu / lokalizacja prac (opcjonalny). */
+        @Size(max = Project.MAXIMUM_SITE_ADDRESS_LENGTH, message = "Site address must have at most 500 characters")
+        String siteAddress,
+
+        /** Data zlecenia RRRR-MM-DD (opcjonalna). */
+        java.time.LocalDate orderDate
+) {
+
+    /** Dotychczasowe wywolania (nazwa i opis). */
+    public CreateProjectRequest(String name, String description) {
+        this(name, description, null, null, null);
+    }
+}
