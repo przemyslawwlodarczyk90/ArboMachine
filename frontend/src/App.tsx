@@ -1,11 +1,11 @@
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthenticationProvider } from './auth/AuthenticationContext';
 import { RedirectSignedInUserToPanel, RedirectToPanelOrSignIn, RequireSignedInUserWithRole } from './auth/routeGuards';
 import { AuthCardPageLayout } from './components/AuthCardPageLayout';
 import { RolePanelLayout } from './components/RolePanelLayout';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminUserAccountsPage } from './pages/admin/AdminUserAccountsPage';
-import { ArboristDashboardPage } from './pages/arborist/ArboristDashboardPage';
+import { PlannedModulePage } from './pages/arborist/PlannedModulePage';
 import { EmailConfirmationPage } from './pages/EmailConfirmationPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { MyProfilePage } from './pages/MyProfilePage';
@@ -45,8 +45,10 @@ export default function App() {
 
           <Route path="/arborist" element={<RequireSignedInUserWithRole requiredRole="ARBORIST" />}>
             <Route element={<RolePanelLayout panelRole="ARBORIST" />}>
-              <Route index element={<ArboristDashboardPage />} />
+              {/* Dawny pulpit: strona startowa arborysty to teraz lista projektow. */}
+              <Route index element={<Navigate to="/projects" replace />} />
               <Route path="profile" element={<MyProfilePage />} />
+              <Route path=":moduleSlug" element={<PlannedModulePage />} />
             </Route>
           </Route>
 

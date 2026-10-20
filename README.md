@@ -24,16 +24,19 @@ komunikaty błędów API są po angielsku (kontrakt), frontend tłumaczy je w `u
 
 | Obszar | Co jest | Szczegóły |
 |---|---|---|
-| 👥 Konta | rejestracja z potwierdzeniem e-mail, logowanie JWT, reset hasła, panele: arborysta / urzędnik / administrator | urzędnik - na razie tylko pulpit |
+| 👥 Konta | rejestracja z potwierdzeniem e-mail, logowanie JWT, reset hasła, panele: arborysta / urzędnik / administrator | arborysta startuje od „Projekty”; urzędnik - na razie tylko pulpit |
+| 🚧 Moduły w budowie | zakładki **Oceny drzew, Raporty z prac, Wnioski, Harmonogram**: co już działa w projektach, co planujemy, pytania do arborysty | etap 31 |
 | 📁 Projekty | lista, tworzenie, edycja; **dane zlecenia**: zleceniodawca, adres obiektu, data zlecenia; podsumowanie z liczbami | etap 29 |
 | 🌳 Drzewa | formularz terenowy (tablet-first): numer, gatunek, obwód, wysokość, korona, stan, zagrożenia, notatki; dyktowanie | [etap 8](docs/discovery/etap-8-karta-drzewa-discovery.md) |
-| 📍 Lokalizacja | punkt WGS 84 z mapy, ręcznie albo z **GPS urządzenia** (dokładność, wysokość, źródło) | [etap 25](docs/discovery/etap-25-gnss.md) |
+| 📍 Lokalizacja | punkt WGS 84 z mapy, ręcznie albo z **GPS urządzenia** (dokładność, wysokość, źródło); **pomiar uśredniony**, progi RTK, odbiornik RTK przez pozorowaną lokalizację Androida; współrzędne **PL-2000 / PL-1992** na karcie i w PDF, wpisywanie w układzie krajowym | [etap 25](docs/discovery/etap-25-gnss.md), 31 |
+| 🏷️ Oznaczenia drzew | **wiele symboli na jednym drzewie** (wartościowe, pomnik przyrody, do usunięcia, złom, dziupla, gniazdo…), także offline; widok mapy, filtr listy, eksport, PDF | etap 31 |
 | 📷 Zdjęcia | zdjęcia drzewa z aparatu tabletu, **adnotacje** (rysunek na zdjęciu bez zmiany oryginału) | etapy 13, 20 |
 | 🏅 Waloryzacja | zapis **oceny arborysty**: kategoria V1 + opisy wartości (wiekowa, przyrodnicza, ...). **Bez wzorów i kwot** | [etap 27](docs/discovery/etap-27-waloryzacja.md) |
 | 🪓 Gospodarka drzewostanem | zalecenia i prace: status, priorytet, termin, wykonanie; widok projektu z filtrami (też „najbliższe 7 dni”) | [etap 28](docs/discovery/etap-28-gospodarka-drzewostanem.md) |
 | 🩺 Monitoring stanu | historia kontroli drzewa: data, ocena V1 (Dobry / Umiarkowany / Zły - nie VTA), uwagi; „Nie sprawdzone” na liście | [etap 29](docs/discovery/etap-29-monitoring-i-gis.md) |
 | 🌲 Grupy drzew | obszary (szpalery, zadrzewienia) rysowane na mapie albo importowane; przypisanie drzew, także „w obszarze” | etap 29 |
-| 🗺️ Mapa | tryby: symbole prac / waloryzacja / gospodarka; **gwiazdka = iglaste**, warstwa grup drzew, legendy | etapy 19, 27-29 |
+| 🗺️ Mapa | tryby: symbole prac / **oznaczenia** / waloryzacja / gospodarka; **gwiazdka = iglaste**, warstwa grup drzew, legendy; **„Dodaj drzewo na mapie”** i „Pokaż na mapie” z karty drzewa | etapy 19, 27-29, 31 |
+| 🛰️ Podkłady | OpenStreetMap, **ortofotomapa i mapa topograficzna Geoportalu**, nakładka **działek ewidencyjnych** (KIEG); **warstwy referencyjne z QGIS** (GeoJSON / SHP / GPKG / DXF) pod drzewami | etap 31 |
 | 📄 Dokument | „Dokument projektu” PDF: dane zlecenia, podsumowanie, zestawienie drzew, gospodarka, grupy, karty drzew ze zdjęciami | etap 22 + rozszerzenia |
 | 🔁 Import | CSV, XLSX (także **arkusze z aplikacji terenowych**), GeoJSON, **Shapefile (ZIP), GeoPackage, DXF**; **PL-2000 / PL-1992** przeliczane do WGS 84; obszary grup drzew | [etapy 23-24](docs/discovery/etap-23-import-export.md), 29 |
 | 📤 Eksport / QGIS | CSV, XLSX (arkusze: Drzewa, Prace, Monitoring, Grupy drzew, Projekt), GeoJSON, **GeoPackage** (trees + stands), **Shapefile ZIP** | [instrukcja QGIS](docs/integrations/qgis.md) |

@@ -6,9 +6,9 @@ export const USER_ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   ADMIN: 'Administrator',
 };
 
-/** Panel, do ktorego trafia dana rola po zalogowaniu. */
+/** Panel, do ktorego trafia dana rola po zalogowaniu. Arborysta - od razu lista projektow (bez pulpitu). */
 export const PANEL_HOME_PATH_BY_ROLE: Record<UserRole, string> = {
-  ARBORIST: '/arborist',
+  ARBORIST: '/projects',
   OFFICIAL: '/official',
   ADMIN: '/admin',
 };
