@@ -68,6 +68,19 @@ public enum PolishGridCrs {
         return Optional.empty();
     }
 
+    /** Etap 31: strefa PL-2000 dla dlugosci geograficznej (poludnik osiowy 15/18/21/24 +- 1,5 stopnia; poza Polska - najblizsza). */
+    public static PolishGridCrs pl2000ZoneForLongitude(double longitude) {
+        int zoneNumber = (int) Math.min(8, Math.max(5, Math.round(longitude / 3)));
+        return fromEpsgCode(2171 + zoneNumber).orElseThrow();
+    }
+
+    /** Etap 31: WGS 84 (dlugosc, szerokosc w stopniach) -> [easting, northing] w metrach tego ukladu (dokumenty, eksport). */
+    public double[] fromWgs84(double longitude, double latitude) {
+        if (this == WGS84) return new double[]{longitude, latitude};
+        double[] planar = TransverseMercator.forward(longitude, latitude, scaleFactor, centralMeridianDegrees);
+        return new double[]{planar[0] + falseEasting, planar[1] + falseNorthing};
+    }
+
     /** Wspolrzedne pliku -> WGS 84 [dlugosc, szerokosc] w stopniach. */
     public double[] toWgs84(double x, double y) {
         if (this == WGS84) return new double[]{x, y};
@@ -83,6 +96,12 @@ public enum PolishGridCrs {
         private static final double F = 1 / 298.257222101;
         private static final double N = F / (2 - F);
         private static final double RECTIFYING_RADIUS = A / (1 + N) * (1 + N * N / 4 + Math.pow(N, 4) / 64);
+        private static final double ECCENTRICITY = Math.sqrt(F * (2 - F));
+        private static final double[] ALPHA = {
+                N / 2 - 2 * N * N / 3 + 5 * Math.pow(N, 3) / 16 + 41 * Math.pow(N, 4) / 180,
+                13 * N * N / 48 - 3 * Math.pow(N, 3) / 5 + 557 * Math.pow(N, 4) / 1440,
+                61 * Math.pow(N, 3) / 240 - 103 * Math.pow(N, 4) / 140,
+                49561 * Math.pow(N, 4) / 161280};
         private static final double[] BETA = {
                 N / 2 - 2 * N * N / 3 + 37 * Math.pow(N, 3) / 96 - Math.pow(N, 4) / 360,
                 N * N / 48 + Math.pow(N, 3) / 15 - 437 * Math.pow(N, 4) / 1440,
@@ -95,6 +114,26 @@ public enum PolishGridCrs {
                 4279 * Math.pow(N, 4) / 630};
 
         private TransverseMercator() {
+        }
+
+        /** Odwzorowanie wprost (szeregi Krugera) -> [easting, northing] bez przesuniec ukladu. */
+        static double[] forward(double longitude, double latitude, double scaleFactor, double centralMeridianDegrees) {
+            double phi = Math.toRadians(latitude);
+            double lambda = Math.toRadians(longitude - centralMeridianDegrees);
+            double t = Math.sinh(atanh(Math.sin(phi)) - ECCENTRICITY * atanh(ECCENTRICITY * Math.sin(phi)));
+            double xiPrime = Math.atan2(t, Math.cos(lambda));
+            double etaPrime = atanh(Math.sin(lambda) / Math.sqrt(1 + t * t));
+            double xi = xiPrime;
+            double eta = etaPrime;
+            for (int j = 1; j <= 4; j++) {
+                xi += ALPHA[j - 1] * Math.sin(2 * j * xiPrime) * Math.cosh(2 * j * etaPrime);
+                eta += ALPHA[j - 1] * Math.cos(2 * j * xiPrime) * Math.sinh(2 * j * etaPrime);
+            }
+            return new double[]{scaleFactor * RECTIFYING_RADIUS * eta, scaleFactor * RECTIFYING_RADIUS * xi};
+        }
+
+        private static double atanh(double value) {
+            return 0.5 * Math.log((1 + value) / (1 - value));
         }
 
         static double[] inverse(double easting, double northing, double scaleFactor, double centralMeridianDegrees) {

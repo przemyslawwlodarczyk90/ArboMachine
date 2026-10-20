@@ -8,6 +8,9 @@ import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.infrastructure.repository.UserAccountRepository;
 import com.example.arbomachine.infrastructure.security.JwtTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,6 +129,22 @@ class TreeMarkingApiIntegrationTest {
         setMarkings(userAccountA, projectIdA, tree1, "null").andExpect(status().isBadRequest());
         performAs(userAccountA, get("/api/projects/{p}/trees/{t}/markings", projectIdA, tree1))
                 .andExpect(jsonPath("$.codes", contains("VALUABLE")));
+    }
+
+    @Test
+    void projectReportShowsMarkingsAndPolishGridCoordinates() throws Exception {
+        performAs(userAccountA, put("/api/projects/{p}/trees/{t}/location", projectIdA, tree1).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"latitude\":52.2297,\"longitude\":21.0122}")).andExpect(status().isOk());
+        setMarkings(userAccountA, projectIdA, tree1, "[\"SNAG\",\"VALUABLE\"]").andExpect(status().isOk());
+        byte[] pdf = performAs(userAccountA, get("/api/projects/{p}/documents/project-report", projectIdA)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        String text;
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            // Twarda spacja (separator tysiecy w polskim formacie liczb) tez jako zwykla spacja.
+            text = new PDFTextStripper().getText(document).replaceAll("[\\s\\u00a0]+", " ");
+        }
+        assertThat(text).contains("Oznaczenia Drzewo wartościowe, Złom");
+        assertThat(text).contains("PL-2000 strefa 7 (EPSG:2178): X = 5 788 456,49 m, Y = 7 500 833,51 m");
     }
 
     @Test

@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import com.example.arbomachine.domain.treemarking.catalog.TreeMarkingCatalog;
+import com.example.arbomachine.infrastructure.repository.TreeMarkingRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +37,8 @@ import java.util.stream.Collectors;
 
 /**
  * Sklada ProjectDocumentData z danych WLASNEGO projektu (wlasnosc sprawdza wczesniej handler). Stala liczba zapytan
- * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec, kontrole stanu - laczone w pamieci
+ * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec, kontrole stanu,
+ * oznaczenia drzew (etap 31) - laczone w pamieci
  * (brak N+1). Plikow zdjec NIE czyta - daje tylko leniwy dostep do tresci (wersja z adnotacja, jesli istnieje,
  * jak .../documentation-content). Kolejnosc: drzewa, prace i zdjecia w kolejnosci dodania.
  */
@@ -53,6 +56,8 @@ public class ProjectDocumentDataAssembler {
     private final TreeValuationRepository treeValuationRepository;
     private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
     private final TreeStandRepository treeStandRepository;
+    private final TreeMarkingRepository treeMarkingRepository;
+    private final TreeMarkingCatalog treeMarkingCatalog;
 
     public ProjectDocumentDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                         TreePhotoRepository treePhotoRepository,
@@ -60,7 +65,8 @@ public class ProjectDocumentDataAssembler {
                                         PhotoStorage photoStorage,
                                         TreeValuationRepository treeValuationRepository,
                                         TreeMonitoringRecordRepository treeMonitoringRecordRepository,
-                                        TreeStandRepository treeStandRepository) {
+                                        TreeStandRepository treeStandRepository, TreeMarkingRepository treeMarkingRepository,
+                                        TreeMarkingCatalog treeMarkingCatalog) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treePhotoRepository = treePhotoRepository;
@@ -69,6 +75,8 @@ public class ProjectDocumentDataAssembler {
         this.treeValuationRepository = treeValuationRepository;
         this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
         this.treeStandRepository = treeStandRepository;
+        this.treeMarkingRepository = treeMarkingRepository;
+        this.treeMarkingCatalog = treeMarkingCatalog;
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +102,10 @@ public class ProjectDocumentDataAssembler {
                                 record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
                         Collectors.toList())));
 
+        Map<Long, List<String>> markingCodesByTreeId = treeMarkingRepository.findTreeIdsAndCodesByProjectId(ownedProject.getId()).stream()
+                .collect(Collectors.groupingBy(TreeMarkingRepository.TreeIdAndCode::getTreeId,
+                        Collectors.mapping(TreeMarkingRepository.TreeIdAndCode::getCode, Collectors.toList())));
+
         int[] nextPhotoNumber = {1};
         List<ProjectDocumentTreeData> treeData = new ArrayList<>(trees.size());
         for (Tree tree : trees) {
@@ -112,7 +124,8 @@ public class ProjectDocumentDataAssembler {
                             tree.getLocation().getAccuracyM(),
                             tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name()),
                     valuationDataOf(valuationByTreeId.get(tree.getId())), treeWorkData, treePhotoData,
-                    monitoringByTreeId.getOrDefault(tree.getId(), List.of())));
+                    monitoringByTreeId.getOrDefault(tree.getId(), List.of()),
+                    treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of()))));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),

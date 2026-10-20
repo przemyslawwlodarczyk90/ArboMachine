@@ -35,4 +35,22 @@ class PolishGridCrsTest {
         assertThat(PolishGridCrs.guessFromCoordinates(12, 3_000_000)).isEmpty();
         assertThat(PolishGridCrs.fromEpsgCode(2180)).contains(PolishGridCrs.PL_1992);
     }
+
+    /** Etap 31: WGS 84 -> PL-2000 / PL-1992 (wartosci wzorcowe PROJ, pyproj 3, 2026-10-20) - dokladnosc 1 mm. */
+    @Test
+    void wgs84IsProjectedToPolishGridsLikeProj() {
+        assertPlanar(PolishGridCrs.PL_2000_ZONE_7, 21.0122, 52.2297, 7500833.512, 5788456.487);
+        assertPlanar(PolishGridCrs.PL_2000_ZONE_5, 17.0385, 51.1079, 5642748.471, 5665630.246);
+        assertPlanar(PolishGridCrs.PL_2000_ZONE_8, 23.1688, 53.1325, 8444371.356, 5889235.316);
+        assertPlanar(PolishGridCrs.PL_1992, 21.0122, 52.2297, 637382.204, 486757.209);
+        assertThat(PolishGridCrs.pl2000ZoneForLongitude(16.49)).isEqualTo(PolishGridCrs.PL_2000_ZONE_5);
+        assertThat(PolishGridCrs.pl2000ZoneForLongitude(16.51)).isEqualTo(PolishGridCrs.PL_2000_ZONE_6);
+        assertThat(PolishGridCrs.pl2000ZoneForLongitude(30)).isEqualTo(PolishGridCrs.PL_2000_ZONE_8);
+    }
+
+    private static void assertPlanar(PolishGridCrs crs, double longitude, double latitude, double expectedEasting, double expectedNorthing) {
+        double[] planar = crs.fromWgs84(longitude, latitude);
+        assertThat(planar[0]).as(crs + " easting").isCloseTo(expectedEasting, within(0.001));
+        assertThat(planar[1]).as(crs + " northing").isCloseTo(expectedNorthing, within(0.001));
+    }
 }

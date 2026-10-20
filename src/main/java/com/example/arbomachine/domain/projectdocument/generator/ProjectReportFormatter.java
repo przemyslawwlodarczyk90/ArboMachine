@@ -3,6 +3,7 @@ package com.example.arbomachine.domain.projectdocument.generator;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentLocationData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentTreeData;
 
+import com.example.arbomachine.domain.dataexchange.crs.PolishGridCrs;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -59,6 +60,19 @@ public final class ProjectReportFormatter {
         BigDecimal longitude = location.longitude();
         return coordinateFormat.format(latitude.abs()) + "° " + (latitude.signum() < 0 ? "S" : "N") + ", "
                 + coordinateFormat.format(longitude.abs()) + "° " + (longitude.signum() < 0 ? "W" : "E");
+    }
+
+    /**
+     * Etap 31: punkt w ukladzie krajowym, np. "PL-2000 strefa 7 (EPSG:2178): X = 5 788 456,49 m, Y = 7 500 833,51 m"
+     * (X = polnoc, Y = wschod, jak w operatach); null = brak lokalizacji.
+     */
+    public String polishGridCoordinates(ProjectDocumentLocationData location) {
+        if (location == null) return null;
+        PolishGridCrs zone = PolishGridCrs.pl2000ZoneForLongitude(location.longitude().doubleValue());
+        double[] planar = zone.fromWgs84(location.longitude().doubleValue(), location.latitude().doubleValue());
+        DecimalFormat metersFormat = polishDecimalFormat("#,##0.00");
+        return "PL-2000 strefa " + (zone.epsgCode() - 2171) + " (" + zone.code() + "): X = " + metersFormat.format(planar[1])
+                + " m, Y = " + metersFormat.format(planar[0]) + " m";
     }
 
     /** "GPS urządzenia, dokładność ±4 m" / "wskazanie na mapie" / null (brak danych pomiaru - nic nie pokazujemy). */

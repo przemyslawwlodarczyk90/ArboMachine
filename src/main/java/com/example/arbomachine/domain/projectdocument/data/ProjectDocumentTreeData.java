@@ -20,7 +20,9 @@ public record ProjectDocumentTreeData(
         List<ProjectDocumentWorkData> works,
         List<ProjectDocumentPhotoData> photos,
         /** etap 29: kontrole stanu, najnowsza pierwsza (pusta lista = brak monitoringu) */
-        List<ProjectDocumentMonitoringData> monitoringRecords
+        List<ProjectDocumentMonitoringData> monitoringRecords,
+        /** etap 31: nazwy oznaczen drzewa w kolejnosci katalogu (pusta lista = brak) */
+        List<String> markingNames
 ) {
 
     public ProjectDocumentMonitoringData latestMonitoringRecord() {
