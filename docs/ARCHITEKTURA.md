@@ -41,6 +41,8 @@ infrastructure/repository/*Repository          Spring Data JPA
 | `treevaluation` | waloryzacja — zapis oceny arborysty |
 | `treemonitoring` | kontrole stanu drzewa |
 | `treestand` | grupy drzew: wielokąt (GeoJSON), pole, przypisane drzewa (`StandPolygon`: walidacja, pole, punkt-w-wielokącie) |
+| `treemarking` | oznaczenia drzewa (etap 31): katalog w kodzie, wiele oznaczeń na drzewie (wartościowe, do usunięcia, złom…) |
+| `referencelayer` | warstwy referencyjne projektu (etap 31): pliki z QGIS → GeoJSON WGS 84, tylko podgląd na mapie |
 | `mapsymbol` | katalog symboli mapy |
 | `projectsummary` | liczby projektu |
 | `projectdocument` | „Dokument projektu” PDF |

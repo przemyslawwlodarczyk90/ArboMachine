@@ -111,6 +111,10 @@ Publiczne kafelki OpenStreetMap (`tile.openstreetmap.org`). Ich polityka użycia
 produkcyjnego — przed wdrożeniem trzeba wybrać dostawcę podkładu (własny serwer kafelków, komercyjny dostawca,
 WMS GUGiK).
 
+**Etap 31:** arborysta wskazał podkłady wektorowe / QGIS, a dla prostszych zleceń rastrowe (Geoportal, Google).
+Dodano wybór podkładu (OSM, ortofotomapa i mapa topograficzna Geoportalu, nakładka działek KIEG) i warstwy
+referencyjne z plików QGIS — szczegóły i otwarte pytania w sekcji „Etap 31”. Polityka OSM przed produkcją — nadal OPEN.
+
 ### Czy blokuje dalszy development?
 NIE dla developmentu. TAK przed wdrożeniem produkcyjnym.
 
@@ -317,7 +321,54 @@ Zauważone podczas przejścia pełnego flow; zapisane zamiast implementowane (et
 
 ---
 
+## Etap 31 — geolokalizacja, podkłady mapowe, oznaczenia drzew (po pierwszej odpowiedzi arborysty)
+
+**Źródło:** pierwsza odpowiedź arborysty — pierwszy moduł to lokalizacja geodezyjna drzewa na podkładach wektorowych
+(najlepiej QGIS) albo rastrowych (Geoportal, Google), punkt z odbiornika GNSS powiązany z kartą drzewa, wiele symboli
+graficznych na jednym drzewie (wartościowe, do usunięcia, złom…), w przyszłości inne obiekty (ptaki, grzyby, znaleziska).
+Pytania do arborysty: `konspekty/do doprecyzowania/!!!-dodatkowe-pytania-geolokalizacja-mapa-symbole.md`.
+
+**Zasada etapu:** robimy to, co umiemy; w miejscu braku w UI jest widoczny znacznik „Do doprecyzowania” z krótkim
+komentarzem (komponent `ToBeClarifiedNote`), a brak jest zapisany tutaj.
+
+### Co zrobiono (V1)
+
+| Obszar | V1 |
+|---|---|
+| Podkłady mapy | Wybór pod każdą mapą: OpenStreetMap, ortofotomapa Geoportalu (WMS `PZGIK/ORTO/WMS/HighResolution`), mapa topograficzna Geoportalu (WMS `TOPO`); nakładka działek ewidencyjnych KIEG (od zoomu 15, jeden obraz na widok). Wybór wspólny dla wszystkich map, zapamiętany na urządzeniu. Usługi sprawdzone 2026-10-20 w EPSG:3857. |
+| PL-2000 / PL-1992 | Karta drzewa pokazuje punkt w PL-2000 (strefa z długości) i PL-1992 (X = północ, Y = wschód). Ręczne wpisanie współrzędnych także w PL-2000 strefy 5–8 i PL-1992. Raport PDF: wiersz „Układ krajowy”. Przeliczenia zgodne z PROJ do 1 mm (testy). |
+| GNSS / RTK | Pomiar „Uśrednij 10 odczytów” (maks. 20 s) z rozrzutem; dokładność nie lepsza niż rozrzut. Progi: do 10 cm geodezyjna (RTK), do 1 m submetrowa. Odbiornik RTK przez „pozorowaną lokalizację” Androida (aplikacja odbiornika) — instrukcja w karcie drzewa. |
+| Oznaczenia drzewa | Nowy moduł `treemarking`: katalog 16 oznaczeń w 5 grupach (wartość, postępowanie, stan, zagrożenie, siedlisko), wiele na drzewie; sekcja w karcie drzewa (działa offline), tryb mapy „Oznaczenia drzew” (rząd skrótów nad punktem, do 4 + „+N”, filtr, legenda), plakietki i filtr na liście drzew, eksport CSV/XLSX/GIS (`markings`), raport PDF. |
+| Punkt ↔ karta | Karta drzewa: „Pokaż na mapie projektu” (mapa przybliża i zaznacza drzewo). Mapa: „Dodaj drzewo na mapie” — klik w miejsce → numer → karta drzewa z punktem (źródło MAP). |
+| Podkład z QGIS | Nowy moduł `referencelayer`: plik GeoJSON / Shapefile ZIP / GeoPackage / DXF wgrany do projektu jako warstwa referencyjna (GeoJSON WGS 84 w bazie, tylko podgląd pod drzewami, kolor na warstwę, przełącznik widoczności). Czytniki GIS obsługują teraz linie (LineString / MultiLineString, DXF `LINE`). |
+| Inne obiekty przyrodnicze | Tylko zaślepka na mapie (nieaktywny przycisk + „Do doprecyzowania”); do tego czasu oznaczenia z grupy „Siedlisko i przyroda”. |
+
+### Otwarte (OPEN) i założenia bez potwierdzenia
+
+| Temat | Stan |
+|---|---|
+| Model odbiornika GNSS | OPEN / BLOCKS STAGE (pełny RTK): producent, model, połączenie (Bluetooth / USB), aplikacja odbiornika, korekty (ASG-EUPOS / NTRIP), telefon czy tablet, Android czy iOS. Od tego zależy, czy wystarczy pozorowana lokalizacja, czy potrzebna aplikacja natywna. |
+| Dane pomiaru RTK | OPEN: typ rozwiązania (FIX / FLOAT), PDOP, liczba satelitów, czas pomiaru, wysokość anteny — przeglądarka tych danych nie podaje; zapis wymagałby aplikacji natywnej albo odczytu NMEA. |
+| Pomiar z odsunięciem (offset) | OPEN: pomiar obok pnia (pod koroną brak sygnału) i przesunięcie punktu o odległość/azymut — nie zrobione. |
+| Uśrednianie | Założenie V1: 10 odczytów / 20 s, dokładność = max(średnia zgłoszonych dokładności, rozrzut). Do potwierdzenia, ile trwa pomiar przy drzewie. |
+| Progi dokładności | Założenie V1: 10 cm / 1 m / 5 m / 15 m. Czy w dokumentacji wymagana jest konkretna dokładność? Czy blokować zapis słabego pomiaru? |
+| Google Maps | OPEN: wymaga klucza Map Tiles API i akceptacji licencji (płatne powyżej limitu) — w UI opcja nieaktywna ze znacznikiem. Czy Geoportal + OSM wystarczą? |
+| Inne podkłady GUGiK | OPEN: mapa zasadnicza (KIUT / GESUT), BDOT10k (usługa wymagała logowania przy próbie 2026-10-20), MPZP — które warstwy są potrzebne w terenie? |
+| Podkłady offline | BRAK: kafle Geoportalu i OSM nie są zapisywane offline (service worker obsługuje tylko własny origin; polityka OSM zabrania masowego pobierania). |
+| Warstwy referencyjne | Założenia V1: tylko podgląd (bez edycji), bez stylu z QGIS (kolor na warstwę), bez opisów / etykiet z atrybutów, bez kliknięcia obiektu, tylko na mapie projektu (nie na mapie lokalizacji drzewa ani w edytorze grup), limity 15 MB / 20 000 obiektów / 400 000 wierzchołków / 20 warstw, teksty z DXF pomijane, wymagają internetu. OPEN: przykładowy projekt QGIS arborysty. |
+| Usługa WMS/WFS z QGIS Server | DEFERRED: zamiast plików — podłączenie serwera mapowego arborysty / gminy (adres usługi w projekcie). |
+| Lista oznaczeń | Założenie V1: 16 oznaczeń, skróty i kolory wymyślone (nie branżowe). OPEN: lista i symbolika arborysty, edycja katalogu przez użytkownika, oznaczenia wyliczane z danych (waloryzacja → „wartościowe”, praca „wycinka” → „do usunięcia”). |
+| Oznaczenia w imporcie | BRAK: kolumna `markings` jest tylko w eksporcie; import oznaczeń z plików — do doprecyzowania (nazwy czy kody?). |
+| Oznaczenia na mapie | Założenie V1: widoczne od zoomu ok. 15, maks. 4 przy drzewie, tylko w trybie „Oznaczenia drzew” (nie mieszane z symbolami prac). Czy łączyć z symbolem drzewa / pracami? Czy symbole mają trafić do eksportu DXF / PDF z mapą? |
+| Punkt ↔ karta | OPEN: kolejność w terenie (najpierw punkt czy karta), czy przesuwanie punktu na mapie jest dopuszczalne po pomiarze GNSS. V1: oba warianty dostępne. |
+| Inne obiekty przyrodnicze | FUTURE / OPEN: typy, dane, powiązanie z drzewem, wymogi prawne (ochrona gatunkowa). |
+| Weryfikacja | DO SPRAWDZENIA: wszystko sprawdzone w headless Chrome (desktop + telefon 390 px) na H2 i na PostgreSQL; NIE sprawdzone z prawdziwym odbiornikiem RTK, na tablecie w terenie ani z prawdziwym projektem QGIS. |
+
+---
+
 ## Rejestr braków — stan po etapie 30
+
+> Braki etapu 31 (geolokalizacja, podkłady, oznaczenia, warstwy z QGIS) są w sekcji „Etap 31” powyżej.
 
 Jedno miejsce na **wszystko, czego brakuje**: funkcje, niesprawdzone obszary, dług techniczny i sprawy operacyjne.
 Aktualizowany po każdym etapie (dopisujemy nowe braki, rozwiązane oznaczamy). Statusy: **OPEN** — decyzja/discovery,
@@ -644,10 +695,10 @@ Uzupełnia wcześniejsze pytania z sekcji „Lokalizacja drzewa — dane pomiaru
 | Źródło pozycji | V1 IMPLEMENTED: GPS urządzenia przez Geolocation API przeglądarki (jeden pomiar, wysoka dokładność, 30 s). |
 | Dane pomiaru | V1 IMPLEMENTED: dokładność pozioma, wysokość n.p.m., źródło (`MANUAL`/`MAP`/`DEVICE_GNSS`/`IMPORT`). OPEN: czy zapisywać czas pomiaru, PDOP/HDOP, liczbę satelitów, typ rozwiązania (FIX/FLOAT), wysokość anteny? |
 | RTK / NTRIP | DEFERRED / OPEN: czy projekty wymagają centymetrowej dokładności? Jaki dostawca korekt (ASG-EUPOS, komercyjny)? Kto płaci za subskrypcję? |
-| Odbiorniki Bluetooth | DEFERRED / OPEN: czy arboryści używają zewnętrznych odbiorników? Jakie modele i protokoły (NMEA)? Czy wystarczy Web Bluetooth (tylko Chrome)? V1: nieaktywny przycisk z opisem. |
+| Odbiorniki Bluetooth | Etap 31: V1 przez pozorowaną lokalizację Androida (aplikacja odbiornika podaje pozycję systemowi, przeglądarka czyta ją Geolocation API) + instrukcja w karcie drzewa. OPEN: model odbiornika arborysty, iOS, odczyt NMEA. |
 | Aplikacja natywna | OPEN: czy potrzebna wersja natywna (Android / iOS) z pełnym dostępem do GNSS? |
 | Progi dokładności | V1: do 5 m dobra, do 15 m akceptowalna, powyżej słaba (ostrzeżenie, zapis nadal możliwy). OPEN: jaka dokładność jest wymagana w dokumentacji? Czy blokować zapis słabego pomiaru? |
-| Uśrednianie pomiaru | OPEN: czy mierzyć kilka razy i uśredniać (pod koronami drzew)? V1: jeden pomiar + „Zmierz ponownie”. |
+| Uśrednianie pomiaru | Etap 31: V1 IMPLEMENTED — „Uśrednij 10 odczytów” (maks. 20 s) z rozrzutem; nadal dostępny jeden odczyt. |
 | Pomiar RTK w UI | OPEN: z tej samej sekcji lokalizacji czy osobny ekran pomiarów? |
 | Mapa offline / podkład | OPEN: czy mapa offline ma mieć podkład (kafelki OSM nie mogą być masowo cache'owane - polityka OSM)? Ortofotomapa? |
 | Geokodowanie | OPEN: czy potrzebny adres z pozycji GPS (np. do opisu obiektu)? |

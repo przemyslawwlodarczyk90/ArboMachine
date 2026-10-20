@@ -96,8 +96,8 @@ albo zdarzenia (`TreeMonitoringRecordSavedEvent` → powiadomienia) i punkty roz
 [`docs/ARCHITEKTURA.md`](docs/ARCHITEKTURA.md).
 
 ```
-domain/  user · project · tree · treephoto · treework · treevaluation · treemonitoring · treestand
-         mapsymbol · projectsummary · projectdocument · dataexchange (schema, imports, export, gis, crs) · notification
+domain/  user · project · tree · treephoto · treework · treevaluation · treemonitoring · treestand · treemarking
+         referencelayer · mapsymbol · projectsummary · projectdocument · dataexchange (schema, imports, export, gis, crs) · notification
 infrastructure/  api (kontrolery + obsługa błędów) · security · repository · storage · service (e-mail)
 frontend/src/  api · auth · components · map · speech · gnss · offline · notifications
                pages/projects (summary, management, stands, dataexchange, documentation, integrations) · pages/trees (...)
