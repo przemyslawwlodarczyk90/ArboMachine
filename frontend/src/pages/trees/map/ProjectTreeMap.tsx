@@ -25,6 +25,28 @@ import { standPolygonOf, type StandMapShape } from '../../projects/stands/standG
 import { createTreeMarkingStyles, type MapMarkingAppearance } from '../../../map/treeMarkingStyleFactory';
 import type { TreeLocation } from '../treeDataTypes';
 import { toTreeLocation } from '../location/treeLocationMapCoordinates';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Circle as CircleStyle } from 'ol/style';
+import type { ReferenceLayerOnMap } from '../../projects/referencelayers/referenceLayerDataTypes';
+
+/** Stala pusta lista warstw referencyjnych (domyslny props). */
+const NO_REFERENCE_LAYERS: ReferenceLayerOnMap[] = [];
+const REFERENCE_COLOR_PROPERTY = 'referenceLayerColor';
+
+/** Warstwa referencyjna (etap 31): linie i obrysy w kolorze warstwy, obszary z lekkim wypelnieniem, punkty jako kolka. */
+const referenceStyleCache = new globalThis.Map<string, Style>();
+function referenceStyleOf(color: string): Style {
+  let style = referenceStyleCache.get(color);
+  if (!style) {
+    style = new Style({
+      stroke: new Stroke({ color, width: 2 }),
+      fill: new Fill({ color: `${color}1f` }),
+      image: new CircleStyle({ radius: 4, fill: new Fill({ color }), stroke: new Stroke({ color: '#ffffff', width: 1 }) }),
+    });
+    referenceStyleCache.set(color, style);
+  }
+  return style;
+}
 
 /** Pusta mapa oznaczen - domyslna wartosc propsa bez nowego obiektu przy kazdym renderze. */
 const NO_MARKINGS = new globalThis.Map<string, MapMarkingAppearance>();
@@ -113,7 +135,10 @@ function buildManagementStyles(management: TreeManagementSummary, openWorkSymbol
  * jedynie Feature w warstwie i dopasowuje widok. Klikniecie markera zglasza treeId (albo null - klik obok).
  */
 export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS', stands = [],
-                                 markingByCode = NO_MARKINGS, focusedTreeId = null, onEmptyMapClicked }: {
+                                 markingByCode = NO_MARKINGS, focusedTreeId = null, onEmptyMapClicked,
+                                 referenceLayers = NO_REFERENCE_LAYERS }: {
+  /** etap 31: widoczne warstwy referencyjne projektu (podklad wektorowy z QGIS) - pod grupami drzew i drzewami */
+  referenceLayers?: ReferenceLayerOnMap[];
   /** etap 31: tryb "Dodaj drzewo na mapie" - klik obok markerow zglasza punkt WGS 84 (brak = zwykly podglad) */
   onEmptyMapClicked?: (location: TreeLocation) => void;
   treeMapPoints: TreeMapPoint[];
@@ -141,6 +166,7 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
   const treeMarkerLayerRef = useRef<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
   const viewModeRef = useRef(viewMode);
   const standSourceRef = useRef<VectorSource<Feature<Polygon>> | null>(null);
+  const referenceSourceRef = useRef<VectorSource | null>(null);
   const markingByCodeRef = useRef(markingByCode);
   const focusedTreeIdRef = useRef(focusedTreeId);
   focusedTreeIdRef.current = focusedTreeId;
@@ -200,7 +226,11 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     const standLayer = new VectorLayer({ source: standSource, declutter: true,
       style: (feature: FeatureLike) => standStyleOf(String(feature.get('name') ?? '')) });
     standSourceRef.current = standSource;
-    const map = createMapWithBasemap(mapContainerRef.current, [standLayer, treeMarkerLayer]);
+    const referenceSource = new VectorSource();
+    referenceSourceRef.current = referenceSource;
+    const referenceLayer = new VectorLayer({ source: referenceSource,
+      style: (feature: FeatureLike) => referenceStyleOf(String(feature.get(REFERENCE_COLOR_PROPERTY) ?? '#495057')) });
+    const map = createMapWithBasemap(mapContainerRef.current, [referenceLayer, standLayer, treeMarkerLayer]);
     treeMarkerLayerRef.current = treeMarkerLayer;
 
     map.on('singleclick', (clickEvent) => {
@@ -267,6 +297,23 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     fitViewToCoordinates(map, focusedPoint ? [focusedPoint.mapCoordinate]
       : treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
   }, [treeMapPoints]);
+
+  // Warstwy referencyjne (etap 31) - jedno zrodlo dla wszystkich widocznych warstw; zmiana nie zmienia widoku mapy.
+  useEffect(() => {
+    const referenceSource = referenceSourceRef.current;
+    if (!referenceSource) return;
+    referenceSource.clear();
+    const format = new GeoJSON();
+    for (const layer of referenceLayers) {
+      try {
+        const features = format.readFeatures(layer.geoJson, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+        features.forEach((feature) => feature.set(REFERENCE_COLOR_PROPERTY, layer.color));
+        referenceSource.addFeatures(features);
+      } catch {
+        // Uszkodzona geometria jednej warstwy nie psuje mapy - warstwa po prostu sie nie pojawia.
+      }
+    }
+  }, [referenceLayers]);
 
   // Grupy drzew (etap 29) - osobna warstwa pod markerami; zmiana listy nie zmienia widoku mapy.
   useEffect(() => {

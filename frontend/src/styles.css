@@ -800,3 +800,14 @@ th.right, td.right { text-align: right; }
 .tree-marking-group legend { padding: 0 0.3rem; font-weight: 600; font-size: 0.9rem; }
 .tree-marking-group .checkbox-row { display: flex; }
 .map-add-tree-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; }
+
+/* ---------- Etap 31: warstwy referencyjne z QGIS ---------- */
+.reference-layers-panel { display: grid; gap: 0.5rem; padding: 0.6rem 0.85rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.reference-layers-panel > summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.reference-layers-panel p { margin: 0; }
+.reference-layer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
+.reference-layer-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.75rem; overflow-wrap: anywhere; }
+.reference-layer-swatch { display: inline-block; width: 18px; height: 12px; border: 3px solid; border-radius: 3px; flex: none; }
+.reference-layer-upload { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1rem; }
+.reference-layer-upload .field { min-width: min(260px, 100%); flex: 1 1 220px; }
+.reference-layer-upload input[type=file] { max-width: 100%; }

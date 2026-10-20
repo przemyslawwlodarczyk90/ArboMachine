@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { NewTreeDialog } from '../NewTreeDialog';
+import { ReferenceLayersPanel } from '../../projects/referencelayers/ReferenceLayersPanel';
+import { useProjectReferenceLayers } from '../../projects/referencelayers/useProjectReferenceLayers';
 import type { TreeLocation } from '../treeDataTypes';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
@@ -69,6 +71,8 @@ export function ProjectTreeMapSection() {
   const [projectMarkings, setProjectMarkings] = useState<TreeMarkings[] | null>(null);
   const [markingFilterCode, setMarkingFilterCode] = useState('');
   const { catalogState: markingCatalogState, markingByCode } = useTreeMarkingCatalog();
+  // Etap 31: podklad wektorowy projektu (pliki z QGIS) - niezalezny od danych drzew.
+  const referenceLayers = useProjectReferenceLayers(projectId ?? 0);
 
   useEffect(() => {
     if (projectId === null) return;
@@ -230,6 +234,7 @@ export function ProjectTreeMapSection() {
       <div className="map-frame">
         <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
                         focusedTreeId={focusedTreeId} onEmptyMapClicked={isAddingTreeOnMap ? setNewTreeLocation : undefined}
+                        referenceLayers={referenceLayers.layersOnMap}
                         viewMode={viewMode} stands={areStandsVisible ? stands : NO_STANDS} markingByCode={markingByCode} />
         {selectedTree && (
           <div className="map-selected-tree card" role="status">
@@ -278,6 +283,9 @@ export function ProjectTreeMapSection() {
       </div>
 
       <BasemapControls />
+      <ReferenceLayersPanel projectId={projectId} state={referenceLayers.state} hiddenLayerIds={referenceLayers.hiddenLayerIds}
+                            toggleLayer={referenceLayers.toggleLayer} onLayerAdded={referenceLayers.addLayer}
+                            onLayerRemoved={referenceLayers.removeLayer} />
 
       {treeMapPoints.length > 0 && viewMode === 'SYMBOLS' && <ProjectMapLegend entries={legendEntries} />}
       {allTreeMapPoints.length > 0 && viewMode === 'MARKINGS' && (
