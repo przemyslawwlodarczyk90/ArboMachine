@@ -4,6 +4,7 @@ import { createMemoryOfflineStore } from './memoryOfflineStore.ts';
 import {
   describePendingChange, discardChange, isLocalOnlyPath, projectValuationsPath, projectWorksPath, queueChange, syncPendingChanges,
   projectLatestMonitoringPath, treeMonitoringPath, treePath, treesListPath, treeValuationPath, treeWorksPath,
+  projectTreeMarkingsPath, treeMarkingsPath,
 } from './offlineQueue.ts';
 import type { PendingChangeRequest } from './offlineTypes.ts';
 
@@ -244,4 +245,31 @@ test('pominiecie kontroli utworzonej offline pomija tez jej edycje', async () =>
   const [first] = await store.listChanges();
   assert.equal(await discardChange(store, first.id!), 2);
   assert.equal((await store.listChanges()).length, 0);
+});
+
+test('oznaczenia offline (etap 31): od razu w karcie i liscie projektu, synchronizacja PUT z id drzewa z serwera', async () => {
+  const store = createMemoryOfflineStore();
+  await store.writeCachedResponse(projectTreeMarkingsPath(PROJECT), [{ treeId: 3, codes: ['NEST'] }]);
+  const tree = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE', body: { inventoryNumber: 'O-1' } }) as { id: number };
+  assert.deepEqual(await store.readCachedResponse(treeMarkingsPath(PROJECT, tree.id)), { treeId: tree.id, codes: [] });
+  const saved = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'SET_TREE_MARKINGS', treeId: tree.id,
+    body: { codes: ['TO_REMOVE', 'SNAG'] } }) as Record<string, unknown>;
+  assert.deepEqual(saved, { treeId: tree.id, codes: ['TO_REMOVE', 'SNAG'], offlinePending: true });
+  const list = await store.readCachedResponse(projectTreeMarkingsPath(PROJECT)) as { treeId: number }[];
+  assert.deepEqual(list.map((item) => item.treeId), [3, tree.id]);
+  assert.equal(describePendingChange((await store.listChanges())[1]), 'Oznaczenia drzewa');
+
+  const sent: string[] = [];
+  const outcome = await syncPendingChanges(store, OWNER, async (request) => {
+    sent.push(`${request.httpMethod} ${request.path}`);
+    if (request.path.endsWith('/trees')) return { id: 800, projectId: PROJECT, inventoryNumber: 'O-1' };
+    return { treeId: 800, ...(request.body as object) };
+  });
+  assert.deepEqual(outcome, { status: 'completed', syncedCount: 2 });
+  assert.deepEqual(sent, [`POST /api/projects/${PROJECT}/trees`, `PUT /api/projects/${PROJECT}/trees/800/markings`]);
+  const syncedList = await store.readCachedResponse(projectTreeMarkingsPath(PROJECT)) as { treeId: number }[];
+  assert.deepEqual(syncedList.map((item) => item.treeId), [3, 800], 'wpis z tymczasowym id zastapiony');
+
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'SET_TREE_MARKINGS', treeId: 3, body: { codes: [] } });
+  assert.deepEqual((await store.readCachedResponse(projectTreeMarkingsPath(PROJECT)) as { treeId: number }[]).map((item) => item.treeId), [800]);
 });

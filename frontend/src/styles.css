@@ -786,3 +786,16 @@ th.right, td.right { text-align: right; }
 .basemap-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
 .basemap-controls-row .select { min-height: 40px; max-width: 100%; }
 .tree-location-grid { display: grid; gap: 0.1rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- Etap 31: oznaczenia drzewa (wiele symboli na drzewie) ---------- */
+.tree-marking-badge-row { display: inline-flex; align-items: center; gap: 0.4rem; }
+.tree-marking-badge {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  min-width: 22px; height: 22px; padding: 0 4px; border-radius: 999px; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 25%); color: #fff; font-size: 0.7rem; font-weight: 700; line-height: 1;
+}
+.tree-marking-list { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; }
+.tree-marking-groups { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
+.tree-marking-group { margin: 0; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+.tree-marking-group legend { padding: 0 0.3rem; font-weight: 600; font-size: 0.9rem; }
+.tree-marking-group .checkbox-row { display: flex; }

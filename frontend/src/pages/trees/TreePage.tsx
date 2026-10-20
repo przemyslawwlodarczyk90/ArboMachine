@@ -14,6 +14,7 @@ import { TreePhotosSection } from './photos/TreePhotosSection';
 import type { Tree } from './treeDataTypes';
 import { TreeFieldForm } from './TreeFieldForm';
 import { TreeMapSymbolSection } from './TreeMapSymbolSection';
+import { TreeMarkingsSection } from './markings/TreeMarkingsSection';
 import { treesApi } from './treesApi';
 import { TreeMonitoringSection } from './monitoring/TreeMonitoringSection';
 import { TreeValuationSection } from './valuation/TreeValuationSection';
@@ -138,6 +139,7 @@ export function TreePage() {
       <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree}
                      onUnsavedChangesChange={setHasUnsavedTreeChanges} />
       <TreeLocationSection projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
+      <TreeMarkingsSection key={`markings-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       <TreeValuationSection key={`valuation-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       <TreeMonitoringSection key={`monitoring-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       {isCreatedOffline ? (

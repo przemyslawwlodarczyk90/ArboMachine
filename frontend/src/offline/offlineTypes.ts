@@ -18,7 +18,9 @@ export type PendingChangeKind =
   /** etap 29: wpisy monitoringu (kontrole stanu) drzewa */
   | 'CREATE_TREE_MONITORING_RECORD'
   | 'UPDATE_TREE_MONITORING_RECORD'
-  | 'DELETE_TREE_MONITORING_RECORD';
+  | 'DELETE_TREE_MONITORING_RECORD'
+  /** etap 31: komplet oznaczen drzewa (PUT - zastepuje poprzednie) */
+  | 'SET_TREE_MARKINGS';
 
 /** Blad wyslania zmiany (walidacja, brak zasobu, blad serwera) - synchronizacja stoi do decyzji uzytkownika. */
 export interface PendingChangeFailure {

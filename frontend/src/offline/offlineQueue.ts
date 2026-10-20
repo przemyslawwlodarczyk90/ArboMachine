@@ -16,6 +16,8 @@ export const treeValuationPath = (projectId: number, treeId: number) => `${treeP
 export const projectValuationsPath = (projectId: number) => `/api/projects/${projectId}/valuations`;
 export const treeMonitoringPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/monitoring`;
 export const projectLatestMonitoringPath = (projectId: number) => `/api/projects/${projectId}/monitoring/latest`;
+export const treeMarkingsPath = (projectId: number, treeId: number) => `${treePath(projectId, treeId)}/markings`;
+export const projectTreeMarkingsPath = (projectId: number) => `/api/projects/${projectId}/tree-markings`;
 
 /** Pusta waloryzacja (jak GET backendu dla drzewa bez waloryzacji). */
 const emptyValuationOf = (treeId: number) => ({ treeId, hasValuation: false });
@@ -85,6 +87,8 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
       return { httpMethod: 'PUT', path: treeValuationPath(change.projectId, treeId), body: change.body };
     case 'DELETE_TREE_VALUATION':
       return { httpMethod: 'DELETE', path: treeValuationPath(change.projectId, treeId) };
+    case 'SET_TREE_MARKINGS':
+      return { httpMethod: 'PUT', path: treeMarkingsPath(change.projectId, treeId), body: change.body };
     case 'CREATE_TREE_MONITORING_RECORD':
       return { httpMethod: 'POST', path: treeMonitoringPath(change.projectId, treeId), body: change.body };
     case 'UPDATE_TREE_MONITORING_RECORD':
@@ -129,6 +133,17 @@ async function cacheValuation(store: OfflineStore, projectId: number, treeId: nu
   if (!Array.isArray(list)) return;
   const others = (list as Record<string, unknown>[]).filter((item) => item.treeId !== replacedTreeId && item.treeId !== treeId);
   await store.writeCachedResponse(projectValuationsPath(projectId), valuation.hasValuation ? [...others, valuation] : others);
+}
+
+/** Oznaczenia drzewa (etap 31) w kopiach: karta drzewa i lista projektu (tylko drzewa z oznaczeniami, klucz = treeId). */
+async function cacheMarkings(store: OfflineStore, projectId: number, treeId: number, markings: { treeId: number; codes: unknown },
+                             replacedTreeId = treeId) {
+  await store.writeCachedResponse(treeMarkingsPath(projectId, treeId), markings);
+  const list = await store.readCachedResponse(projectTreeMarkingsPath(projectId));
+  if (!Array.isArray(list)) return;
+  const others = (list as Record<string, unknown>[]).filter((item) => item.treeId !== replacedTreeId && item.treeId !== treeId);
+  const hasCodes = Array.isArray(markings.codes) && markings.codes.length > 0;
+  await store.writeCachedResponse(projectTreeMarkingsPath(projectId), hasCodes ? [...others, markings] : others);
 }
 
 async function removeFromCachedList(store: OfflineStore, path: string, removedId: number) {
@@ -189,6 +204,14 @@ export async function queueChange(store: OfflineStore, queuedDraft: QueuedChange
       await store.writeCachedResponse(treePhotosPath(projectId, treeId), []);
       await store.writeCachedResponse(treeValuationPath(projectId, treeId), emptyValuationOf(treeId));
       await store.writeCachedResponse(treeMonitoringPath(projectId, treeId), []);
+      await store.writeCachedResponse(treeMarkingsPath(projectId, treeId), { treeId, codes: [] });
+      break;
+    }
+    case 'SET_TREE_MARKINGS': {
+      const codes = ((draft.body ?? {}) as Record<string, unknown>).codes;
+      result = { id: treeId, treeId, codes: Array.isArray(codes) ? codes : [], offlinePending: true };
+      delete (result as Record<string, unknown>).id;
+      await cacheMarkings(store, projectId, treeId, result as unknown as { treeId: number; codes: unknown });
       break;
     }
     case 'CREATE_TREE_MONITORING_RECORD': {
@@ -329,6 +352,13 @@ export async function syncPendingChanges(store: OfflineStore, ownerEmail: string
 }
 
 async function applyServerResponse(store: OfflineStore, change: PendingChange, response: unknown) {
+  if (change.kind === 'SET_TREE_MARKINGS') {
+    const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
+    if (typeof response === 'object' && response !== null) {
+      await cacheMarkings(store, change.projectId, serverTreeId, response as { treeId: number; codes: unknown }, change.treeId);
+    }
+    return;
+  }
   if (change.kind === 'UPSERT_TREE_VALUATION' || change.kind === 'DELETE_TREE_VALUATION') {
     const serverTreeId = await resolveId(store, 'tree', change.treeId) ?? change.treeId;
     const valuation = change.kind === 'UPSERT_TREE_VALUATION' && typeof response === 'object' && response !== null
@@ -410,6 +440,7 @@ export function describePendingChange(change: PendingChange): string {
     case 'DELETE_TREE_WORK': return 'Usunięcie pracy';
     case 'UPSERT_TREE_VALUATION': return 'Waloryzacja drzewa';
     case 'DELETE_TREE_VALUATION': return 'Usunięcie waloryzacji drzewa';
+    case 'SET_TREE_MARKINGS': return 'Oznaczenia drzewa';
     case 'CREATE_TREE_MONITORING_RECORD': return `Nowa kontrola stanu (${String(body.inspectionDate ?? '')})`;
     case 'UPDATE_TREE_MONITORING_RECORD': return `Zmiana kontroli stanu (${String(body.inspectionDate ?? '')})`;
     case 'DELETE_TREE_MONITORING_RECORD': return 'Usunięcie kontroli stanu';
