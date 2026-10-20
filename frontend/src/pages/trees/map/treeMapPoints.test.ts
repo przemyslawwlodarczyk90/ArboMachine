@@ -68,3 +68,9 @@ test('drzewo bez symbolu i bez prac -> neutralny punkt bez znaczkow', () => {
   assert.equal(treeMapPoint.treeSymbolCode, null);
   assert.deepEqual(treeMapPoint.workSymbolCodes, []);
 });
+
+test('etap 31: oznaczenia drzewa po treeId; drzewo bez wpisu ma pusta liste', () => {
+  const points = toTreeMapPoints([treeWith(1, { latitude: 52, longitude: 21 }), treeWith(2, { latitude: 52, longitude: 21 })],
+    [], new Map(), new Map([[1, ['VALUABLE', 'SNAG']]]));
+  assert.deepEqual(points.map((point) => point.markingCodes), [['VALUABLE', 'SNAG'], []]);
+});

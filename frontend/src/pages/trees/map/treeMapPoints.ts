@@ -27,6 +27,8 @@ export interface TreeMapPoint {
   management: TreeManagementSummary;
   /** etap 29: iglaste (gwiazdka) / lisciaste (kolko) / null (gatunek nie podany - kolko) */
   speciesGroup: SpeciesGroup | null;
+  /** etap 31: kody oznaczen drzewa (kolejnosc katalogu); pusta lista = brak oznaczen */
+  markingCodes: string[];
 }
 
 /** Minimum danych pracy potrzebne mapie (TreeWork z GET /api/projects/{projectId}/works). */
@@ -44,7 +46,8 @@ export interface TreeMapWorkInput {
  * i jest widoczne na liscie drzew.
  */
 export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = [],
-                                valuationCategoryByTreeId: Map<number, TreeValuationCategory | null> = new Map()): TreeMapPoint[] => {
+                                valuationCategoryByTreeId: Map<number, TreeValuationCategory | null> = new Map(),
+                                markingCodesByTreeId: Map<number, string[]> = new Map()): TreeMapPoint[] => {
   const workSymbolCodesByTreeId = new Map<number, string[]>();
   const openWorkSymbolCodesByTreeId = new Map<number, string[]>();
   const append = (codesByTreeId: Map<number, string[]>, treeId: number, code: string) =>
@@ -68,6 +71,7 @@ export const toTreeMapPoints = (trees: Tree[], works: TreeMapWorkInput[] = [],
       openWorkSymbolCodes: openWorkSymbolCodesByTreeId.get(tree.id) ?? [],
       management: managementByTreeId.get(tree.id) ?? NO_WORKS_SUMMARY,
       speciesGroup: speciesGroupOf(tree.speciesLatin, tree.speciesPolish),
+      markingCodes: markingCodesByTreeId.get(tree.id) ?? [],
     }]
     : []);
 };

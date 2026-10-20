@@ -22,7 +22,11 @@ import { ValuationBadge } from '../valuation/ValuationBadge';
 import { valuationColorOf } from '../valuation/valuationColors';
 import { valuationCategoryLabel, type TreeValuation } from '../valuation/valuationDataTypes';
 import { valuationCategoryByTreeId } from '../valuation/valuationFilter';
-import { buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
+import { buildMarkingLegend, buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
+import { TreeMarkingBadge } from '../markings/TreeMarkingBadge';
+import type { TreeMarkings } from '../markings/treeMarkingDataTypes';
+import { treeMarkingsApi } from '../markings/treeMarkingsApi';
+import { useTreeMarkingCatalog } from '../markings/useTreeMarkingCatalog';
 import { TreeWorkMeta } from '../works/TreeWorkMeta';
 import {
   buildManagementLegend, isOpenWorkStatus, managementColorOf, managementStateLabel, sortWorksForManagement,
@@ -53,6 +57,10 @@ export function ProjectTreeMapSection() {
   // Grupy drzew (etap 29): warstwa obszarow, domyslnie widoczna, gdy projekt je ma.
   const [stands, setStands] = useState<TreeStand[]>([]);
   const [areStandsVisible, setAreStandsVisible] = useState(true);
+  // Oznaczenia drzew (etap 31) - osobne zapytanie; blad nie blokuje mapy. Filtr: kod oznaczenia albo '' = wszystkie.
+  const [projectMarkings, setProjectMarkings] = useState<TreeMarkings[] | null>(null);
+  const [markingFilterCode, setMarkingFilterCode] = useState('');
+  const { catalogState: markingCatalogState, markingByCode } = useTreeMarkingCatalog();
 
   useEffect(() => {
     if (projectId === null) return;
@@ -62,6 +70,9 @@ export function ProjectTreeMapSection() {
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
+    treeMarkingsApi.listProjectMarkings(projectId)
+      .then((loadedMarkings) => { if (isResponseStillWanted) setProjectMarkings(loadedMarkings); })
+      .catch(() => { if (isResponseStillWanted) setProjectMarkings(null); });
     treeStandsApi.listStands(projectId)
       .then((loadedStands) => { if (isResponseStillWanted) setStands(loadedStands); })
       .catch(() => { if (isResponseStillWanted) setStands([]); });
@@ -81,9 +92,14 @@ export function ProjectTreeMapSection() {
 
   const loadedData = projectMapDataState.status === 'loaded' ? projectMapDataState : null;
   // Stabilne tablice - mapa dopasowuje widok tylko wtedy, gdy zmieniaja sie dane projektu.
-  const treeMapPoints = useMemo(
-    () => (loadedData ? toTreeMapPoints(loadedData.trees, loadedData.works, valuationCategoryByTreeId(valuations ?? [])) : []),
-    [loadedData, valuations]);
+  const allTreeMapPoints = useMemo(
+    () => (loadedData ? toTreeMapPoints(loadedData.trees, loadedData.works, valuationCategoryByTreeId(valuations ?? []),
+      new Map((projectMarkings ?? []).map((markings) => [markings.treeId, markings.codes]))) : []),
+    [loadedData, valuations, projectMarkings]);
+  // Filtr oznaczen dziala tylko w trybie "Oznaczenia drzew" - w innych trybach mapa pokazuje wszystkie drzewa.
+  const treeMapPoints = useMemo(() => (viewMode === 'MARKINGS' && markingFilterCode
+    ? allTreeMapPoints.filter((point) => point.markingCodes.includes(markingFilterCode))
+    : allTreeMapPoints), [allTreeMapPoints, viewMode, markingFilterCode]);
   const legendEntries = useMemo(() => (loadedData
     ? buildProjectMapLegend(
       loadedData.trees.map((tree) => ({ id: tree.id, hasLocation: !!tree.location, mapSymbolCode: tree.mapSymbolCode })),
@@ -106,7 +122,9 @@ export function ProjectTreeMapSection() {
   }
 
   const treeCount = projectMapDataState.trees.length;
-  const treesWithoutLocationCount = treeCount - treeMapPoints.length;
+  const treesWithoutLocationCount = treeCount - allTreeMapPoints.length;
+  const markingCatalogCodes = markingCatalogState.status === 'loaded' ? markingCatalogState.markings.map((marking) => marking.code) : [];
+  const selectedTreeMarkingCodes = allTreeMapPoints.find((point) => point.treeId === selectedTreeId)?.markingCodes ?? [];
   const selectedTree = projectMapDataState.trees.find((tree) => tree.id === selectedTreeId) ?? null;
   const allSelectedTreeWorks = projectMapDataState.works.filter((work) => work.treeId === selectedTreeId);
   // W trybie gospodarki tylko prace do wykonania, w kolejnosci terminow (jak w widoku "Gospodarka drzewostanem").
@@ -130,10 +148,10 @@ export function ProjectTreeMapSection() {
           W tym projekcie nie ma jeszcze drzew. <Link to={`/projects/${projectId}/trees`}>Przejdź do listy drzew</Link>
         </Alert>
       )}
-      {treeCount > 0 && treeMapPoints.length === 0 && (
+      {treeCount > 0 && allTreeMapPoints.length === 0 && (
         <Alert variant="info">Brak drzew z zapisaną lokalizacją.</Alert>
       )}
-      {treeMapPoints.length > 0 && treesWithoutLocationCount > 0 && (
+      {allTreeMapPoints.length > 0 && treesWithoutLocationCount > 0 && (
         <p className="muted small">
           Drzewa bez lokalizacji: {treesWithoutLocationCount} (niewidoczne na mapie). Lokalizację ustawisz w karcie
           drzewa.
@@ -145,7 +163,7 @@ export function ProjectTreeMapSection() {
         </Alert>
       )}
 
-      {treeMapPoints.length > 0 && (
+      {allTreeMapPoints.length > 0 && (
         <div className="map-view-mode" role="radiogroup" aria-label="Widok mapy">
           <span className="muted small">Widok:</span>
           {MAP_VIEW_MODES.map(({ mode, label }) => (
@@ -156,7 +174,23 @@ export function ProjectTreeMapSection() {
           ))}
         </div>
       )}
-      {(stands.length > 0 || treeMapPoints.length > 0) && (
+      {viewMode === 'MARKINGS' && (
+        <div className="map-layer-toggles">
+          <label className="muted small" htmlFor="map-marking-filter">Pokaż:</label>
+          <select id="map-marking-filter" className="select" value={markingFilterCode}
+                  onChange={(changeEvent) => setMarkingFilterCode(changeEvent.target.value)}>
+            <option value="">wszystkie drzewa</option>
+            {markingCatalogState.status === 'loaded' && markingCatalogState.markings.map((marking) => (
+              <option key={marking.code} value={marking.code}>tylko: {marking.displayName}</option>
+            ))}
+          </select>
+          {markingFilterCode && <span className="muted small">Drzewa z tym oznaczeniem: {treeMapPoints.length}</span>}
+        </div>
+      )}
+      {viewMode === 'MARKINGS' && projectMarkings === null && (
+        <Alert variant="error">Nie udało się pobrać oznaczeń drzew - drzewa są pokazane bez oznaczeń.</Alert>
+      )}
+      {(stands.length > 0 || allTreeMapPoints.length > 0) && (
         <div className="map-layer-toggles">
           {stands.length > 0 && (
             <label className="checkbox-row">
@@ -177,7 +211,7 @@ export function ProjectTreeMapSection() {
 
       <div className="map-frame">
         <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
-                        viewMode={viewMode} stands={areStandsVisible ? stands : NO_STANDS} />
+                        viewMode={viewMode} stands={areStandsVisible ? stands : NO_STANDS} markingByCode={markingByCode} />
         {selectedTree && (
           <div className="map-selected-tree card" role="status">
             <div className="map-selected-tree-text">
@@ -185,6 +219,12 @@ export function ProjectTreeMapSection() {
                 {selectedTreeSymbol && <MapSymbolSwatch symbol={selectedTreeSymbol} size={18} />} Drzewo {selectedTree.inventoryNumber}
               </strong>
               {viewMode === 'VALUATION' && <ValuationBadge category={selectedTreeValuationCategory} prefix="Waloryzacja: " />}
+              {selectedTreeMarkingCodes.length > 0 && (
+                <span className="tree-marking-list" aria-label="Oznaczenia drzewa">
+                  {selectedTreeMarkingCodes.map((code) => markingByCode.get(code)).filter((marking) => marking !== undefined)
+                    .map((marking) => <TreeMarkingBadge key={marking.code} marking={marking} withName />)}
+                </span>
+              )}
               {viewMode === 'MANAGEMENT' && selectedTreeWorks.length === 0 && (
                 <span className="muted small">Brak prac do wykonania.</span>
               )}
@@ -221,6 +261,21 @@ export function ProjectTreeMapSection() {
       <BasemapControls />
 
       {treeMapPoints.length > 0 && viewMode === 'SYMBOLS' && <ProjectMapLegend entries={legendEntries} />}
+      {allTreeMapPoints.length > 0 && viewMode === 'MARKINGS' && (
+        <section className="map-legend" aria-labelledby="map-marking-legend-heading">
+          <h3 id="map-marking-legend-heading">Legenda - oznaczenia drzew</h3>
+          {buildMarkingLegend(allTreeMapPoints, markingCatalogCodes).length === 0 ? (
+            <p className="muted small">Żadne drzewo na mapie nie ma jeszcze oznaczeń. Oznaczenia dodasz w karcie drzewa.</p>
+          ) : (
+            <ul>
+              {buildMarkingLegend(allTreeMapPoints, markingCatalogCodes).map(({ code, count }) => (
+                <li key={code}><TreeMarkingBadge marking={markingByCode.get(code)!} withName /> ({count})</li>
+              ))}
+            </ul>
+          )}
+          <p className="muted small">Przy drzewie widać do 4 oznaczeń, resztę jako „+N” - pełna lista po kliknięciu drzewa.</p>
+        </section>
+      )}
       {treeMapPoints.length > 0 && viewMode === 'VALUATION' && (
         <section className="map-legend" aria-labelledby="map-valuation-legend-heading">
           <h3 id="map-valuation-legend-heading">Legenda - waloryzacja</h3>

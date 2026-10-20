@@ -1,4 +1,7 @@
+import type BaseLayer from 'ol/layer/Base';
+import ImageLayer from 'ol/layer/Image';
 import TileLayer from 'ol/layer/Tile';
+import ImageWMS from 'ol/source/ImageWMS';
 import OSM from 'ol/source/OSM';
 import TileWMS from 'ol/source/TileWMS';
 import type { BasemapId, BasemapSelection } from './basemapPreference';
@@ -27,14 +30,17 @@ function geoportalWmsLayer(url: string, layers: string, basemapId: BasemapId) {
   return layer;
 }
 
-/** Wszystkie podklady (widoczny tylko wybrany) + nakladka dzialek - kolejnosc = kolejnosc rysowania. */
-export function createBasemapLayers(): TileLayer[] {
+/**
+ * Wszystkie podklady (widoczny tylko wybrany) + nakladka dzialek - kolejnosc = kolejnosc rysowania. Dzialki jako
+ * JEDEN obraz na widok (ImageWMS), a nie kafle - przy kaflach usluga podpisuje numer dzialki w kazdym kaflu osobno.
+ */
+export function createBasemapLayers(): BaseLayer[] {
   const openStreetMap = new TileLayer({ source: new OSM(), visible: false });
   openStreetMap.set(BASEMAP_ID_PROPERTY, 'OSM');
-  const parcels = new TileLayer({
+  const parcels = new ImageLayer({
     visible: false,
     minZoom: PARCELS_MIN_ZOOM,
-    source: new TileWMS({
+    source: new ImageWMS({
       url: PARCELS_WMS_URL,
       params: { LAYERS: 'dzialki,numery_dzialek', VERSION: '1.3.0', FORMAT: 'image/png', TRANSPARENT: true },
       attributions: 'Działki: © GUGiK (Krajowa Integracja Ewidencji Gruntów)',
@@ -50,7 +56,7 @@ export function createBasemapLayers(): TileLayer[] {
 }
 
 /** Pokazuje wybrany podklad i (opcjonalnie) dzialki; pozostale warstwy ukryte - nie pobieraja kafli. */
-export function applyBasemapSelection(basemapLayers: TileLayer[], selection: BasemapSelection) {
+export function applyBasemapSelection(basemapLayers: BaseLayer[], selection: BasemapSelection) {
   for (const layer of basemapLayers) {
     layer.setVisible(layer.get(PARCELS_OVERLAY_PROPERTY)
       ? selection.showParcels

@@ -22,6 +22,10 @@ import { Fill, Stroke, Style, Text } from 'ol/style';
 import { type SpeciesGroup } from '../../../map/speciesGroup';
 import { type TreeMarkerShape } from '../../../map/openLayersBaseMap';
 import { standPolygonOf, type StandMapShape } from '../../projects/stands/standGeometry';
+import { createTreeMarkingStyles, type MapMarkingAppearance } from '../../../map/treeMarkingStyleFactory';
+
+/** Pusta mapa oznaczen - domyslna wartosc propsa bez nowego obiektu przy kazdym renderze. */
+const NO_MARKINGS = new globalThis.Map<string, MapMarkingAppearance>();
 
 /** Nazwy wlasciwosci Feature - po nich klikniety marker jest wiazany z konkretnym drzewem. */
 const TREE_ID_FEATURE_PROPERTY = 'treeId';
@@ -32,6 +36,7 @@ const VALUATION_CATEGORY_FEATURE_PROPERTY = 'valuationCategory';
 const OPEN_WORK_SYMBOLS_FEATURE_PROPERTY = 'openWorkSymbolCodes';
 const MANAGEMENT_FEATURE_PROPERTY = 'management';
 const SPECIES_GROUP_FEATURE_PROPERTY = 'speciesGroup';
+const MARKING_CODES_FEATURE_PROPERTY = 'markingCodes';
 
 /** Rozmiary V1 (piksele): centralny symbol drzewa i mniejsze znaczki prac wokol niego. */
 const TREE_SYMBOL_RADIUS_PX = 8;
@@ -71,6 +76,18 @@ function buildTreeStyles(treeSymbolCode: string | null, workSymbolCodes: string[
   return styles;
 }
 
+/**
+ * Oznaczenia rysujemy dopiero od przyblizenia "osiedle" (ok. zoom 15; m na piksel) - przy widoku miasta rzedy
+ * oznaczen sasiednich drzew nachodza na siebie. Wartosc V1.
+ */
+const MARKING_BADGES_MAXIMUM_RESOLUTION = 5;
+
+/** Tryb "Oznaczenia drzew" (etap 31): neutralny punkt drzewa + rzad oznaczen nad nim (symbole prac ukryte). */
+function buildMarkingStyles(markingCodes: string[], markingByCode: globalThis.Map<string, MapMarkingAppearance>,
+                            speciesGroup: SpeciesGroup | null): Style[] {
+  return [speciesGroup === 'CONIFER' ? NEUTRAL_CONIFER_STYLE : NEUTRAL_TREE_STYLE, ...createTreeMarkingStyles(markingCodes, markingByCode)];
+}
+
 /** Tryb "Waloryzacja" (etap 27): sam kolor kategorii, bez znaczkow prac - nie mieszamy dwoch znaczen na jednym punkcie. */
 function buildValuationStyles(category: TreeValuationCategory | null, speciesGroup: SpeciesGroup | null): Style[] {
   return [createTreeMarkerStyle(valuationColorOf(category).fill, shapeOf(speciesGroup))];
@@ -93,8 +110,13 @@ function buildManagementStyles(management: TreeManagementSummary, openWorkSymbol
  * Instancja mapy powstaje raz (przy montowaniu) i jest niszczona przy odmontowaniu; zmiana punktow podmienia
  * jedynie Feature w warstwie i dopasowuje widok. Klikniecie markera zglasza treeId (albo null - klik obok).
  */
-export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS', stands = [] }: {
+export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS', stands = [],
+                                 markingByCode = NO_MARKINGS, focusedTreeId = null }: {
   treeMapPoints: TreeMapPoint[];
+  /** etap 31: katalog oznaczen (wyglad) - tryb "Oznaczenia drzew" */
+  markingByCode?: globalThis.Map<string, MapMarkingAppearance>;
+  /** etap 31: drzewo do pokazania (np. "Pokaz na mapie" z karty) - widok przybliza sie do niego zamiast do calosci */
+  focusedTreeId?: number | null;
   /** etap 29: grupy drzew pokazywane jako obszary (pusta lista = warstwa ukryta) */
   stands?: StandMapShape[];
   symbolByCode: globalThis.Map<string, MapSymbol>;
@@ -113,13 +135,16 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
   const treeMarkerLayerRef = useRef<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
   const viewModeRef = useRef(viewMode);
   const standSourceRef = useRef<VectorSource<Feature<Polygon>> | null>(null);
+  const markingByCodeRef = useRef(markingByCode);
+  const focusedTreeIdRef = useRef(focusedTreeId);
+  focusedTreeIdRef.current = focusedTreeId;
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
     const treeMarkerSource = new VectorSource<Feature<Point>>();
     const treeMarkerLayer = new VectorLayer({
       source: treeMarkerSource,
-      style: (feature: FeatureLike) => {
+      style: (feature: FeatureLike, resolution: number) => {
         const speciesGroup = (feature.get(SPECIES_GROUP_FEATURE_PROPERTY) as SpeciesGroup | null) ?? null;
         if (viewModeRef.current === 'VALUATION') {
           const category = (feature.get(VALUATION_CATEGORY_FEATURE_PROPERTY) as TreeValuationCategory | null) ?? null;
@@ -130,6 +155,17 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
             styleCacheRef.current.set(valuationKey, valuationStyles);
           }
           return valuationStyles;
+        }
+        if (viewModeRef.current === 'MARKINGS') {
+          const markingCodes = resolution > MARKING_BADGES_MAXIMUM_RESOLUTION ? []
+            : (feature.get(MARKING_CODES_FEATURE_PROPERTY) as string[] | undefined) ?? [];
+          const markingKey = `markings|${markingCodes.join(',')}|${speciesGroup}`;
+          let markingStyles = styleCacheRef.current.get(markingKey);
+          if (!markingStyles) {
+            markingStyles = buildMarkingStyles(markingCodes, markingByCodeRef.current, speciesGroup);
+            styleCacheRef.current.set(markingKey, markingStyles);
+          }
+          return markingStyles;
         }
         if (viewModeRef.current === 'MANAGEMENT') {
           const management = feature.get(MANAGEMENT_FEATURE_PROPERTY) as TreeManagementSummary;
@@ -192,12 +228,13 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     treeMarkerLayerRef.current?.changed();
   }, [viewMode]);
 
-  // Katalog symboli dochodzi asynchronicznie - po jego zmianie przerysowujemy markery nowymi stylami.
+  // Katalogi symboli i oznaczen dochodza asynchronicznie - po ich zmianie przerysowujemy markery nowymi stylami.
   useEffect(() => {
     symbolByCodeRef.current = symbolByCode;
+    markingByCodeRef.current = markingByCode;
     styleCacheRef.current.clear();
     treeMarkerLayerRef.current?.changed();
-  }, [symbolByCode]);
+  }, [symbolByCode, markingByCode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -214,8 +251,11 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       [OPEN_WORK_SYMBOLS_FEATURE_PROPERTY]: treeMapPoint.openWorkSymbolCodes,
       [MANAGEMENT_FEATURE_PROPERTY]: treeMapPoint.management,
       [SPECIES_GROUP_FEATURE_PROPERTY]: treeMapPoint.speciesGroup,
+      [MARKING_CODES_FEATURE_PROPERTY]: treeMapPoint.markingCodes,
     })));
-    fitViewToCoordinates(map, treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
+    const focusedPoint = treeMapPoints.find((treeMapPoint) => treeMapPoint.treeId === focusedTreeIdRef.current);
+    fitViewToCoordinates(map, focusedPoint ? [focusedPoint.mapCoordinate]
+      : treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
   }, [treeMapPoints]);
 
   // Grupy drzew (etap 29) - osobna warstwa pod markerami; zmiana listy nie zmienia widoku mapy.
