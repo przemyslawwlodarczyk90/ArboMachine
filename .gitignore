@@ -47,3 +47,9 @@ src/main/resources/static/sw.js
 
 ### Zdjecia drzew - storage V1 na dysku (app.tree-photos.storage-directory) ###
 /storage/
+
+### Pliki Claude (pamiec, instrukcje) - zostaja lokalnie, nigdy w repo ###
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+**/CLAUDE.md
