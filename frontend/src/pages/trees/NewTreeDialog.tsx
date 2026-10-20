@@ -4,14 +4,22 @@ import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
 import { ModalDialog } from '../../components/ModalDialog';
+import { formatTreeLocationForDisplay } from './location/formatTreeLocationForDisplay';
+import type { TreeLocation } from './treeDataTypes';
 import { treesApi } from './treesApi';
 
 /**
  * Okno dodawania drzewa - celowo minimalne (sam numer), bo reszte danych uzupelnia sie w formularzu terenowym
  * karty drzewa: "Dodaj drzewo -> numer -> karta". Po sukcesie przechodzi od razu do karty nowego drzewa.
  * Przy bledzie okno zostaje otwarte z wpisanym numerem.
+ * Etap 31: initialLocation - punkt wskazany na mapie projektu ("punkt -> karta"); zapisywany zaraz po utworzeniu
+ * drzewa (zrodlo MAP). Oba zapisy dzialaja tez offline (kolejka).
  */
-export function NewTreeDialog({ projectId, closeDialog }: { projectId: number; closeDialog: () => void }) {
+export function NewTreeDialog({ projectId, closeDialog, initialLocation = null }: {
+  projectId: number;
+  closeDialog: () => void;
+  initialLocation?: TreeLocation | null;
+}) {
   const navigate = useNavigate();
   const [inventoryNumber, setInventoryNumber] = useState('');
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
@@ -34,6 +42,10 @@ export function NewTreeDialog({ projectId, closeDialog }: { projectId: number; c
     setIsAddingTree(true);
     try {
       const createdTree = await treesApi.createTreeInProject(projectId, { inventoryNumber: inventoryNumber.trim() });
+      if (initialLocation) {
+        await treesApi.setTreeLocation(projectId, createdTree.id,
+          { latitude: initialLocation.latitude, longitude: initialLocation.longitude, source: 'MAP' });
+      }
       navigate(`/projects/${projectId}/trees/${createdTree.id}`);
       closeDialog();
     } catch (creationError) {
@@ -52,6 +64,9 @@ export function NewTreeDialog({ projectId, closeDialog }: { projectId: number; c
     <ModalDialog title="Dodaj drzewo" closeDialog={closeDialog} isClosingBlocked={isAddingTree}>
       <form onSubmit={submitNewTree} className="form" noValidate>
         {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
+        {initialLocation && (
+          <p className="muted small">Punkt z mapy: <strong>{formatTreeLocationForDisplay(initialLocation)}</strong></p>
+        )}
         <LabeledInputField label="Numer drzewa *" autoFocus autoComplete="off" maxLength={100} value={inventoryNumber}
                            hintText="Pozostałe dane uzupełnisz w karcie drzewa, która otworzy się po dodaniu."
                            onChange={(changeEvent) => setInventoryNumber(changeEvent.target.value)}

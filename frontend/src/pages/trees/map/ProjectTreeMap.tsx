@@ -23,6 +23,8 @@ import { type SpeciesGroup } from '../../../map/speciesGroup';
 import { type TreeMarkerShape } from '../../../map/openLayersBaseMap';
 import { standPolygonOf, type StandMapShape } from '../../projects/stands/standGeometry';
 import { createTreeMarkingStyles, type MapMarkingAppearance } from '../../../map/treeMarkingStyleFactory';
+import type { TreeLocation } from '../treeDataTypes';
+import { toTreeLocation } from '../location/treeLocationMapCoordinates';
 
 /** Pusta mapa oznaczen - domyslna wartosc propsa bez nowego obiektu przy kazdym renderze. */
 const NO_MARKINGS = new globalThis.Map<string, MapMarkingAppearance>();
@@ -111,7 +113,9 @@ function buildManagementStyles(management: TreeManagementSummary, openWorkSymbol
  * jedynie Feature w warstwie i dopasowuje widok. Klikniecie markera zglasza treeId (albo null - klik obok).
  */
 export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS', stands = [],
-                                 markingByCode = NO_MARKINGS, focusedTreeId = null }: {
+                                 markingByCode = NO_MARKINGS, focusedTreeId = null, onEmptyMapClicked }: {
+  /** etap 31: tryb "Dodaj drzewo na mapie" - klik obok markerow zglasza punkt WGS 84 (brak = zwykly podglad) */
+  onEmptyMapClicked?: (location: TreeLocation) => void;
   treeMapPoints: TreeMapPoint[];
   /** etap 31: katalog oznaczen (wyglad) - tryb "Oznaczenia drzew" */
   markingByCode?: globalThis.Map<string, MapMarkingAppearance>;
@@ -129,6 +133,8 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
   // Najnowszy callback w refie - listener OpenLayers rejestrujemy raz i nie chcemy starego domkniecia.
   const onTreeMarkerClickedRef = useRef(onTreeMarkerClicked);
   onTreeMarkerClickedRef.current = onTreeMarkerClicked;
+  const onEmptyMapClickedRef = useRef(onEmptyMapClicked);
+  onEmptyMapClickedRef.current = onEmptyMapClicked;
   // Katalog symboli w refie + pamiec stylow wg kombinacji symboli (wiele drzew ma te same symbole).
   const symbolByCodeRef = useRef(symbolByCode);
   const styleCacheRef = useRef(new globalThis.Map<string, Style[]>());
@@ -201,6 +207,10 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       const clickedFeature = map.forEachFeatureAtPixel(clickEvent.pixel, (feature) => feature,
         { hitTolerance: MARKER_HIT_TOLERANCE_PX, layerFilter: (layer) => layer === treeMarkerLayer });
       const clickedTreeId = clickedFeature?.get(TREE_ID_FEATURE_PROPERTY);
+      if (typeof clickedTreeId !== 'number' && onEmptyMapClickedRef.current) {
+        onEmptyMapClickedRef.current(toTreeLocation(clickEvent.coordinate));
+        return;
+      }
       onTreeMarkerClickedRef.current(typeof clickedTreeId === 'number' ? clickedTreeId : null);
     });
     // Kursor "reki" nad markerem (desktop) - sygnal, ze marker jest klikalny.
@@ -266,5 +276,6 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     standSource.addFeatures(stands.map((stand) => new Feature({ geometry: standPolygonOf(stand), name: stand.name })));
   }, [stands]);
 
-  return <div ref={mapContainerRef} className="map-container" role="region" aria-label="Mapa drzew projektu" />;
+  return <div ref={mapContainerRef} className={`map-container${onEmptyMapClicked ? ' map-container-picking' : ''}`}
+              role="region" aria-label="Mapa drzew projektu" />;
 }

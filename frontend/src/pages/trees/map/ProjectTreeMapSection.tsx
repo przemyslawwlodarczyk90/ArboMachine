@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { NewTreeDialog } from '../NewTreeDialog';
+import type { TreeLocation } from '../treeDataTypes';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -50,6 +52,12 @@ export function ProjectTreeMapSection() {
   const projectId = parsePositiveIdRouteParam(useParams().projectId);
   const [projectMapDataState, setProjectMapDataState] = useState<ProjectMapDataState>({ status: 'loading' });
   const [selectedTreeId, setSelectedTreeId] = useState<number | null>(null);
+  // Etap 31: "Pokaz na mapie" z karty drzewa (?drzewo=ID) - mapa przybliza sie do drzewa i je zaznacza.
+  const [searchParams] = useSearchParams();
+  const focusedTreeId = Number(searchParams.get('drzewo')) || null;
+  // Etap 31: "punkt -> karta" - klik w mapie wskazuje miejsce nowego drzewa.
+  const [isAddingTreeOnMap, setIsAddingTreeOnMap] = useState(false);
+  const [newTreeLocation, setNewTreeLocation] = useState<TreeLocation | null>(null);
   const { catalogState, symbolByCode } = useMapSymbolCatalog();
   const [viewMode, setViewMode] = useState<MapViewMode>('SYMBOLS');
   // Waloryzacje (etap 27) - osobne zapytanie; blad nie blokuje mapy (tryb "Waloryzacja" pokaze wtedy komunikat).
@@ -66,7 +74,7 @@ export function ProjectTreeMapSection() {
     if (projectId === null) return;
     let isResponseStillWanted = true;
     setProjectMapDataState({ status: 'loading' });
-    setSelectedTreeId(null);
+    setSelectedTreeId(focusedTreeId);
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
@@ -209,8 +217,19 @@ export function ProjectTreeMapSection() {
         <Alert variant="error">Nie udało się pobrać waloryzacji - wszystkie drzewa są pokazane jako „Nie oceniono”.</Alert>
       )}
 
+      <div className="map-add-tree-row">
+        <button type="button" className={`btn btn-small ${isAddingTreeOnMap ? 'btn-primary' : 'btn-secondary'}`}
+                aria-pressed={isAddingTreeOnMap} onClick={() => setIsAddingTreeOnMap((isAdding) => !isAdding)}>
+          {isAddingTreeOnMap ? 'Zakończ dodawanie' : 'Dodaj drzewo na mapie'}
+        </button>
+        {isAddingTreeOnMap && (
+          <span className="small"><strong>Kliknij miejsce drzewa na mapie</strong> - po podaniu numeru otworzy się karta drzewa.</span>
+        )}
+      </div>
+
       <div className="map-frame">
         <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
+                        focusedTreeId={focusedTreeId} onEmptyMapClicked={isAddingTreeOnMap ? setNewTreeLocation : undefined}
                         viewMode={viewMode} stands={areStandsVisible ? stands : NO_STANDS} markingByCode={markingByCode} />
         {selectedTree && (
           <div className="map-selected-tree card" role="status">
@@ -308,6 +327,9 @@ export function ProjectTreeMapSection() {
             <Link to={`/projects/${projectId}/management`}>Gospodarka drzewostanem</Link>.
           </p>
         </section>
+      )}
+      {newTreeLocation && (
+        <NewTreeDialog projectId={projectId} initialLocation={newTreeLocation} closeDialog={() => setNewTreeLocation(null)} />
       )}
     </div>
   );

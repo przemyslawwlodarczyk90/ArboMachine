@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiRequestError } from '../../../api/httpClient';
 import { describeLocationMeasurement } from '../../../gnss/deviceGnss';
 import { Alert } from '../../../components/Alert';
@@ -94,6 +95,9 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
               Użyj GPS urządzenia
             </button>
             <button className="btn btn-secondary" onClick={() => setEditingMode('manualForm')}>Wpisz współrzędne</button>
+            {savedLocation && (
+              <Link className="btn btn-secondary" to={`/projects/${projectId}/map?drzewo=${tree.id}`}>Pokaż na mapie projektu</Link>
+            )}
             {savedLocation && (
               <button className="btn btn-danger-outline" onClick={() => setIsRemovalDialogOpen(true)}>Usuń</button>
             )}
