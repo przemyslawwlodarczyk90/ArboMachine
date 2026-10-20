@@ -8,7 +8,7 @@ import Modify from 'ol/interaction/Modify';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Fill, Stroke, Style, Text } from 'ol/style';
-import { createMapWithOpenStreetMapBase, createTreeMarkerStyle, fitViewToCoordinates, SAVED_TREE_MARKER_COLOR } from '../../../map/openLayersBaseMap';
+import { createMapWithBasemap, createTreeMarkerStyle, fitViewToCoordinates, SAVED_TREE_MARKER_COLOR } from '../../../map/openLayersBaseMap';
 import type { TreeMapPoint } from '../../trees/map/treeMapPoints';
 import type { StandPolygonGeometry } from './standDataTypes';
 import { geometryFromMapRing, standPolygonOf, type StandMapShape } from './standGeometry';
@@ -51,7 +51,7 @@ export function StandEditorMap({ trees, otherStands, initialGeometry, redrawToke
       features: trees.map((tree) => new Feature({ geometry: new Point(tree.mapCoordinate), label: tree.inventoryNumber })),
     });
     const editSource = new VectorSource<Feature<Polygon>>();
-    const map = createMapWithOpenStreetMapBase(containerRef.current, [
+    const map = createMapWithBasemap(containerRef.current, [
       new VectorLayer({ source: otherSource, style: OTHER_STAND_STYLE }),
       new VectorLayer({ source: editSource, style: EDITED_STAND_STYLE }),
       new VectorLayer({ source: treeSource, style: TREE_STYLE }),

@@ -4,14 +4,14 @@ import View from 'ol/View';
 import { boundingExtent } from 'ol/extent';
 import type { Coordinate } from 'ol/coordinate';
 import type BaseLayer from 'ol/layer/Base';
-import TileLayer from 'ol/layer/Tile';
 import { fromLonLat } from 'ol/proj';
-import OSM from 'ol/source/OSM';
 import { Circle as CircleStyle, Fill, RegularShape, Stroke, Style } from 'ol/style';
+import { applyBasemapSelection, createBasemapLayers } from './basemapLayers';
+import { basemapPreferenceStore } from './basemapPreference';
 
 // Wspolna, techniczna konfiguracja map OpenLayers (mapa projektu i mapa lokalizacji drzewa). Tylko to, co obie
-// mapy naprawde robia tak samo - bez "frameworka mapowego". Podklad V1 to OpenStreetMap; WMS/Geoportal/ortofoto
-// i uklady PL-2000/PL-1992 swiadomie poza zakresem (docs/DO_DOPRECYZOWANIA.md).
+// mapy naprawde robia tak samo - bez "frameworka mapowego". Od etapu 31 podklad wybiera uzytkownik (OSM / Geoportal,
+// nakladka dzialek) - wybor wspolny dla wszystkich map (basemapPreference). Widok mapy zawsze EPSG:3857.
 
 /** Widok startowy, gdy nie ma punktu do pokazania: cala Polska. Nie zgadujemy polozenia uzytkownika. */
 const DEFAULT_VIEW_CENTER_LONGITUDE_LATITUDE = [19.4, 52.1];
@@ -22,18 +22,41 @@ export const TREE_FOCUS_ZOOM = 18;
 /** Margines (px) przy dopasowaniu widoku do markerow, zeby punkty nie lezaly na krawedzi mapy. */
 const FIT_VIEW_PADDING_PX = 48;
 
-/** Mapa z podkladem OSM i warstwami nad nim, osadzona w podanym elemencie. Widok w EPSG:3857 (domyslny OpenLayers). */
-export function createMapWithOpenStreetMapBase(targetElement: HTMLElement, overlayLayers: BaseLayer[]): Map {
-  return new Map({
-    target: targetElement,
-    layers: [new TileLayer({ source: new OSM() }), ...overlayLayers],
-    view: new View({
-      center: fromLonLat(DEFAULT_VIEW_CENTER_LONGITUDE_LATITUDE),
-      zoom: DEFAULT_VIEW_ZOOM,
-      // OSM nie ma kafelkow powyzej 19 - glebszy zoom pokazywalby rozmyty podklad.
-      maxZoom: 19,
-    }),
-  });
+/** Najglebszy zoom: ortofotomapa Geoportalu ma szczegoly ponizej 19; kafle OSM powyzej 19 sa powiekszane. */
+const MAXIMUM_VIEW_ZOOM = 21;
+
+/**
+ * Mapa OpenLayers z podkladami, ktora sama sledzi wybor podkladu uzytkownika i przestaje go sledzic przy dispose()
+ * (kazdy komponent mapy i tak wola dispose() przy odmontowaniu).
+ */
+class MapFollowingBasemapPreference extends Map {
+  private readonly stopFollowingBasemapPreference: () => void;
+
+  constructor(targetElement: HTMLElement, overlayLayers: BaseLayer[]) {
+    const basemapLayers = createBasemapLayers();
+    super({
+      target: targetElement,
+      layers: [...basemapLayers, ...overlayLayers],
+      view: new View({
+        center: fromLonLat(DEFAULT_VIEW_CENTER_LONGITUDE_LATITUDE),
+        zoom: DEFAULT_VIEW_ZOOM,
+        maxZoom: MAXIMUM_VIEW_ZOOM,
+      }),
+    });
+    applyBasemapSelection(basemapLayers, basemapPreferenceStore.getSelection());
+    this.stopFollowingBasemapPreference = basemapPreferenceStore.subscribe(
+      () => applyBasemapSelection(basemapLayers, basemapPreferenceStore.getSelection()));
+  }
+
+  protected override disposeInternal() {
+    this.stopFollowingBasemapPreference();
+    super.disposeInternal();
+  }
+}
+
+/** Mapa z wybranym podkladem i warstwami nad nim, osadzona w podanym elemencie. Widok w EPSG:3857 (domyslny OpenLayers). */
+export function createMapWithBasemap(targetElement: HTMLElement, overlayLayers: BaseLayer[]): Map {
+  return new MapFollowingBasemapPreference(targetElement, overlayLayers);
 }
 
 export function showDefaultView(map: Map) {

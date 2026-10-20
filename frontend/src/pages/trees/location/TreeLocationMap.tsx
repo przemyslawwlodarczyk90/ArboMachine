@@ -5,7 +5,7 @@ import Point from 'ol/geom/Point';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import {
-  createMapWithOpenStreetMapBase, createTreeMarkerStyle, PENDING_TREE_MARKER_COLOR, SAVED_TREE_MARKER_COLOR,
+  createMapWithBasemap, createTreeMarkerStyle, PENDING_TREE_MARKER_COLOR, SAVED_TREE_MARKER_COLOR,
   showDefaultView, TREE_FOCUS_ZOOM,
 } from '../../../map/openLayersBaseMap';
 import type { TreeLocation } from '../treeDataTypes';
@@ -45,7 +45,7 @@ export function TreeLocationMap({ savedLocation, pendingLocation, isPickingLocat
     if (!mapContainerRef.current) return;
     const savedMarkerSource = new VectorSource<Feature<Point>>();
     const pendingMarkerSource = new VectorSource<Feature<Point>>();
-    const map = createMapWithOpenStreetMapBase(mapContainerRef.current, [
+    const map = createMapWithBasemap(mapContainerRef.current, [
       new VectorLayer({ source: savedMarkerSource, style: createTreeMarkerStyle(SAVED_TREE_MARKER_COLOR) }),
       // Tymczasowy punkt nad zapisanym - przy wyborze obok siebie widac "bylo" i "bedzie".
       new VectorLayer({ source: pendingMarkerSource, style: createTreeMarkerStyle(PENDING_TREE_MARKER_COLOR) }),

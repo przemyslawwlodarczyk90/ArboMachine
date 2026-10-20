@@ -11,6 +11,7 @@ import type { Tree } from '../../trees/treeDataTypes';
 import { treesApi } from '../../trees/treesApi';
 import type { StandPolygonGeometry, TreeStand } from './standDataTypes';
 import { StandEditorMap } from './StandEditorMap';
+import { BasemapControls } from '../../../map/BasemapControls';
 import { formatStandArea } from './standGeometry';
 import { treeStandsApi } from './treeStandsApi';
 
@@ -180,6 +181,7 @@ export function ProjectStandsPage() {
             <StandEditorMap trees={treeMapPoints} redrawToken={editor.redrawToken} initialGeometry={editor.initialGeometry}
                             otherStands={pageState.stands.filter((stand) => stand.id !== editor.standId)}
                             onGeometryChange={(geometry) => setEditor((current) => (current ? { ...current, geometry } : current))} />
+            <BasemapControls />
             <div className="form-actions">
               <button type="button" className="btn btn-secondary btn-small" disabled={isWorking}
                       onClick={() => setEditor({ ...editor, geometry: null, redrawToken: editor.redrawToken + 1 })}>

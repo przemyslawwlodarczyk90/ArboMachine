@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { describeLocationMeasurement } from '../../../gnss/deviceGnss';
 import { Alert } from '../../../components/Alert';
+import { BasemapControls } from '../../../map/BasemapControls';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import { formatTreeLocationForDisplay } from './formatTreeLocationForDisplay';
@@ -162,6 +163,7 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
                        pendingLocation={editingMode === 'mapPicking' || editingMode === 'gnss' ? pendingMapLocation : null}
                        isPickingLocation={editingMode === 'mapPicking' && !isSavingMapLocation}
                        onLocationPicked={setPendingMapLocation} />
+      <BasemapControls />
 
       {isRemovalDialogOpen && (
         <RemoveTreeLocationDialog projectId={projectId} treeId={tree.id}

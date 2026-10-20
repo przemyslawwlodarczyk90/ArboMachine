@@ -12,6 +12,7 @@ import { treesApi } from '../treesApi';
 import type { TreeWork } from '../works/treeWorkDataTypes';
 import { treeWorksApi } from '../works/treeWorksApi';
 import { ProjectMapLegend } from './ProjectMapLegend';
+import { BasemapControls } from '../../../map/BasemapControls';
 import type { TreeStand } from '../../projects/stands/standDataTypes';
 import { treeStandsApi } from '../../projects/stands/treeStandsApi';
 import { ProjectTreeMap } from './ProjectTreeMap';
@@ -216,6 +217,8 @@ export function ProjectTreeMapSection() {
           </div>
         )}
       </div>
+
+      <BasemapControls />
 
       {treeMapPoints.length > 0 && viewMode === 'SYMBOLS' && <ProjectMapLegend entries={legendEntries} />}
       {treeMapPoints.length > 0 && viewMode === 'VALUATION' && (

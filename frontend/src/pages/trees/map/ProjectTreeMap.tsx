@@ -9,7 +9,7 @@ import type { MapSymbol } from '../../../map/mapSymbolDataTypes';
 import { layoutWorkBadges } from '../../../map/mapSymbolShapeSpec';
 import { createMapSymbolStyles, createOverflowBadgeStyle } from '../../../map/mapSymbolStyleFactory';
 import {
-  createMapWithOpenStreetMapBase, createTreeMarkerStyle, fitViewToCoordinates, MARKER_HIT_TOLERANCE_PX,
+  createMapWithBasemap, createTreeMarkerStyle, fitViewToCoordinates, MARKER_HIT_TOLERANCE_PX,
   SAVED_TREE_MARKER_COLOR,
 } from '../../../map/openLayersBaseMap';
 import { valuationColorOf } from '../valuation/valuationColors';
@@ -158,7 +158,7 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     const standLayer = new VectorLayer({ source: standSource, declutter: true,
       style: (feature: FeatureLike) => standStyleOf(String(feature.get('name') ?? '')) });
     standSourceRef.current = standSource;
-    const map = createMapWithOpenStreetMapBase(mapContainerRef.current, [standLayer, treeMarkerLayer]);
+    const map = createMapWithBasemap(mapContainerRef.current, [standLayer, treeMarkerLayer]);
     treeMarkerLayerRef.current = treeMarkerLayer;
 
     map.on('singleclick', (clickEvent) => {
