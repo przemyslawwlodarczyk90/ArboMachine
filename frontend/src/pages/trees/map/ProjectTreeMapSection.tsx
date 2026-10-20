@@ -6,6 +6,7 @@ import { useProjectReferenceLayers } from '../../projects/referencelayers/usePro
 import type { TreeLocation } from '../treeDataTypes';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
+import { ToBeClarifiedNote } from '../../../components/ToBeClarifiedNote';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { buildProjectMapLegend } from '../../../map/mapSymbolLegend';
 import { MapSymbolSwatch } from '../../../map/MapSymbolSwatch';
@@ -226,9 +227,19 @@ export function ProjectTreeMapSection() {
                 aria-pressed={isAddingTreeOnMap} onClick={() => setIsAddingTreeOnMap((isAdding) => !isAdding)}>
           {isAddingTreeOnMap ? 'Zakończ dodawanie' : 'Dodaj drzewo na mapie'}
         </button>
+        <button type="button" className="btn btn-small btn-secondary" disabled aria-describedby="other-nature-objects-note">
+          Dodaj inny obiekt (ptak, grzyb, znalezisko)
+        </button>
         {isAddingTreeOnMap && (
           <span className="small"><strong>Kliknij miejsce drzewa na mapie</strong> - po podaniu numeru otworzy się karta drzewa.</span>
         )}
+      </div>
+      <div id="other-nature-objects-note">
+        <ToBeClarifiedNote>
+          Inne obiekty przyrodnicze (ptaki, gniazda, grzyby, znaleziska) - jakie typy i jakie dane dla każdego? Czy są
+          przypisane do drzewa (np. gniazdo na drzewie), czy to osobne punkty na mapie? Na razie można użyć oznaczeń drzewa
+          „Gniazdo / siedlisko ptaków”, „Owocniki grzybów”, „Siedlisko gatunku chronionego”.
+        </ToBeClarifiedNote>
       </div>
 
       <div className="map-frame">

@@ -15,6 +15,10 @@ import type { TreeStand } from '../projects/stands/standDataTypes';
 import { treeStandsApi } from '../projects/stands/treeStandsApi';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
+import { TreeMarkingBadge } from './markings/TreeMarkingBadge';
+import type { TreeMarkings } from './markings/treeMarkingDataTypes';
+import { treeMarkingsApi } from './markings/treeMarkingsApi';
+import { useTreeMarkingCatalog } from './markings/useTreeMarkingCatalog';
 import { treeValuationsApi } from './valuation/treeValuationsApi';
 import { ValuationBadge } from './valuation/ValuationBadge';
 import { VALUATION_CATEGORY_OPTIONS, type TreeValuation } from './valuation/valuationDataTypes';
@@ -45,6 +49,10 @@ export function ProjectTreesSection() {
   const [stands, setStands] = useState<TreeStand[]>([]);
   const [standFilter, setStandFilter] = useState<'ALL' | 'NONE' | number>('ALL');
   const [speciesGroupFilter, setSpeciesGroupFilter] = useState<'ALL' | 'UNKNOWN' | SpeciesGroup>('ALL');
+  // Etap 31: oznaczenia drzew - plakietki w wierszu i filtr ('' = wszystkie, 'NONE' = bez oznaczen, kod = z oznaczeniem).
+  const [projectMarkings, setProjectMarkings] = useState<TreeMarkings[] | null>(null);
+  const [markingFilter, setMarkingFilter] = useState('');
+  const { catalogState: markingCatalogState, markingByCode } = useTreeMarkingCatalog();
 
   useEffect(() => {
     if (projectId === null) return;
@@ -53,6 +61,9 @@ export function ProjectTreesSection() {
     treeValuationsApi.listProjectValuations(projectId)
       .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
       .catch(() => { if (isResponseStillWanted) setValuations(null); });
+    treeMarkingsApi.listProjectMarkings(projectId)
+      .then((loadedMarkings) => { if (isResponseStillWanted) setProjectMarkings(loadedMarkings); })
+      .catch(() => { if (isResponseStillWanted) setProjectMarkings(null); });
     treeStandsApi.listStands(projectId)
       .then((loadedStands) => { if (isResponseStillWanted) setStands(loadedStands); })
       .catch(() => { if (isResponseStillWanted) setStands([]); });
@@ -75,6 +86,8 @@ export function ProjectTreesSection() {
 
   const categoryByTreeId = useMemo(() => valuationCategoryByTreeId(valuations ?? []), [valuations]);
   const latestByTreeId = useMemo(() => latestRecordByTreeId(latestRecords ?? []), [latestRecords]);
+  const markingCodesByTreeId = useMemo(() => new Map((projectMarkings ?? []).map((markings) => [markings.treeId, markings.codes])),
+    [projectMarkings]);
 
   if (projectId === null) return null; // ProjectPage pokazuje juz stan "nie istnieje"
   const treeIdsInAnyStand = new Set(stands.flatMap((stand) => stand.treeIds));
@@ -86,6 +99,11 @@ export function ProjectTreesSection() {
         if (speciesGroupFilter === 'ALL') return true;
         const group = speciesGroupOf(tree.speciesLatin, tree.speciesPolish);
         return speciesGroupFilter === 'UNKNOWN' ? group === null : group === speciesGroupFilter;
+      })
+      .filter((tree) => {
+        if (!markingFilter) return true;
+        const codes = markingCodesByTreeId.get(tree.id) ?? [];
+        return markingFilter === 'NONE' ? codes.length === 0 : codes.includes(markingFilter);
       })
     : [];
 
@@ -132,6 +150,16 @@ export function ProjectTreesSection() {
               <option value="UNKNOWN">Gatunek nie podany</option>
             </select>
           </div>
+          {projectMarkings !== null && markingCatalogState.status === 'loaded' && (
+            <div className="field">
+              <label htmlFor="tree-marking-filter">Oznaczenie</label>
+              <select id="tree-marking-filter" value={markingFilter} onChange={(changeEvent) => setMarkingFilter(changeEvent.target.value)}>
+                <option value="">Wszystkie</option>
+                <option value="NONE">Bez oznaczeń</option>
+                {markingCatalogState.markings.map((marking) => <option key={marking.code} value={marking.code}>{marking.displayName}</option>)}
+              </select>
+            </div>
+          )}
           {stands.length > 0 && (
             <div className="field">
               <label htmlFor="tree-stand-filter">Grupa drzew</label>
@@ -177,6 +205,12 @@ export function ProjectTreesSection() {
                 {!tree.location && <span className="tree-list-item-no-location">Brak lokalizacji</span>}
                 {categoryByTreeId.get(tree.id) && <ValuationBadge category={categoryByTreeId.get(tree.id)} prefix="Waloryzacja: " />}
                 {latestByTreeId.get(tree.id) && <HealthStatusBadge status={latestByTreeId.get(tree.id)!.healthStatus} prefix="Stan: " />}
+                {(markingCodesByTreeId.get(tree.id) ?? []).length > 0 && (
+                  <span className="tree-marking-list" aria-label="Oznaczenia">
+                    {markingCodesByTreeId.get(tree.id)!.map((code) => markingByCode.get(code)).filter((marking) => marking !== undefined)
+                      .map((marking) => <TreeMarkingBadge key={marking.code} marking={marking} />)}
+                  </span>
+                )}
                 {pendingTreeIds.has(tree.id) && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
               </Link>
             </li>

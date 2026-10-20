@@ -811,3 +811,4 @@ th.right, td.right { text-align: right; }
 .reference-layer-upload { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1rem; }
 .reference-layer-upload .field { min-width: min(260px, 100%); flex: 1 1 220px; }
 .reference-layer-upload input[type=file] { max-width: 100%; }
+.tree-list-item .tree-marking-list { gap: 0.2rem; }
