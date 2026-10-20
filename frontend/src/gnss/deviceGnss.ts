@@ -1,6 +1,8 @@
 // GNSS urzadzenia (etap 25) przez przegladarkowe Geolocation API: GPS tabletu/telefonu, a gdy go brak - lokalizacja
 // z Wi-Fi/sieci (znacznie mniej dokladna). Modul bez importow wartosci i bez DOM - testowany przez node --test
-// z podstawionym obiektem geolocation. Zewnetrzne odbiorniki (Bluetooth) i RTK/NTRIP - poza V1 (DO_DOPRECYZOWANIA).
+// z podstawionym obiektem geolocation. Zewnetrzny odbiornik RTK (etap 31): bez wlasnej obslugi NMEA/Bluetooth -
+// aplikacja odbiornika na Androidzie podstawia pozycje jako lokalizacje systemu (mock location), a my czytamy ja tym
+// samym Geolocation API. Typ rozwiazania (FIX/FLOAT), PDOP i liczba satelitow nie sa dostepne (DO_DOPRECYZOWANIA).
 
 /** Minimalny interfejs navigator.geolocation potrzebny do jednego pomiaru (do podstawienia w testach). */
 export interface GeolocationLike {
@@ -89,23 +91,123 @@ export function readDeviceGnssPosition(geolocation: GeolocationLike | null | und
   });
 }
 
-export type GnssAccuracyQuality = 'GOOD' | 'ACCEPTABLE' | 'POOR';
+export type GnssAccuracyQuality = 'SURVEY' | 'SUBMETER' | 'GOOD' | 'ACCEPTABLE' | 'POOR';
 
 /**
- * Ocena dokladnosci V1 (do potwierdzenia z arborysta): do 5 m - dobra (GPS na otwartym terenie), do 15 m -
- * akceptowalna, powyzej - slaba (zwykle lokalizacja z Wi-Fi/sieci albo zaslonieta antena).
+ * Ocena dokladnosci V1 (do potwierdzenia z arborysta): do 10 cm - geodezyjna (odbiornik RTK z korektami), do 1 m -
+ * submetrowa (odbiornik bez RTK / RTK FLOAT), do 5 m - dobra (GPS na otwartym terenie), do 15 m - akceptowalna,
+ * powyzej - slaba (zwykle lokalizacja z Wi-Fi/sieci albo zaslonieta antena).
  */
-export const GNSS_ACCURACY_THRESHOLDS_M = { good: 5, acceptable: 15 } as const;
+export const GNSS_ACCURACY_THRESHOLDS_M = { survey: 0.1, submeter: 1, good: 5, acceptable: 15 } as const;
 
 export function gnssAccuracyQuality(accuracyM: number): GnssAccuracyQuality {
+  if (accuracyM <= GNSS_ACCURACY_THRESHOLDS_M.survey) return 'SURVEY';
+  if (accuracyM <= GNSS_ACCURACY_THRESHOLDS_M.submeter) return 'SUBMETER';
   if (accuracyM <= GNSS_ACCURACY_THRESHOLDS_M.good) return 'GOOD';
   if (accuracyM <= GNSS_ACCURACY_THRESHOLDS_M.acceptable) return 'ACCEPTABLE';
   return 'POOR';
 }
 
-/** "±3,5 m" - dokladnosc po polsku. */
-export const formatAccuracy = (accuracyM: number) =>
-  `±${(Math.round(accuracyM * 10) / 10).toString().replace('.', ',')} m`;
+/** "±3,5 m" - dokladnosc po polsku; ponizej metra w centymetrach ("±2 cm"), bo tak mowi sie o RTK. */
+export const formatAccuracy = (accuracyM: number) => (accuracyM < 1
+  ? `±${Math.round(accuracyM * 100)} cm`
+  : `±${(Math.round(accuracyM * 10) / 10).toString().replace('.', ',')} m`);
+
+/** Interfejs navigator.geolocation do serii pomiarow (watchPosition) - do podstawienia w testach. */
+export interface GeolocationWatchLike {
+  watchPosition(
+    onSuccess: (position: { coords: GeolocationCoordinatesLike; timestamp: number }) => void,
+    onError: (error: { code: number }) => void,
+    options?: { enableHighAccuracy?: boolean; timeout?: number; maximumAge?: number },
+  ): number;
+  clearWatch(watchId: number): void;
+}
+
+/** Pomiar usredniony: srednia z kilku odczytow + najwieksza odleglosc odczytu od sredniej (rozrzut). */
+export interface AveragedGnssReading extends GnssReading {
+  sampleCount: number;
+  spreadM: number;
+}
+
+/** V1: 10 odczytow albo 20 s - co nastapi pierwsze (do potwierdzenia, ile trwa pomiar przy drzewie u arborysty). */
+export const GNSS_AVERAGING = { sampleCount: 10, maximumDurationMs: 20_000 } as const;
+
+const METERS_PER_DEGREE_LATITUDE = 111_320;
+
+/**
+ * Srednia z odczytow (stopnie - na obszarze kilku metrow srednia arytmetyczna wystarcza). Dokladnosc = srednia
+ * zglaszanych dokladnosci, ale nie lepsza niz rozrzut - nie udajemy wiekszej precyzji niz pokazuja same odczyty.
+ */
+export function averageGnssReadings(readings: GnssReading[]): AveragedGnssReading {
+  if (readings.length === 0) throw new Error('No readings to average');
+  const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+  const latitude = mean(readings.map((reading) => reading.latitude));
+  const longitude = mean(readings.map((reading) => reading.longitude));
+  const metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * Math.cos(latitude * Math.PI / 180);
+  const spreadM = Math.max(...readings.map((reading) => Math.hypot(
+    (reading.latitude - latitude) * METERS_PER_DEGREE_LATITUDE, (reading.longitude - longitude) * metersPerDegreeLongitude)));
+  const altitudes = readings.map((reading) => reading.altitudeM).filter((altitude): altitude is number => altitude !== null);
+  const round = (value: number, decimalPlaces: number) => Number(value.toFixed(decimalPlaces));
+  return {
+    latitude: round(latitude, 7),
+    longitude: round(longitude, 7),
+    accuracyM: round(Math.max(mean(readings.map((reading) => reading.accuracyM)), spreadM), 2),
+    altitudeM: altitudes.length ? round(mean(altitudes), 2) : null,
+    measuredAt: readings[readings.length - 1].measuredAt,
+    sampleCount: readings.length,
+    spreadM: round(spreadM, 2),
+  };
+}
+
+/**
+ * Seria odczytow (watchPosition) do usrednienia: konczy sie po GNSS_AVERAGING.sampleCount odczytach albo po czasie
+ * (wtedy usrednia to, co jest; zero odczytow = TIMEOUT). onProgress - liczba odczytow do paska postepu.
+ * abort() (np. "Anuluj") zatrzymuje serie - przerwana seria nie konczy obietnicy.
+ */
+export function collectAveragedGnssReading(geolocation: GeolocationWatchLike | null | undefined, isSecureContext: boolean,
+                                           onProgress: (sampleCount: number) => void,
+                                           schedule: (callback: () => void, delayMs: number) => unknown = setTimeout,
+): { result: Promise<AveragedGnssReading>; abort: () => void } {
+  let abort = () => {};
+  const result = new Promise<AveragedGnssReading>((resolve, reject) => {
+    if (!isSecureContext) { reject(new GnssReadingError('INSECURE_CONTEXT')); return; }
+    if (!geolocation) { reject(new GnssReadingError('UNSUPPORTED')); return; }
+    const readings: GnssReading[] = [];
+    let isFinished = false;
+    let watchId: number | null = null;
+    const finish = (error?: GnssReadingError) => {
+      if (isFinished) return;
+      isFinished = true;
+      if (watchId !== null) geolocation.clearWatch(watchId);
+      if (error) reject(error);
+      else if (readings.length === 0) reject(new GnssReadingError('TIMEOUT'));
+      else resolve(averageGnssReadings(readings));
+    };
+    watchId = geolocation.watchPosition(
+      (position) => {
+        if (isFinished) return;
+        readings.push(toGnssReading(position));
+        onProgress(readings.length);
+        if (readings.length >= GNSS_AVERAGING.sampleCount) finish();
+      },
+      (error) => {
+        // Pojedynczy blad w serii nie przerywa pomiaru, jesli sa juz odczyty; brak zgody - zawsze.
+        if (error.code === PERMISSION_DENIED) finish(new GnssReadingError('PERMISSION_DENIED'));
+        else if (readings.length === 0 && error.code !== TIMEOUT) finish(new GnssReadingError('POSITION_UNAVAILABLE'));
+      },
+      GNSS_READING_OPTIONS,
+    );
+    // Odczyty moga przyjsc synchronicznie (testy) - wtedy seria mogla sie juz skonczyc przed przypisaniem watchId.
+    if (isFinished) geolocation.clearWatch(watchId);
+    schedule(() => finish(), GNSS_AVERAGING.maximumDurationMs);
+    abort = () => {
+      if (isFinished) return;
+      isFinished = true;
+      if (watchId !== null) geolocation.clearWatch(watchId);
+    };
+  });
+  return { result, abort: () => abort() };
+}
 
 const SOURCE_LABELS: Record<string, string> = {
   MANUAL: 'wpisane ręcznie',

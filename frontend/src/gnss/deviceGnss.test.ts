@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   describeLocationMeasurement, formatAccuracy, GNSS_READING_OPTIONS, gnssAccuracyQuality, GnssReadingError,
-  readDeviceGnssPosition, type GeolocationLike,
+  readDeviceGnssPosition, type GeolocationLike, averageGnssReadings, collectAveragedGnssReading, type GeolocationWatchLike,
 } from './deviceGnss.ts';
 
 // Uruchamianie: npm test (node --test). navigator.geolocation podstawiony - bez przegladarki i bez GPS.
@@ -78,4 +78,54 @@ test('opis zapisanego pomiaru po polsku', () => {
   assert.equal(describeLocationMeasurement({ source: 'MAP' }), 'Wskazane na mapie');
   assert.equal(describeLocationMeasurement({}), null);
   assert.equal(describeLocationMeasurement({ source: null, accuracyM: null }), null);
+});
+
+test('progi dokladnosci RTK: do 10 cm geodezyjna, do 1 m submetrowa; ponizej metra w centymetrach', () => {
+  assert.equal(gnssAccuracyQuality(0.02), 'SURVEY');
+  assert.equal(gnssAccuracyQuality(0.1), 'SURVEY');
+  assert.equal(gnssAccuracyQuality(0.6), 'SUBMETER');
+  assert.equal(formatAccuracy(0.02), '±2 cm');
+  assert.equal(formatAccuracy(1), '±1 m');
+});
+
+const reading = (latitude: number, longitude: number, accuracyM: number, altitudeM: number | null = null) =>
+  ({ latitude, longitude, accuracyM, altitudeM, measuredAt: '2026-10-20T10:00:00.000Z' });
+
+test('usrednianie: srednia wspolrzednych, rozrzut w metrach, dokladnosc nie lepsza niz rozrzut', () => {
+  const averaged = averageGnssReadings([reading(52.0, 21.0, 0.02, 100), reading(52.00001, 21.0, 0.02, 102)]);
+  assert.equal(averaged.latitude, 52.000005);
+  assert.equal(averaged.sampleCount, 2);
+  assert.equal(averaged.spreadM, 0.56);
+  assert.equal(averaged.accuracyM, 0.56);
+  assert.equal(averaged.altitudeM, 101);
+  assert.equal(averageGnssReadings([reading(52, 21, 3), reading(52, 21, 5)]).accuracyM, 4);
+});
+
+test('seria odczytow konczy sie po 10 odczytach; po czasie usrednia zebrane; bez odczytow = TIMEOUT', async () => {
+  let cleared = 0;
+  let emit: (latitude: number) => void = () => {};
+  const geolocation: GeolocationWatchLike = {
+    watchPosition: (onSuccess) => {
+      emit = (latitude) => onSuccess({ coords: { latitude, longitude: 21, accuracy: 0.03, altitude: null }, timestamp: 0 });
+      return 7;
+    },
+    clearWatch: (watchId) => { if (watchId === 7) cleared += 1; },
+  };
+  const progress: number[] = [];
+  const full = collectAveragedGnssReading(geolocation, true, (count) => progress.push(count), () => undefined);
+  for (let index = 0; index < 12; index++) emit(52);
+  assert.equal((await full.result).sampleCount, 10);
+  assert.equal(progress.length, 10);
+  assert.equal(cleared, 1);
+
+  let fireTimeout = () => {};
+  const timed = collectAveragedGnssReading(geolocation, true, () => {}, (callback) => { fireTimeout = callback; });
+  emit(52);
+  emit(52.00001);
+  fireTimeout();
+  assert.equal((await timed.result).sampleCount, 2);
+
+  const empty = collectAveragedGnssReading(geolocation, true, () => {}, (callback) => { fireTimeout = callback; });
+  fireTimeout();
+  await assert.rejects(empty.result, (error: GnssReadingError) => error.reason === 'TIMEOUT');
 });

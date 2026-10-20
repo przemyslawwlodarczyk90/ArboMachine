@@ -561,7 +561,9 @@ th.right, td.right { text-align: right; }
 /* GNSS urzadzenia (etap 25) */
 .gnss-measuring { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
 .gnss-panel p { margin: 0; }
-.gnss-external-receiver { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.gnss-external-receiver { display: grid; gap: 0.4rem; }
+.gnss-external-receiver summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.gnss-external-receiver p { margin: 0; }
 @media (max-width: 560px) {
   .tree-list-item, .tree-details { grid-template-columns: 1fr; }
   .tree-list-item-number { grid-row: auto; }

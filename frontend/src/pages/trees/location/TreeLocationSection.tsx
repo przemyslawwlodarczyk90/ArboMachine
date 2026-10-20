@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { describeLocationMeasurement } from '../../../gnss/deviceGnss';
 import { Alert } from '../../../components/Alert';
+import { ToBeClarifiedNote } from '../../../components/ToBeClarifiedNote';
 import { BasemapControls } from '../../../map/BasemapControls';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
@@ -125,15 +126,19 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
                                onTreeLocationSaved={replaceTreeAndStopEditing} cancel={stopEditing} />
       )}
 
-      {editingMode === 'viewing' && (
-        <div className="gnss-external-receiver">
-          <button type="button" className="btn btn-secondary btn-small" disabled aria-describedby="gnss-external-receiver-note">
-            Połącz odbiornik GNSS (Bluetooth)
-          </button>
-          <span id="gnss-external-receiver-note" className="muted small">
-            Niedostępne w wersji MVP - zewnętrzne odbiorniki i korekty RTK są planowane.
-          </span>
-        </div>
+      {(editingMode === 'viewing' || editingMode === 'gnss') && (
+        <details className="gnss-external-receiver">
+          <summary>Odbiornik GNSS / RTK (dokładność centymetrowa)</summary>
+          <p className="muted small">
+            Na Androidzie: połącz odbiornik w jego aplikacji i włącz w niej udostępnianie pozycji jako lokalizacji
+            telefonu („pozorowana lokalizacja” w opcjach programisty). Wtedy „Użyj GPS urządzenia” pobierze pozycję
+            z odbiornika - wybierz „Uśrednij” i sprawdź, czy dokładność jest oznaczona jako geodezyjna (RTK).
+          </p>
+          <ToBeClarifiedNote>
+            Model odbiornika arborysty, korekty RTK (ASG-EUPOS / NTRIP), praca na iPhonie/iPadzie oraz zapis typu
+            rozwiązania (FIX / FLOAT), PDOP i liczby satelitów - przeglądarka tych danych nie podaje.
+          </ToBeClarifiedNote>
+        </details>
       )}
 
       {editingMode === 'mapPicking' && (
