@@ -9,6 +9,7 @@ import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.Geometry;
 import mil.nga.sf.LineString;
+import mil.nga.sf.MultiLineString;
 import mil.nga.sf.MultiPolygon;
 import mil.nga.sf.Point;
 import mil.nga.sf.Polygon;
@@ -85,10 +86,18 @@ public final class GeoPackageFileReader {
         if (geometry == null) return null;
         if (geometry instanceof Point point) return new GisFeature.Point(point.getX(), point.getY());
         if (geometry instanceof Polygon polygon) return polygonOf(polygon);
+        if (geometry instanceof LineString line) return lineOf(line);
+        if (geometry instanceof MultiLineString multiLine) {
+            return new GisFeature.MultiLineString(multiLine.getLineStrings().stream().map(GeoPackageFileReader::lineOf).toList());
+        }
         if (geometry instanceof MultiPolygon multiPolygon) {
             return new GisFeature.MultiPolygon(multiPolygon.getPolygons().stream().map(GeoPackageFileReader::polygonOf).toList());
         }
         return new GisFeature.Unsupported(geometry.getGeometryType().getName());
+    }
+
+    private static GisFeature.LineString lineOf(LineString line) {
+        return new GisFeature.LineString(line.getPoints().stream().map(point -> new double[]{point.getX(), point.getY()}).toList());
     }
 
     private static GisFeature.Polygon polygonOf(Polygon polygon) {

@@ -58,6 +58,12 @@ public final class GeoJsonGisReader {
             case "Point" -> coordinates.size() >= 2 ? new GisFeature.Point(coordinates.get(0).asDouble(), coordinates.get(1).asDouble())
                     : new GisFeature.Unsupported("Point");
             case "Polygon" -> polygonOf(coordinates);
+            case "LineString" -> lineOf(coordinates);
+            case "MultiLineString" -> {
+                List<GisFeature.LineString> lines = new ArrayList<>();
+                coordinates.forEach(line -> lines.add(lineOf(line)));
+                yield new GisFeature.MultiLineString(lines);
+            }
             case "MultiPolygon" -> {
                 List<GisFeature.Polygon> polygons = new ArrayList<>();
                 coordinates.forEach(polygon -> polygons.add(polygonOf(polygon)));
@@ -65,6 +71,12 @@ public final class GeoJsonGisReader {
             }
             default -> new GisFeature.Unsupported(geometry.path("type").asText("?"));
         };
+    }
+
+    private static GisFeature.LineString lineOf(JsonNode positions) {
+        List<double[]> points = new ArrayList<>();
+        positions.forEach(position -> points.add(new double[]{position.path(0).asDouble(Double.NaN), position.path(1).asDouble(Double.NaN)}));
+        return new GisFeature.LineString(points);
     }
 
     private static GisFeature.Polygon polygonOf(JsonNode rings) {

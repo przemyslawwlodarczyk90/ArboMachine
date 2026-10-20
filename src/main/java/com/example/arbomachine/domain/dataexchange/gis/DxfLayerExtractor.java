@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Rysunek DXF -> warstwy GIS wg typowej konwencji warstw eksportu z aplikacji terenowych (etap 29):
@@ -128,5 +129,36 @@ public final class DxfLayerExtractor {
 
     private static double distance(double x1, double y1, double x2, double y2) {
         return Math.hypot(x1 - x2, y1 - y2);
+    }
+
+    /**
+     * Rysunek DXF jako warstwy podgladu (etap 31 - warstwy referencyjne projektu): jedna warstwa GIS na warstwe rysunku;
+     * okregi / punkty -> punkty, zamkniete polilinie -> wielokaty, otwarte polilinie i odcinki -> linie. Teksty pominiete
+     * (opisy CAD - do doprecyzowania, czy pokazywac je na mapie).
+     */
+    public static List<GisLayer> referenceLayers(DxfDrawing drawing) {
+        Map<String, List<GisFeature>> featuresByLayer = new LinkedHashMap<>();
+        for (DxfPoint point : drawing.points()) {
+            addFeature(featuresByLayer, point.layer(), new GisFeature.Point(point.x(), point.y()));
+        }
+        for (DxfPolyline polyline : Stream.concat(drawing.polylines().stream(), drawing.lineSegments().stream()).toList()) {
+            if (polyline.closed() && polyline.vertices().size() >= 3) {
+                List<double[]> ring = new ArrayList<>(polyline.vertices());
+                ring.add(polyline.vertices().getFirst());
+                List<List<double[]>> rings = new ArrayList<>();
+                rings.add(ring);
+                addFeature(featuresByLayer, polyline.layer(), new GisFeature.Polygon(rings));
+            } else {
+                addFeature(featuresByLayer, polyline.layer(), new GisFeature.LineString(polyline.vertices()));
+            }
+        }
+        return featuresByLayer.entrySet().stream()
+                .map(entry -> GisLayer.of(entry.getKey().isBlank() ? "0" : entry.getKey(), entry.getValue(), Optional.empty()))
+                .toList();
+    }
+
+    private static void addFeature(Map<String, List<GisFeature>> featuresByLayer, String layer, GisFeature.Geometry geometry) {
+        List<GisFeature> features = featuresByLayer.computeIfAbsent(layer, ignored -> new ArrayList<>());
+        features.add(new GisFeature(features.size() + 1, geometry, Map.of()));
     }
 }

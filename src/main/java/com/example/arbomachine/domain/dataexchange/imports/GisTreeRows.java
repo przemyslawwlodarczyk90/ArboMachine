@@ -68,14 +68,7 @@ final class GisTreeRows {
     }
 
     static Optional<double[]> firstPositionOf(GisFeature.Geometry geometry) {
-        if (geometry instanceof GisFeature.Point point) return Optional.of(new double[]{point.x(), point.y()});
-        if (geometry instanceof GisFeature.Polygon polygon && !polygon.rings().isEmpty() && !polygon.rings().getFirst().isEmpty()) {
-            return Optional.of(polygon.rings().getFirst().getFirst());
-        }
-        if (geometry instanceof GisFeature.MultiPolygon multiPolygon && !multiPolygon.polygons().isEmpty()) {
-            return firstPositionOf(multiPolygon.polygons().getFirst());
-        }
-        return Optional.empty();
+        return GisFeature.firstPositionOf(geometry);
     }
 
     private static ImportedTreeRow rowOf(int rowNumber, GisFeature feature, PolishGridCrs crs,
@@ -102,6 +95,8 @@ final class GisTreeRows {
                 case GisFeature.MultiPolygon ignored -> "MultiPolygon";
                 case GisFeature.Unsupported unsupported -> unsupported.typeName();
                 case GisFeature.Point ignored -> "Point";
+                case GisFeature.LineString ignored -> "LineString";
+                case GisFeature.MultiLineString ignored -> "MultiLineString";
             };
             readingIssues.add(new TreeImportIssue(rowNumber, "geometry", "geometria", typeName, TreeImportIssueCode.UNSUPPORTED_GEOMETRY));
         }

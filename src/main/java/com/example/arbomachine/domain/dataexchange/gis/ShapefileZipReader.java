@@ -103,6 +103,7 @@ public final class ShapefileZipReader {
                     case 0 -> null;
                     case 1, 11, 21 -> new GisFeature.Point(buffer.getDouble(), buffer.getDouble());
                     case 5, 15, 25 -> readPolygon(buffer);
+                    case 3, 13, 23 -> readPolyline(buffer);
                     default -> new GisFeature.Unsupported(shapeTypeName(shapeType));
                 });
                 buffer.position(contentStart + contentLengthBytes);
@@ -111,6 +112,25 @@ public final class ShapefileZipReader {
         } catch (BufferUnderflowException | BufferOverflowException | IllegalArgumentException | IndexOutOfBoundsException corrupted) {
             throw new GisFileException(GisFileException.Reason.UNREADABLE_FILE, "shp");
         }
+    }
+
+    /** PolyLine: te same czesci co wielokat, ale kazda czesc to osobna linia. */
+    private static GisFeature.Geometry readPolyline(ByteBuffer buffer) {
+        buffer.position(buffer.position() + 32);
+        int partCount = buffer.getInt();
+        int pointCount = buffer.getInt();
+        int[] partStarts = new int[partCount];
+        for (int part = 0; part < partCount; part++) partStarts[part] = buffer.getInt();
+        double[][] points = new double[pointCount][];
+        for (int point = 0; point < pointCount; point++) points[point] = new double[]{buffer.getDouble(), buffer.getDouble()};
+        List<GisFeature.LineString> lines = new ArrayList<>();
+        for (int part = 0; part < partCount; part++) {
+            int end = part + 1 < partCount ? partStarts[part + 1] : pointCount;
+            List<double[]> line = new ArrayList<>();
+            for (int point = partStarts[part]; point < end; point++) line.add(points[point]);
+            lines.add(new GisFeature.LineString(line));
+        }
+        return lines.size() == 1 ? lines.getFirst() : new GisFeature.MultiLineString(lines);
     }
 
     private static GisFeature.Geometry readPolygon(ByteBuffer buffer) {
