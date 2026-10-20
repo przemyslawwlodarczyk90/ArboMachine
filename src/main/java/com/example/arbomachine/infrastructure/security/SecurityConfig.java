@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/projects", "/api/projects/**").authenticated()
                         .requestMatchers("/api/map-symbols").authenticated()
+                        .requestMatchers("/api/tree-markings").authenticated()
                         .requestMatchers("/api/notifications", "/api/notifications/**").authenticated()
                         .anyRequest().permitAll()
                 )
