@@ -783,3 +783,4 @@ th.right, td.right { text-align: right; }
 .basemap-controls { display: grid; gap: 0.4rem; }
 .basemap-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
 .basemap-controls-row .select { min-height: 40px; max-width: 100%; }
+.tree-location-grid { display: grid; gap: 0.1rem; font-variant-numeric: tabular-nums; }

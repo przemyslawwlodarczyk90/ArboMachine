@@ -6,6 +6,7 @@ import { BasemapControls } from '../../../map/BasemapControls';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import { formatTreeLocationForDisplay } from './formatTreeLocationForDisplay';
+import { PolishGridCoordinatesText } from './PolishGridCoordinatesText';
 import { RemoveTreeLocationDialog } from './RemoveTreeLocationDialog';
 import { TreeGnssLocationPanel } from './TreeGnssLocationPanel';
 import { TreeLocationForm } from './TreeLocationForm';
@@ -102,6 +103,7 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
       {editingMode !== 'manualForm' && (savedLocation ? (
         <p className="tree-location-coordinates">
           <span className="muted small">Współrzędne (WGS84): </span>{formatTreeLocationForDisplay(savedLocation)}
+          <PolishGridCoordinatesText location={savedLocation} />
           {describeLocationMeasurement(savedLocation) && (
             <span className="tree-location-measurement muted small">{describeLocationMeasurement(savedLocation)}</span>
           )}
