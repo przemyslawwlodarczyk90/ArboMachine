@@ -76,6 +76,11 @@ public class TreeMarkingCatalog {
         return codes;
     }
 
+    /** Nazwy oznaczen (do eksportu i dokumentow) w kolejnosci katalogu; nieznane kody pominiete. */
+    public List<String> displayNamesInCatalogOrder(Collection<String> codes) {
+        return inCatalogOrder(codes).stream().map(code -> MARKING_BY_CODE.get(code).displayName()).toList();
+    }
+
     /** Kody znane katalogowi w kolejnosci katalogu (nieznane pominiete) - stabilny wynik w API. */
     public List<String> inCatalogOrder(Collection<String> codes) {
         return codes.stream().filter(this::isSupported).distinct()

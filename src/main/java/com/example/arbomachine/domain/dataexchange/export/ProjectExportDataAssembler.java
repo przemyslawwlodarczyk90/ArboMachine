@@ -11,6 +11,8 @@ import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRep
 import com.example.arbomachine.infrastructure.repository.TreeStandRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.arbomachine.infrastructure.repository.TreeValuationRepository;
+import com.example.arbomachine.infrastructure.repository.TreeMarkingRepository;
+import com.example.arbomachine.domain.treemarking.catalog.TreeMarkingCatalog;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): piec zapytan - drzewa,
- * prace, waloryzacje, kontrole stanu i grupy drzew calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
+ * Sklada ProjectExportData z WLASNEGO projektu (wlasnosc sprawdza wczesniej handler): szesc zapytan - drzewa,
+ * prace, waloryzacje, kontrole stanu, grupy drzew i oznaczenia calego projektu - laczone w pamieci (bez N+1). Zdjecia nie sa eksportowane (V1).
  */
 @Component
 public class ProjectExportDataAssembler {
@@ -32,17 +34,22 @@ public class ProjectExportDataAssembler {
     private final TreeValuationRepository treeValuationRepository;
     private final TreeMonitoringRecordRepository treeMonitoringRecordRepository;
     private final TreeStandRepository treeStandRepository;
+    private final TreeMarkingRepository treeMarkingRepository;
+    private final TreeMarkingCatalog treeMarkingCatalog;
     private final ObjectMapper objectMapper;
 
     public ProjectExportDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                       TreeValuationRepository treeValuationRepository,
                                       TreeMonitoringRecordRepository treeMonitoringRecordRepository,
-                                      TreeStandRepository treeStandRepository, ObjectMapper objectMapper) {
+                                      TreeStandRepository treeStandRepository, TreeMarkingRepository treeMarkingRepository,
+                                      TreeMarkingCatalog treeMarkingCatalog, ObjectMapper objectMapper) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treeValuationRepository = treeValuationRepository;
         this.treeMonitoringRecordRepository = treeMonitoringRecordRepository;
         this.treeStandRepository = treeStandRepository;
+        this.treeMarkingRepository = treeMarkingRepository;
+        this.treeMarkingCatalog = treeMarkingCatalog;
         this.objectMapper = objectMapper;
     }
 
@@ -65,9 +72,13 @@ public class ProjectExportDataAssembler {
         for (TreeStand stand : stands) {
             stand.getTrees().forEach(tree -> standNamesByTreeId.computeIfAbsent(tree.getId(), id -> new java.util.ArrayList<>()).add(stand.getName()));
         }
+        Map<Long, List<String>> markingCodesByTreeId = treeMarkingRepository.findTreeIdsAndCodesByProjectId(ownedProject.getId()).stream()
+                .collect(Collectors.groupingBy(TreeMarkingRepository.TreeIdAndCode::getTreeId,
+                        Collectors.mapping(TreeMarkingRepository.TreeIdAndCode::getCode, Collectors.toList())));
         List<TreeExportData> trees = treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(ownedProject.getId()).stream()
                 .map(tree -> treeDataOf(tree, worksByTreeId.getOrDefault(tree.getId(), List.of()), valuationByTreeId.get(tree.getId()),
-                        monitoringByTreeId.getOrDefault(tree.getId(), List.of()), standNamesByTreeId.getOrDefault(tree.getId(), List.of())))
+                        monitoringByTreeId.getOrDefault(tree.getId(), List.of()), standNamesByTreeId.getOrDefault(tree.getId(), List.of()),
+                        treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of()))))
                 .toList();
         return new ProjectExportData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 exportedAt, trees, ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
@@ -94,7 +105,8 @@ public class ProjectExportDataAssembler {
     }
 
     private static TreeExportData treeDataOf(Tree tree, List<TreeWorkExportData> works, TreeValuation valuation,
-                                             List<TreeMonitoringExportData> monitoringRecords, List<String> standNames) {
+                                             List<TreeMonitoringExportData> monitoringRecords, List<String> standNames,
+                                             List<String> markingNames) {
         return new TreeExportData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(), tree.getSpeciesLatin(),
                 tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(), tree.getNotes(),
                 tree.getConditionNotes(), tree.getHazardNotes(),
@@ -103,6 +115,6 @@ public class ProjectExportDataAssembler {
                 tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
                 tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
                 tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
-                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames);
+                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames, markingNames);
     }
 }

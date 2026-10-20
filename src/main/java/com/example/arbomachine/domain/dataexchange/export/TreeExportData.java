@@ -32,7 +32,9 @@ public record TreeExportData(
         /** etap 29: kontrole stanu, najnowsza pierwsza (pusta lista = drzewo nie sprawdzone) */
         List<TreeMonitoringExportData> monitoringRecords,
         /** etap 29: nazwy grup drzew, do ktorych nalezy drzewo */
-        List<String> standNames
+        List<String> standNames,
+        /** etap 31: nazwy oznaczen drzewa w kolejnosci katalogu (pusta lista = brak) */
+        List<String> markingNames
 ) {
 
     public static final String STAND_NAMES_SEPARATOR = "; ";
@@ -123,6 +125,7 @@ public record TreeExportData(
             case LAST_MONITORING_NOTES -> latestMonitoringRecord() == null ? null : latestMonitoringRecord().notes();
             case SPECIES_GROUP -> com.example.arbomachine.domain.dataexchange.schema.SpeciesGroupClassifier.groupOf(speciesLatin, speciesPolish);
             case STAND_NAMES -> standNames.isEmpty() ? null : String.join(STAND_NAMES_SEPARATOR, standNames);
+            case MARKINGS -> markingNames.isEmpty() ? null : String.join(STAND_NAMES_SEPARATOR, markingNames);
         };
     }
 }
