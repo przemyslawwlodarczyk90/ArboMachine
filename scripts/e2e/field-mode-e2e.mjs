@@ -71,6 +71,7 @@ class Cdp {
 
 let cdp;
 let session;
+let photoFilePath;
 const send = (method, params) => cdp.send(method, params, session);
 
 async function evaluate(expression) {
@@ -140,6 +141,19 @@ async function setOffline(isOffline) {
   }
 }
 
+/** Etap 33: zdjecie z "galerii" - plik ustawiony w ukrytym polu wyboru pliku panelu drzewa (bez aparatu). */
+async function pickGalleryPhoto(filePath) {
+  const { root } = await send('DOM.getDocument', { depth: -1 });
+  const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId,
+    selector: '.field-sheet input[type=file]:not([capture])' });
+  await send('DOM.setFileInputFiles', { nodeId, files: [filePath] });
+  await waitFor('okno dodawania zdjecia', 'return !!document.querySelector(".modal img")');
+  await clickButton('Dodaj zdjęcie', 'document.querySelector(".modal")');
+  await waitFor('zdjecie na urzadzeniu', 'return !!document.querySelector(".field-sheet .tree-photo-tile-pending")');
+}
+
+const pendingPhotoTileCount = () => evaluate('return document.querySelectorAll(".field-sheet .tree-photo-tile-pending").length');
+
 async function openNewTab(path) {
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   const attached = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
@@ -153,6 +167,9 @@ async function openNewTab(path) {
 // ---------- Scenariusz ----------
 async function main() {
   const profileDirectory = mkdtempSync(join(tmpdir(), 'arbomachine-chrome-'));
+  // Etap 33: maly plik z sygnatura JPEG (backend sprawdza typ po pierwszych bajtach).
+  photoFilePath = join(profileDirectory, 'IMG_E2E_OFFLINE.jpg');
+  writeFileSync(photoFilePath, Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(2000, 7)]));
   const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profileDirectory}`,
     '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' });
   try {
@@ -321,7 +338,11 @@ async function main() {
     await waitFor('panel drzewa offline', `return document.querySelector(".field-sheet h2")?.textContent === "Drzewo ${editedTree.inventoryNumber}"`);
     await waitFor('formularz offline', 'return !!document.querySelector(".field-sheet .tree-field-form textarea")');
     check('Panel drzewa dostepny offline', true);
-    check('Offline: komunikat o zdjeciach zamiast ukrytego przycisku', (await bodyText()).includes('Zdjęcia wymagają połączenia'));
+    check('Offline: komunikat, ze zdjecia zapisza sie na urzadzeniu', (await bodyText()).includes('zdjęcia zapisują się na tym urządzeniu'));
+    // Etap 33: zdjecie istniejacego drzewa bez sieci.
+    const photosOfEditedTreeBefore = (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`)).length;
+    await pickGalleryPhoto(photoFilePath);
+    check('Zdjecie bez sieci zapisane na urzadzeniu (kafelek "Czeka na wysłanie")', (await pendingPhotoTileCount()) === 1);
     const notesFieldIndex = await evaluate(`return [...document.querySelectorAll(".field-sheet .tree-field-form textarea")].length - 1`);
     await evaluate(`const fields = document.querySelectorAll(".field-sheet .tree-field-form textarea");
       fields[${notesFieldIndex}].setAttribute("data-e2e", "notes"); return true;`);
@@ -333,15 +354,28 @@ async function main() {
     // Nowe drzewo offline wskazane na mapie.
     await clickButton('Zamknij', 'document.querySelector(".field-sheet-actions")');
     await clickButton('Wskaż na mapie');
-    const mapBox = await evaluate('const box = document.querySelector(".field-map-area canvas").getBoundingClientRect(); return { x: box.x + 140, y: box.y + 120 };');
-    for (const type of ['mousePressed', 'mouseReleased']) {
-      await send('Input.dispatchMouseEvent', { type, x: mapBox.x, y: mapBox.y, button: 'left', clickCount: 1 });
+    // Losowy punkt w gornej czesci mapy - kolejne przebiegi dodaja drzewa, a klik w drzewo nie wskazuje miejsca.
+    const mapBox = await evaluate('const box = document.querySelector(".field-map-area canvas").getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width };');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const x = mapBox.x + 90 + Math.random() * (mapBox.width - 260);
+      const y = mapBox.y + 90 + Math.random() * 250;
+      for (const type of ['mousePressed', 'mouseReleased']) {
+        await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+      }
+      try {
+        await waitFor('okno numeru offline', 'return !!document.querySelector(".modal input")', 2500);
+        break;
+      } catch (missedEmptySpot) {
+        if (attempt === 4) throw missedEmptySpot;
+      }
     }
-    await waitFor('okno numeru offline', 'return !!document.querySelector(".modal input")', 5000);
     await clickButton('Dodaj drzewo');
     await waitFor('panel drzewa offline', 'return document.querySelector(".field-sheet .badge")?.textContent === "Zapisane na urządzeniu"');
     const offlineTreeId = Number(new URLSearchParams((await pathname()).split('?')[1]).get('drzewo'));
     check('Nowe drzewo offline ma tymczasowe ujemne id', offlineTreeId < 0, String(offlineTreeId));
+    await waitFor('sekcja zdjec drzewa offline', 'return !!document.querySelector(".field-sheet input[type=file]:not([capture])")');
+    await pickGalleryPhoto(photoFilePath);
+    check('Zdjecie drzewa utworzonego offline zapisane na urzadzeniu', (await pendingPhotoTileCount()) === 1);
     await screenshot('08-teren-offline');
     const pendingBefore = await evaluate('return document.querySelector(".field-connection")?.innerText');
     check('Pasek: offline i liczba zmian w kolejce', /offline/.test(pendingBefore) && /zmian/.test(pendingBefore), pendingBefore);
@@ -358,10 +392,14 @@ async function main() {
     check('Po zamknieciu i otwarciu offline zmiany nadal sa widoczne', notesAfterRestart.includes(offlineNote));
     const pendingAfterRestart = await evaluate('return document.querySelector(".field-connection")?.innerText');
     check('Licznik kolejki zgadza sie po ponownym otwarciu', pendingAfterRestart === pendingBefore, pendingAfterRestart);
+    check('Pasek liczy zdjecia na urzadzeniu', /zdjęcia: 2/.test(pendingAfterRestart), pendingAfterRestart);
+    await waitFor('zdjecie po restarcie', 'return document.querySelectorAll(".field-sheet .tree-photo-tile-pending").length === 1');
+    check('Po zamknieciu i otwarciu offline zdjecie nadal czeka na urzadzeniu (z podgladem)',
+      await evaluate('return !!document.querySelector(".field-sheet .tree-photo-tile-pending img")?.src.startsWith("blob:")'));
 
     // Powrot sieci i synchronizacja.
     await setOffline(false);
-    await waitFor('synchronizacja', 'return !/zmian/.test(document.querySelector(".field-connection")?.innerText ?? "zmian")', 60_000);
+    await waitFor('synchronizacja', 'return !/zmian|zdjęcia/.test(document.querySelector(".field-connection")?.innerText ?? "zmian")', 60_000);
     check('Po wlaczeniu sieci synchronizacja konczy sie bez bledow', !(await bodyText()).includes('Nie udało się zsynchronizować'));
     const treesAfter = await api(`/api/projects/${PROJECT_ID}/trees`);
     check('Nowe drzewo offline jest na serwerze z prawdziwym id', treesAfter.length === treesBefore.length + 2,
@@ -373,6 +411,20 @@ async function main() {
     check('Zmienione offline drzewo: notatka zapisana, zadne inne pole nie zostalo wyczyszczone',
       editedAfter.notes === offlineNote && clearedFields.length === 0 && !!editedAfter.location, clearedFields.join(', '));
     await waitFor('prawdziwe id w adresie', 'return !location.search.includes("drzewo=-")', 10_000).catch(() => {});
+
+    // Etap 33: zdjecia offline na serwerze, bez duplikatow - takze po ponownym otwarciu i synchronizacji.
+    const offlineTreeOnServer = treesAfter.find((tree) => !treesBefore.some((before) => before.id === tree.id) && tree.id !== newTreeId);
+    const photosOfEditedTreeAfter = (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`)).length;
+    const photosOfOfflineTree = offlineTreeOnServer ? (await api(`/api/projects/${PROJECT_ID}/trees/${offlineTreeOnServer.id}/photos`)).length : -1;
+    check('Zdjecie istniejacego drzewa wyslane po polaczeniu (dokladnie jedno)', photosOfEditedTreeAfter === photosOfEditedTreeBefore + 1,
+      `${photosOfEditedTreeBefore} -> ${photosOfEditedTreeAfter}`);
+    check('Zdjecie drzewa utworzonego offline wyslane pod prawdziwe id drzewa', photosOfOfflineTree === 1, String(photosOfOfflineTree));
+    await navigate(`/field/projects/${PROJECT_ID}?drzewo=${editedTree.id}`);
+    await waitFor('panel po synchronizacji', 'return !!document.querySelector(".field-sheet .tree-photo-tile")');
+    await wait(1500);
+    check('Po synchronizacji brak zdjec czekajacych i brak duplikatow po ponownym otwarciu',
+      (await pendingPhotoTileCount()) === 0
+        && (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`)).length === photosOfEditedTreeAfter);
 
     // --- Ekrany ---
     await navigate(`/field/projects/${PROJECT_ID}?drzewo=${newTreeId}`);
