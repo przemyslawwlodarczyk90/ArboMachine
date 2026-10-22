@@ -8,6 +8,7 @@ import {
 } from '../../../gnss/deviceGnss';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
+import { fieldLocationSourceLabel, formatMeasurementTime, formatReportedAccuracy } from '../../../fieldmode/fieldLocationDescription';
 
 type GnssState =
   | { status: 'measuring'; sampleCount: number }
@@ -15,7 +16,7 @@ type GnssState =
   | { status: 'failed'; errorMessage: string };
 
 /** Jeden odczyt (szybko) albo seria usredniona (etap 31 - pod odbiornik RTK, ok. 10 odczytow). */
-type MeasurementMode = 'SINGLE' | 'AVERAGED';
+export type MeasurementMode = 'SINGLE' | 'AVERAGED';
 
 const QUALITY_LABELS = {
   SURVEY: 'geodezyjna (RTK)',
@@ -33,15 +34,32 @@ const isAveraged = (reading: GnssReading | AveragedGnssReading): reading is Aver
  * i formularz (PUT .../location, zrodlo DEVICE_GNSS). Nic nie zapisuje sie samo; "Zmierz ponownie" robi nowy pomiar.
  * Odbiornik RTK dziala, jesli jego aplikacja podstawia pozycje jako lokalizacje telefonu (mock location).
  */
-export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChanged, onTreeLocationSaved, cancel }: {
+export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChanged, onTreeLocationSaved, cancel,
+                                        onReadingConfirmed, describesForField = false, initialMeasurementMode = 'SINGLE',
+                                        onMeasurementModeChange }: {
   projectId: number;
-  tree: Tree;
+  /** null tylko razem z onReadingConfirmed (pomiar przed utworzeniem drzewa) */
+  tree: Tree | null;
   onPendingLocationChanged: (location: TreeLocation | null) => void;
   onTreeLocationSaved: (savedTree: Tree) => void;
   cancel: () => void;
+  /**
+   * etap 32 ("+ Drzewo tutaj"): zamiast zapisu lokalizacji oddaje zaakceptowany odczyt (np. do okna numeru nowego
+   * drzewa); przycisk glowny to wtedy "Dalej"
+   */
+  onReadingConfirmed?: (reading: GnssReading) => void;
+  /** etap 32 (tryb terenowy): zrodlo i czas pomiaru, dokladnosc "zgloszona przez urzadzenie" - bez slowa "RTK" */
+  describesForField?: boolean;
+  initialMeasurementMode?: MeasurementMode;
+  /** etap 32: zapamietanie wyboru "Usrednij" na urzadzeniu */
+  onMeasurementModeChange?: (mode: MeasurementMode) => void;
 }) {
   const [gnssState, setGnssState] = useState<GnssState>({ status: 'measuring', sampleCount: 0 });
-  const [measurementMode, setMeasurementMode] = useState<MeasurementMode>('SINGLE');
+  const [measurementMode, setMeasurementModeState] = useState<MeasurementMode>(initialMeasurementMode);
+  const setMeasurementMode = (mode: MeasurementMode) => {
+    setMeasurementModeState(mode);
+    onMeasurementModeChange?.(mode);
+  };
   const [measurementNumber, setMeasurementNumber] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [savingErrorMessage, setSavingErrorMessage] = useState<string | null>(null);
@@ -76,6 +94,10 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
 
   const saveReading = async (reading: GnssReading) => {
     if (isSubmissionInProgress.current) return;
+    if (onReadingConfirmed || !tree) {
+      onReadingConfirmed?.(reading);
+      return;
+    }
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     setSavingErrorMessage(null);
@@ -121,7 +143,15 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
           <p>
             Pozycja z GPS: <strong>{gnssState.reading.latitude}, {gnssState.reading.longitude}</strong>
             <br />
-            <span>Dokładność: <strong>{formatAccuracy(gnssState.reading.accuracyM)}</strong> ({QUALITY_LABELS[quality!]})</span>
+            {describesForField ? (
+              // Etap 32: przegladarka nie zna zrodla (GPS tabletu czy odbiornik) ani typu rozwiazania - bez "RTK".
+              <span>
+                Źródło: <strong>{fieldLocationSourceLabel('DEVICE_GNSS')}</strong> · {formatReportedAccuracy(gnssState.reading.accuracyM)}
+                {' · '}pomiar o {formatMeasurementTime(gnssState.reading.measuredAt)}
+              </span>
+            ) : (
+              <span>Dokładność: <strong>{formatAccuracy(gnssState.reading.accuracyM)}</strong> ({QUALITY_LABELS[quality!]})</span>
+            )}
             {gnssState.reading.altitudeM !== null && (
               <span className="muted small"> · wysokość {Math.round(gnssState.reading.altitudeM)} m n.p.m.</span>
             )}
@@ -148,7 +178,7 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
         </button>
         <button type="button" className="btn btn-primary" disabled={gnssState.status !== 'measured' || isSaving}
                 onClick={() => gnssState.status === 'measured' && saveReading(gnssState.reading)}>
-          {isSaving ? 'Zapisywanie…' : 'Zapisz lokalizację z GPS'}
+          {onReadingConfirmed ? 'Dalej: numer drzewa' : isSaving ? 'Zapisywanie…' : 'Zapisz lokalizację z GPS'}
         </button>
       </div>
     </div>

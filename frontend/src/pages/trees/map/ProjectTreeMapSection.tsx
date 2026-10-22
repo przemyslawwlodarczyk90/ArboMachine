@@ -9,20 +9,16 @@ import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { buildProjectMapLegend } from '../../../map/mapSymbolLegend';
 import { MapSymbolSwatch } from '../../../map/MapSymbolSwatch';
 import { parsePositiveIdRouteParam } from '../../../routing/parsePositiveIdRouteParam';
-import { ProjectMapLegend } from './ProjectMapLegend';
+import { ProjectMapModeLegend } from './ProjectMapModeLegend';
 import { BasemapControls } from '../../../map/BasemapControls';
 import type { TreeStand } from '../../projects/stands/standDataTypes';
 import { ProjectTreeMap } from './ProjectTreeMap';
 import { useProjectMapData } from './useProjectMapData';
 import { ValuationBadge } from '../valuation/ValuationBadge';
-import { valuationColorOf } from '../valuation/valuationColors';
-import { valuationCategoryLabel } from '../valuation/valuationDataTypes';
-import { buildMarkingLegend, buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
+import { MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
 import { TreeMarkingBadge } from '../markings/TreeMarkingBadge';
 import { TreeWorkMeta } from '../works/TreeWorkMeta';
-import {
-  buildManagementLegend, isOpenWorkStatus, managementColorOf, managementStateLabel, sortWorksForManagement,
-} from '../works/workManagement';
+import { isOpenWorkStatus, sortWorksForManagement } from '../works/workManagement';
 
 /** Stala pusta lista - ukrycie warstwy nie tworzy nowej tablicy przy kazdym renderze. */
 const NO_STANDS: TreeStand[] = [];
@@ -248,55 +244,9 @@ export function ProjectTreeMapSection() {
                             toggleLayer={referenceLayers.toggleLayer} onLayerAdded={referenceLayers.addLayer}
                             onLayerRemoved={referenceLayers.removeLayer} />
 
-      {treeMapPoints.length > 0 && viewMode === 'SYMBOLS' && <ProjectMapLegend entries={legendEntries} />}
-      {allTreeMapPoints.length > 0 && viewMode === 'MARKINGS' && (
-        <section className="map-legend" aria-labelledby="map-marking-legend-heading">
-          <h3 id="map-marking-legend-heading">Legenda - oznaczenia drzew</h3>
-          {buildMarkingLegend(allTreeMapPoints, markingCatalogCodes).length === 0 ? (
-            <p className="muted small">Żadne drzewo na mapie nie ma jeszcze oznaczeń. Oznaczenia dodasz w karcie drzewa.</p>
-          ) : (
-            <ul>
-              {buildMarkingLegend(allTreeMapPoints, markingCatalogCodes).map(({ code, count }) => (
-                <li key={code}><TreeMarkingBadge marking={markingByCode.get(code)!} withName /> ({count})</li>
-              ))}
-            </ul>
-          )}
-          <p className="muted small">Przy drzewie widać do 4 oznaczeń, resztę jako „+N” - pełna lista po kliknięciu drzewa.</p>
-        </section>
-      )}
-      {treeMapPoints.length > 0 && viewMode === 'VALUATION' && (
-        <section className="map-legend" aria-labelledby="map-valuation-legend-heading">
-          <h3 id="map-valuation-legend-heading">Legenda - waloryzacja</h3>
-          <ul>
-            {buildValuationLegend(treeMapPoints).map(({ category, count }) => (
-              <li key={category ?? 'NONE'}>
-                <span className="map-legend-swatch-circle" style={{ background: valuationColorOf(category).fill }} aria-hidden="true" />
-                {' '}{valuationCategoryLabel(category)} ({count})
-              </li>
-            ))}
-          </ul>
-          <p className="muted small">
-            Kategorie i kolory są tymczasowe (wersja V1) - to nie jest skala branżowa. Ocenę ogólną wybiera arborysta w karcie drzewa.
-          </p>
-        </section>
-      )}
-      {treeMapPoints.length > 0 && viewMode === 'MANAGEMENT' && (
-        <section className="map-legend" aria-labelledby="map-management-legend-heading">
-          <h3 id="map-management-legend-heading">Legenda - gospodarka drzewostanem</h3>
-          <ul>
-            {buildManagementLegend(treeMapPoints).map(({ state, count }) => (
-              <li key={state}>
-                <span className="map-legend-swatch-circle" style={{ background: managementColorOf(state) }} aria-hidden="true" />
-                {' '}{managementStateLabel(state)} ({count})
-              </li>
-            ))}
-          </ul>
-          <p className="muted small">
-            Prace do wykonania = zalecenia i prace zaplanowane. Przy drzewie widać symbole tylko tych prac. Pełna lista:{' '}
-            <Link to={`/projects/${projectId}/management`}>Gospodarka drzewostanem</Link>.
-          </p>
-        </section>
-      )}
+      <ProjectMapModeLegend viewMode={viewMode} treeMapPoints={treeMapPoints} allTreeMapPoints={allTreeMapPoints}
+                            legendEntries={legendEntries} markingCatalogCodes={markingCatalogCodes}
+                            markingByCode={markingByCode} projectId={projectId} />
       {newTreeLocation && (
         <NewTreeDialog projectId={projectId} initialLocation={newTreeLocation} closeDialog={() => setNewTreeLocation(null)} />
       )}

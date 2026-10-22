@@ -11,15 +11,17 @@ import { treePhotosApi } from './treePhotosApi';
  * aparat - bez natywnej integracji), podglad, wyslanie. Po sukcesie oddaje zdjecie z odpowiedzi backendu
  * (onTreePhotoAdded); przy bledzie okno zostaje otwarte z wybranym plikiem.
  */
-export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, closeDialog }: {
+export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, closeDialog, initialFile = null }: {
   projectId: number;
   treeId: number;
   onTreePhotoAdded: (addedTreePhoto: TreePhoto) => void;
   closeDialog: () => void;
+  /** etap 32 (tryb terenowy): zdjecie juz zrobione aparatem albo wybrane z galerii - okno je pokazuje i wysyla */
+  initialFile?: File | null;
 }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(initialFile);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(() => (initialFile ? errorOfSelectedPhotoFile(initialFile) : null));
   const [isUploading, setIsUploading] = useState(false);
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isUploadInProgress = useRef(false);

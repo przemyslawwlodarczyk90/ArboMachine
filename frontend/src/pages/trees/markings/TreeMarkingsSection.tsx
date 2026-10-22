@@ -29,10 +29,12 @@ function groupByCategory(markings: TreeMarkingDefinition[]) {
  * zlom...) - zaznaczanie w grupach i zapis kompletu (PUT .../markings, dziala tez offline). Na mapie projektu
  * oznaczenia widac w trybie "Oznaczenia drzew".
  */
-export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0 }: {
+export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0, onMarkingsSaved }: {
   projectId: number;
   treeId: number;
   syncGeneration?: number;
+  /** etap 32 (tryb terenowy): zapisane kody - mapa zmienia wyglad drzewa od razu, bez przeladowania */
+  onMarkingsSaved?: (codes: string[]) => void;
 }) {
   const { catalogState, markingByCode } = useTreeMarkingCatalog();
   const [savedState, setSavedState] = useState<SavedMarkingsState>({ status: 'loading' });
@@ -73,6 +75,7 @@ export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0 }: {
       const saved = await treeMarkingsApi.setTreeMarkings(projectId, treeId, selectedCodes);
       setSavedState({ status: 'loaded', codes: saved.codes, offlinePending: !!saved.offlinePending });
       setSelectedCodes(saved.codes);
+      onMarkingsSaved?.(saved.codes);
     } catch (savingError) {
       setErrorMessage(`Nie udało się zapisać oznaczeń. ${savingError instanceof ApiRequestError ? savingError.message : 'Nieoczekiwany błąd.'}`);
     } finally {

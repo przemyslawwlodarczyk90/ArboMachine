@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -21,9 +21,28 @@ type TreePhotoListState =
  * Sekcja "Zdjecia" karty drzewa: responsywna siatka zdjec, dodawanie, podglad i usuwanie. Ma wlasny stan listy -
  * dodanie/usuniecie zdjecia nie przeladowuje karty drzewa. Bez biblioteki galerii: podglad to zwykly ModalDialog.
  */
-export function TreePhotosSection({ projectId, treeId }: { projectId: number; treeId: number }) {
+export function TreePhotosSection({ projectId, treeId, offersCameraCapture = false }: {
+  projectId: number;
+  treeId: number;
+  /**
+   * etap 32 (tryb terenowy): zamiast jednego "Dodaj zdjecie" dwa przyciski - "Zrob zdjecie" (od razu aparat, capture)
+   * i "Z galerii"; plik trafia do tego samego okna dodawania zdjecia
+   */
+  offersCameraCapture?: boolean;
+}) {
   const [treePhotoListState, setTreePhotoListState] = useState<TreePhotoListState>({ status: 'loading' });
   const [isAddPhotoDialogOpen, setIsAddPhotoDialogOpen] = useState(false);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  // Klik w ukryty input w tym samym dotknieciu - przegladarka otwiera aparat tylko w odpowiedzi na gest uzytkownika.
+  const openPickedFile = (changeEvent: ChangeEvent<HTMLInputElement>) => {
+    const pickedFile = changeEvent.target.files?.[0] ?? null;
+    changeEvent.target.value = '';
+    if (!pickedFile) return;
+    setCapturedFile(pickedFile);
+    setIsAddPhotoDialogOpen(true);
+  };
   const [previewedPhoto, setPreviewedPhoto] = useState<{ treePhoto: TreePhoto; objectUrl: string } | null>(null);
   const [photoAwaitingDeletion, setPhotoAwaitingDeletion] = useState<TreePhoto | null>(null);
   const [annotatedPhoto, setAnnotatedPhoto] = useState<TreePhoto | null>(null);
@@ -75,7 +94,16 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
     <section className="tree-card-section" aria-labelledby="tree-photos-heading">
       <div className="section-header-row">
         <h3 id="tree-photos-heading">Zdjęcia</h3>
-        <button className="btn btn-secondary" onClick={() => setIsAddPhotoDialogOpen(true)}>Dodaj zdjęcie</button>
+        {offersCameraCapture ? (
+          <div className="form-actions">
+            <button className="btn btn-primary" onClick={() => cameraInputRef.current?.click()}>Zrób zdjęcie</button>
+            <button className="btn btn-secondary" onClick={() => galleryInputRef.current?.click()}>Z galerii</button>
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={openPickedFile} />
+            <input ref={galleryInputRef} type="file" accept="image/*" hidden onChange={openPickedFile} />
+          </div>
+        ) : (
+          <button className="btn btn-secondary" onClick={() => setIsAddPhotoDialogOpen(true)}>Dodaj zdjęcie</button>
+        )}
       </div>
 
       {treePhotoListState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
@@ -101,7 +129,8 @@ export function TreePhotosSection({ projectId, treeId }: { projectId: number; tr
 
       {isAddPhotoDialogOpen && (
         <AddTreePhotoDialog projectId={projectId} treeId={treeId} onTreePhotoAdded={appendAddedPhotoAndCloseDialog}
-                            closeDialog={() => setIsAddPhotoDialogOpen(false)} />
+                            initialFile={capturedFile}
+                            closeDialog={() => { setIsAddPhotoDialogOpen(false); setCapturedFile(null); }} />
       )}
 
       {previewedPhoto && (

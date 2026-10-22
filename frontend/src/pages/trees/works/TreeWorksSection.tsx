@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -23,11 +23,13 @@ type TreeWorkListState =
  * Ma wlasny stan listy; po kazdej operacji uzywa odpowiedzi backendu, bez przeladowania karty drzewa.
  * Celowo bez powiazania z mapa (symbole/kolory prac) - slownik prac nie jest jeszcze ustalony.
  */
-export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
+export function TreeWorksSection({ projectId, treeId, syncGeneration = 0, onWorksChanged }: {
   projectId: number;
   treeId: number;
   /** etap 26: po synchronizacji zmian offline lista jest pobierana ponownie */
   syncGeneration?: number;
+  /** etap 32 (tryb terenowy): aktualna lista prac drzewa po wczytaniu i kazdej zmianie - symbole na mapie od razu */
+  onWorksChanged?: (treeWorks: TreeWork[]) => void;
 }) {
   const [treeWorkListState, setTreeWorkListState] = useState<TreeWorkListState>({ status: 'loading' });
   const [isAddingWork, setIsAddingWork] = useState(false);
@@ -54,6 +56,13 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0 }: {
       });
     return () => { isResponseStillWanted = false; };
   }, [projectId, treeId, syncGeneration]);
+
+  // Najnowszy callback w refie - efekt zglasza tylko zmiane listy, nie zmiane funkcji rodzica.
+  const onWorksChangedRef = useRef(onWorksChanged);
+  onWorksChangedRef.current = onWorksChanged;
+  useEffect(() => {
+    if (treeWorkListState.status === 'loaded') onWorksChangedRef.current?.(treeWorkListState.treeWorks);
+  }, [treeWorkListState]);
 
   const updateLoadedWorks = (changeTreeWorks: (treeWorks: TreeWork[]) => TreeWork[]) =>
     setTreeWorkListState((currentState) => currentState.status === 'loaded'
