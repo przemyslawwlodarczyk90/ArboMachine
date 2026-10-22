@@ -2,36 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { NewTreeDialog } from '../NewTreeDialog';
 import { ReferenceLayersPanel } from '../../projects/referencelayers/ReferenceLayersPanel';
-import { useProjectReferenceLayers } from '../../projects/referencelayers/useProjectReferenceLayers';
 import type { TreeLocation } from '../treeDataTypes';
-import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { ToBeClarifiedNote } from '../../../components/ToBeClarifiedNote';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { buildProjectMapLegend } from '../../../map/mapSymbolLegend';
 import { MapSymbolSwatch } from '../../../map/MapSymbolSwatch';
-import { useMapSymbolCatalog } from '../../../map/useMapSymbolCatalog';
 import { parsePositiveIdRouteParam } from '../../../routing/parsePositiveIdRouteParam';
-import type { Tree } from '../treeDataTypes';
-import { treesApi } from '../treesApi';
-import type { TreeWork } from '../works/treeWorkDataTypes';
-import { treeWorksApi } from '../works/treeWorksApi';
 import { ProjectMapLegend } from './ProjectMapLegend';
 import { BasemapControls } from '../../../map/BasemapControls';
 import type { TreeStand } from '../../projects/stands/standDataTypes';
-import { treeStandsApi } from '../../projects/stands/treeStandsApi';
 import { ProjectTreeMap } from './ProjectTreeMap';
-import { toTreeMapPoints } from './treeMapPoints';
-import { treeValuationsApi } from '../valuation/treeValuationsApi';
+import { useProjectMapData } from './useProjectMapData';
 import { ValuationBadge } from '../valuation/ValuationBadge';
 import { valuationColorOf } from '../valuation/valuationColors';
-import { valuationCategoryLabel, type TreeValuation } from '../valuation/valuationDataTypes';
-import { valuationCategoryByTreeId } from '../valuation/valuationFilter';
+import { valuationCategoryLabel } from '../valuation/valuationDataTypes';
 import { buildMarkingLegend, buildValuationLegend, MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
 import { TreeMarkingBadge } from '../markings/TreeMarkingBadge';
-import type { TreeMarkings } from '../markings/treeMarkingDataTypes';
-import { treeMarkingsApi } from '../markings/treeMarkingsApi';
-import { useTreeMarkingCatalog } from '../markings/useTreeMarkingCatalog';
 import { TreeWorkMeta } from '../works/TreeWorkMeta';
 import {
   buildManagementLegend, isOpenWorkStatus, managementColorOf, managementStateLabel, sortWorksForManagement,
@@ -40,20 +27,19 @@ import {
 /** Stala pusta lista - ukrycie warstwy nie tworzy nowej tablicy przy kazdym renderze. */
 const NO_STANDS: TreeStand[] = [];
 
-type ProjectMapDataState =
-  | { status: 'loading' }
-  | { status: 'failed'; errorMessage: string }
-  | { status: 'loaded'; trees: Tree[]; works: TreeWork[] };
-
 /**
  * Sekcja "Mapa" workspace projektu (/projects/:projectId/map) - podglad drzew z lokalizacja, ich symboli i symboli prac.
- * Dane: GET .../trees, GET .../works (wszystkie prace projektu jednym zapytaniem) i katalog GET /api/map-symbols,
- * laczone w pamieci po treeId - bez zapytan o kazde drzewo. Edycja punktu i symboli jest w karcie drzewa.
+ * Dane (etap 32: wspolny hook useProjectMapData z trybem terenowym): GET .../trees, GET .../works (wszystkie prace
+ * projektu jednym zapytaniem) i katalog GET /api/map-symbols, laczone w pamieci po treeId - bez zapytan o kazde
+ * drzewo. Edycja punktu i symboli jest w karcie drzewa.
  * Renderuje sie dopiero po udanym pobraniu projektu (ProjectPage), wiec cudzy projekt tu nie dotrze.
  */
 export function ProjectTreeMapSection() {
   const projectId = parsePositiveIdRouteParam(useParams().projectId);
-  const [projectMapDataState, setProjectMapDataState] = useState<ProjectMapDataState>({ status: 'loading' });
+  const {
+    mapDataState: projectMapDataState, valuations, projectMarkings, stands, allTreeMapPoints, referenceLayers,
+    symbolCatalog: { catalogState, symbolByCode }, markingCatalog: { catalogState: markingCatalogState, markingByCode },
+  } = useProjectMapData(projectId);
   const [selectedTreeId, setSelectedTreeId] = useState<number | null>(null);
   // Etap 31: "Pokaz na mapie" z karty drzewa (?drzewo=ID) - mapa przybliza sie do drzewa i je zaznacza.
   const [searchParams] = useSearchParams();
@@ -61,54 +47,18 @@ export function ProjectTreeMapSection() {
   // Etap 31: "punkt -> karta" - klik w mapie wskazuje miejsce nowego drzewa.
   const [isAddingTreeOnMap, setIsAddingTreeOnMap] = useState(false);
   const [newTreeLocation, setNewTreeLocation] = useState<TreeLocation | null>(null);
-  const { catalogState, symbolByCode } = useMapSymbolCatalog();
   const [viewMode, setViewMode] = useState<MapViewMode>('SYMBOLS');
-  // Waloryzacje (etap 27) - osobne zapytanie; blad nie blokuje mapy (tryb "Waloryzacja" pokaze wtedy komunikat).
-  const [valuations, setValuations] = useState<TreeValuation[] | null>(null);
   // Grupy drzew (etap 29): warstwa obszarow, domyslnie widoczna, gdy projekt je ma.
-  const [stands, setStands] = useState<TreeStand[]>([]);
   const [areStandsVisible, setAreStandsVisible] = useState(true);
-  // Oznaczenia drzew (etap 31) - osobne zapytanie; blad nie blokuje mapy. Filtr: kod oznaczenia albo '' = wszystkie.
-  const [projectMarkings, setProjectMarkings] = useState<TreeMarkings[] | null>(null);
+  // Oznaczenia drzew (etap 31) - blad nie blokuje mapy. Filtr: kod oznaczenia albo '' = wszystkie.
   const [markingFilterCode, setMarkingFilterCode] = useState('');
-  const { catalogState: markingCatalogState, markingByCode } = useTreeMarkingCatalog();
-  // Etap 31: podklad wektorowy projektu (pliki z QGIS) - niezalezny od danych drzew.
-  const referenceLayers = useProjectReferenceLayers(projectId ?? 0);
 
   useEffect(() => {
-    if (projectId === null) return;
-    let isResponseStillWanted = true;
-    setProjectMapDataState({ status: 'loading' });
     setSelectedTreeId(focusedTreeId);
-    treeValuationsApi.listProjectValuations(projectId)
-      .then((loadedValuations) => { if (isResponseStillWanted) setValuations(loadedValuations); })
-      .catch(() => { if (isResponseStillWanted) setValuations(null); });
-    treeMarkingsApi.listProjectMarkings(projectId)
-      .then((loadedMarkings) => { if (isResponseStillWanted) setProjectMarkings(loadedMarkings); })
-      .catch(() => { if (isResponseStillWanted) setProjectMarkings(null); });
-    treeStandsApi.listStands(projectId)
-      .then((loadedStands) => { if (isResponseStillWanted) setStands(loadedStands); })
-      .catch(() => { if (isResponseStillWanted) setStands([]); });
-    Promise.all([treesApi.listTreesOfProject(projectId), treeWorksApi.listProjectWorks(projectId)])
-      .then(([trees, works]) => {
-        if (isResponseStillWanted) setProjectMapDataState({ status: 'loaded', trees, works });
-      })
-      .catch((loadingError) => {
-        if (!isResponseStillWanted) return;
-        setProjectMapDataState({
-          status: 'failed',
-          errorMessage: loadingError instanceof ApiRequestError ? loadingError.message : 'Nieoczekiwany błąd.',
-        });
-      });
-    return () => { isResponseStillWanted = false; };
+    // focusedTreeId celowo poza zaleznosciami - jak dotad zaznaczenie z ?drzewo= tylko przy wejsciu do projektu.
   }, [projectId]);
 
   const loadedData = projectMapDataState.status === 'loaded' ? projectMapDataState : null;
-  // Stabilne tablice - mapa dopasowuje widok tylko wtedy, gdy zmieniaja sie dane projektu.
-  const allTreeMapPoints = useMemo(
-    () => (loadedData ? toTreeMapPoints(loadedData.trees, loadedData.works, valuationCategoryByTreeId(valuations ?? []),
-      new Map((projectMarkings ?? []).map((markings) => [markings.treeId, markings.codes]))) : []),
-    [loadedData, valuations, projectMarkings]);
   // Filtr oznaczen dziala tylko w trybie "Oznaczenia drzew" - w innych trybach mapa pokazuje wszystkie drzewa.
   const treeMapPoints = useMemo(() => (viewMode === 'MARKINGS' && markingFilterCode
     ? allTreeMapPoints.filter((point) => point.markingCodes.includes(markingFilterCode))
