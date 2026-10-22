@@ -201,4 +201,34 @@ class TreeLocationGnssApiIntegrationTest {
         assertThat(tree.getLocation().getSource()).isEqualTo(TreeLocationSource.DEVICE_GNSS);
         assertThat(treeWorkRepository.findAllByTreeIdOrderByCreatedAtAscIdAsc(createdTreeId)).hasSize(1);
     }
+
+    // --- etap 35: czas i sposob pomiaru ---
+
+    @Test
+    void measurementTimeAdapterAndDeviceAreStoredAndReturned() throws Exception {
+        putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"accuracyM\":0.03,\"source\":\"DEVICE_GNSS\","
+                + "\"measuredAt\":\"2026-10-22T10:31:22.123456789Z\",\"adapterCode\":\"browser-geolocation-averaged\","
+                + "\"deviceLabel\":\"  Odbiornik testowy\\n  \"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.location.measuredAt").value("2026-10-22T10:31:22.123456Z"))
+                .andExpect(jsonPath("$.location.adapterCode").value("browser-geolocation-averaged"))
+                .andExpect(jsonPath("$.location.deviceLabel").value("Odbiornik testowy"));
+        assertThat(storedTree(treeIdA).getLocation().getMeasuredAt()).isEqualTo(java.time.Instant.parse("2026-10-22T10:31:22.123456Z"));
+        putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"source\":\"MAP\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.location.measuredAt").doesNotExist())
+                .andExpect(jsonPath("$.location.adapterCode").doesNotExist());
+    }
+
+    @Test
+    void measurementFromTheFutureOrUnknownAdapterIsRejected() throws Exception {
+        String future = java.time.Instant.now().plus(java.time.Duration.ofHours(2)).toString();
+        putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"measuredAt\":\"" + future + "\"}")
+                .andExpect(status().isBadRequest());
+        putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"adapterCode\":\"Zly Kod!\"}")
+                .andExpect(status().isBadRequest());
+        putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"deviceLabel\":\"" + "x".repeat(101) + "\"}")
+                .andExpect(status().isBadRequest());
+        assertThat(storedTree(treeIdA).getLocation()).isNull();
+    }
 }

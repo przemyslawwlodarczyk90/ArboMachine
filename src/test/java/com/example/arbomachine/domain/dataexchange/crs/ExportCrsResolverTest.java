@@ -19,7 +19,7 @@ class ExportCrsResolverTest {
     private static TreeExportData treeAt(String latitude, String longitude) {
         return new TreeExportData(1, "1", null, null, null, null, null, null, null, null,
                 latitude == null ? null : new BigDecimal(latitude), longitude == null ? null : new BigDecimal(longitude),
-                null, null, null, null, List.of(), null, List.of(), List.of(), List.of(), List.of());
+                null, null, null, null, null, null, List.of(), null, List.of(), List.of(), List.of(), List.of());
     }
 
     @Test

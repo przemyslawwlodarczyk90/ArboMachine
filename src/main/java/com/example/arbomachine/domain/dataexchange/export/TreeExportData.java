@@ -26,6 +26,9 @@ public record TreeExportData(
         BigDecimal locationAccuracyM,
         BigDecimal locationAltitudeM,
         String locationSource,
+        /** etap 35: chwila pomiaru lokalizacji (UTC) i sposob pomiaru (kod adaptera); null = brak */
+        java.time.Instant locationMeasuredAt,
+        String locationMethod,
         String mapSymbolCode,
         List<TreeWorkExportData> works,
         TreeValuationExportData valuation,
@@ -109,6 +112,8 @@ public record TreeExportData(
             case LOCATION_ACCURACY_M -> locationAccuracyM;
             case LOCATION_ALTITUDE_M -> locationAltitudeM;
             case LOCATION_SOURCE -> locationSource;
+            case LOCATION_MEASURED_AT -> locationMeasuredAt == null ? null : locationMeasuredAt.toString();
+            case LOCATION_METHOD -> locationMethod;
             case MAP_SYMBOL_CODE -> mapSymbolCode;
             case WORK_NAMES -> works.isEmpty() ? null
                     : works.stream().map(TreeWorkExportData::name).collect(Collectors.joining(WORK_NAMES_SEPARATOR));

@@ -5,14 +5,18 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 /**
  * Body PUT /api/projects/{projectId}/trees/{treeId}/location - ustawienie albo zamiana punktu drzewa.
  * Obie wspolrzedne sa wymagane (brak stanu czesciowego); usuniecie lokalizacji to osobna operacja DELETE.
  * Od etapu 25 opcjonalnie dane pomiaru: wysokosc i dokladnosc w metrach oraz zrodlo punktu (MANUAL, MAP,
  * DEVICE_GNSS). Pominiete pola = brak danych; IMPORT nie jest dozwolony w tym endpoincie (ustawia go tylko import).
+ * Etap 35: measuredAt (chwila pomiaru wg urzadzenia, ISO-8601), adapterCode (sposob pomiaru, np. browser-geolocation)
+ * i deviceLabel (opis urzadzenia) - opcjonalne. Typu rozwiazania RTK celowo nie ma: przegladarka go nie zna.
  */
 public record TreeLocationRequest(
         @NotNull(message = "Latitude is mandatory")
@@ -34,11 +38,24 @@ public record TreeLocationRequest(
         BigDecimal accuracyM,
 
         @Pattern(regexp = "MANUAL|MAP|DEVICE_GNSS", message = "Unsupported location source")
-        String source
+        String source,
+
+        Instant measuredAt,
+
+        @Pattern(regexp = TreeLocation.ADAPTER_CODE_PATTERN, message = "Unsupported measurement adapter code")
+        String adapterCode,
+
+        @Size(max = TreeLocation.MAXIMUM_DEVICE_LABEL_LENGTH, message = "Device label is too long")
+        String deviceLabel
 ) {
 
     /** Dotychczasowe wywolania (sam punkt, bez danych pomiaru). */
     public TreeLocationRequest(BigDecimal latitude, BigDecimal longitude) {
-        this(latitude, longitude, null, null, null);
+        this(latitude, longitude, null, null, null, null, null, null);
+    }
+
+    /** Wywolania sprzed etapu 35 (bez czasu i sposobu pomiaru). */
+    public TreeLocationRequest(BigDecimal latitude, BigDecimal longitude, BigDecimal altitudeM, BigDecimal accuracyM, String source) {
+        this(latitude, longitude, altitudeM, accuracyM, source, null, null, null);
     }
 }

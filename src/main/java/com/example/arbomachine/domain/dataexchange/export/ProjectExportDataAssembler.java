@@ -116,6 +116,8 @@ public class ProjectExportDataAssembler {
                 tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
                 tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
                 tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
+                tree.getLocation() == null ? null : tree.getLocation().getMeasuredAt(),
+                tree.getLocation() == null ? null : tree.getLocation().getAdapterCode(),
                 tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames, markingNames, markingCodes);
     }
 }

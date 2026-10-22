@@ -54,7 +54,10 @@ public enum TreeExchangeField {
     SPECIES_GROUP("speciesGroup", "sp_group", "Grupa gatunku (iglaste / liściaste)", ValueType.TEXT, false),
     STAND_NAMES("standNames", "stands", "Grupy drzew", ValueType.TEXT, false),
     // Etap 31: oznaczenia drzewa (nazwy z katalogu, rozdzielone "; ") - tylko eksport, import oznaczen do doprecyzowania.
-    MARKINGS("markings", "markings", "Oznaczenia drzewa", ValueType.TEXT, false);
+    MARKINGS("markings", "markings", "Oznaczenia drzewa", ValueType.TEXT, false),
+    // Etap 35: czas pomiaru lokalizacji (ISO-8601 UTC) i sposob pomiaru (kod adaptera GNSS) - nazwy GIS do 10 znakow (Shapefile).
+    LOCATION_MEASURED_AT("locationMeasuredAt", "meas_time", "Czas pomiaru lokalizacji", ValueType.TEXT, false),
+    LOCATION_METHOD("locationMethod", "loc_method", "Sposób pomiaru lokalizacji", ValueType.TEXT, false);
 
     /** Wersja schematu wymiany - zapisywana w eksportach (GeoJSON, XLSX, GeoPackage). */
     public static final String SCHEMA_VERSION = "1";
@@ -66,7 +69,7 @@ public enum TreeExchangeField {
             VALUATION_CATEGORY, VALUATION_AGE_VALUE, VALUATION_NATURAL_VALUE, VALUATION_ECOLOGICAL_VALUE,
             VALUATION_CULTURAL_VALUE, VALUATION_LANDSCAPE_VALUE, VALUATION_JUSTIFICATION, OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE,
             NEXT_PLANNED_WORK_NAME, LAST_MONITORING_DATE, LAST_HEALTH_STATUS, LAST_MONITORING_NOTES, SPECIES_GROUP, STAND_NAMES,
-            MARKINGS);
+            MARKINGS, LOCATION_MEASURED_AT, LOCATION_METHOD);
 
     /**
      * Atrybuty punktu w eksportach GIS (wspolrzedne sa w geometrii, nie w atrybutach). Z waloryzacji tylko kategoria -
@@ -76,7 +79,7 @@ public enum TreeExchangeField {
             SPECIES_LATIN, TRUNK_CIRCUMFERENCE_CM, HEIGHT_M, CROWN_DIAMETER_M, NOTES, CONDITION_NOTES, HAZARD_NOTES,
             LOCATION_ACCURACY_M, LOCATION_ALTITUDE_M, LOCATION_SOURCE, MAP_SYMBOL_CODE, WORK_NAMES, VALUATION_CATEGORY,
             OPEN_WORK_COUNT, NEXT_PLANNED_WORK_DATE, NEXT_PLANNED_WORK_NAME, LAST_MONITORING_DATE, LAST_HEALTH_STATUS, SPECIES_GROUP,
-            STAND_NAMES, MARKINGS);
+            STAND_NAMES, MARKINGS, LOCATION_MEASURED_AT, LOCATION_METHOD);
 
     public enum ValueType { TEXT, INTEGER, DECIMAL }
 

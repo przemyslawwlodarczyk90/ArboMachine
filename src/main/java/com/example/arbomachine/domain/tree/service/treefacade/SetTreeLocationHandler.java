@@ -36,7 +36,9 @@ public class SetTreeLocationHandler {
 
         TreeLocation newLocation = TreeLocation.of(treeLocationRequest.latitude(), treeLocationRequest.longitude(),
                 treeLocationRequest.altitudeM(), treeLocationRequest.accuracyM(),
-                treeLocationRequest.source() == null ? null : TreeLocationSource.valueOf(treeLocationRequest.source()));
+                treeLocationRequest.source() == null ? null : TreeLocationSource.valueOf(treeLocationRequest.source()),
+                treeLocationRequest.measuredAt(), blankToNull(treeLocationRequest.adapterCode()),
+                treeLocationRequest.deviceLabel(), Instant.now());
         if (newLocation.equals(treeInOwnedProject.getLocation())) {
             return treeMapper.toTreeResponse(treeInOwnedProject);
         }
@@ -44,5 +46,9 @@ public class SetTreeLocationHandler {
         // Precyzja do mikrosekund = precyzja kolumny timestamp w PostgreSQL (jak przy edycji drzewa).
         treeInOwnedProject.placeAt(newLocation, Instant.now().truncatedTo(ChronoUnit.MICROS));
         return treeMapper.toTreeResponse(treeRepository.save(treeInOwnedProject));
+    }
+
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text;
     }
 }

@@ -23,7 +23,7 @@ class TreeWorksIcsExporterTest {
     @Test
     void onlyOpenWorksWithPlannedDateBecomeAllDayEvents() {
         TreeExportData tree = new TreeExportData(7, "G-1", "lipa drobnolistna", "Tilia cordata", null, null, null, null, null, null,
-                new BigDecimal("52.1000000"), new BigDecimal("21.2000000"), null, null, null, null,
+                new BigDecimal("52.1000000"), new BigDecimal("21.2000000"), null, null, null, null, null, null,
                 List.of(work(1, "Cięcia sanitarne", "Posusz; nad chodnikiem, pilne", "PLANNED", "URGENT", LocalDate.of(2026, 11, 15)),
                         work(2, "Kontrola", null, "RECOMMENDED", null, LocalDate.of(2026, 12, 31)),
                         work(3, "Bez terminu", null, "PLANNED", null, null),
