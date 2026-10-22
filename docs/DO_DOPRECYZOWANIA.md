@@ -156,6 +156,10 @@ wszystkie kolumny. Istniejące drzewa dostają `null` = „brak lokalizacji”. 
 ### Czy blokuje dalszy development?
 NIE teraz. TAK przed pierwszą zmianą, której `ddl-auto=update` nie wykona (zmiana typu, PostGIS, przeniesienie danych).
 
+**Stan od etapu 38:** migracje Flyway V1–V5 przygotowane i sprawdzane testem (`ddl-auto=validate` na schemacie
+z migracji); aplikacja nadal działa na `ddl-auto=update`. Przełączenie produkcji (baseline V1) — decyzja właściciela,
+kroki w `docs/MIGRACJE_BAZY.md`.
+
 ---
 
 ## Język interfejsu — ROZSTRZYGNIĘTE w etapie 16 (V1)
