@@ -19,6 +19,9 @@ public interface TreePhotoRepository extends JpaRepository<TreePhoto, Long> {
     /** Zdjecia drzewa w kolejnosci dodawania. */
     List<TreePhoto> findAllByTreeIdOrderByCreatedAtAscIdAsc(Long treeId);
 
+    /** Etap 33: zdjecie juz wyslane z tym identyfikatorem urzadzenia (ponowienie uploadu). */
+    Optional<TreePhoto> findByTreeIdAndClientUploadId(Long treeId, String clientUploadId);
+
     /** Pusty wynik takze dla zdjecia, ktore istnieje, ale nalezy do innego drzewa. */
     Optional<TreePhoto> findByIdAndTreeId(Long treePhotoId, Long treeId);
 

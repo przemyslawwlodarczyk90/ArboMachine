@@ -6,21 +6,25 @@ import com.example.arbomachine.domain.treephoto.config.TreePhotoProperties;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoUpload;
 import com.example.arbomachine.domain.treephoto.entity.TreePhoto;
+import com.example.arbomachine.domain.treephoto.exception.InvalidClientUploadIdException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoFileMissingException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoFileTooLargeException;
 import com.example.arbomachine.domain.treephoto.exception.UnsupportedTreePhotoTypeException;
 import com.example.arbomachine.domain.treephoto.mapper.TreePhotoMapper;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorage;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorageException;
+import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
 import com.example.arbomachine.infrastructure.repository.TreePhotoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -30,6 +34,9 @@ import java.util.UUID;
  * Baza i storage to nie jedna transakcja: jesli zapis metadanych sie nie uda, plik jest usuwany (sprzatanie),
  * zeby nie zostawal plik bez rekordu. Handler celowo nie jest @Transactional - zapis encji commituje sie
  * w repozytorium, wiec blad bazy widac tutaj, zanim odpowiedz trafi do klienta.
+ * <p>
+ * Etap 33 (zdjecia offline): z clientUploadId upload jest idempotentny - zdjecie juz zapisane z tym id w tym drzewie
+ * jest zwracane bez zapisu pliku; dwa rownolegle takie same uploady rozstrzyga unikalnosc (tree_id, client_upload_id).
  */
 @Component
 public class UploadTreePhotoHandler {
@@ -43,19 +50,28 @@ public class UploadTreePhotoHandler {
     private final PhotoStorage photoStorage;
     private final TreePhotoMapper treePhotoMapper;
     private final TreePhotoProperties treePhotoProperties;
+    private final TreePhotoAnnotationRepository treePhotoAnnotationRepository;
 
     public UploadTreePhotoHandler(FindTreeInProjectOwnedByCurrentUserHandler findTreeInProjectOwnedByCurrentUserHandler,
                                   TreePhotoRepository treePhotoRepository, PhotoStorage photoStorage,
-                                  TreePhotoMapper treePhotoMapper, TreePhotoProperties treePhotoProperties) {
+                                  TreePhotoMapper treePhotoMapper, TreePhotoProperties treePhotoProperties,
+                                  TreePhotoAnnotationRepository treePhotoAnnotationRepository) {
         this.findTreeInProjectOwnedByCurrentUserHandler = findTreeInProjectOwnedByCurrentUserHandler;
         this.treePhotoRepository = treePhotoRepository;
         this.photoStorage = photoStorage;
         this.treePhotoMapper = treePhotoMapper;
         this.treePhotoProperties = treePhotoProperties;
+        this.treePhotoAnnotationRepository = treePhotoAnnotationRepository;
     }
 
     public TreePhotoResponse handle(String currentUserEmail, Long projectId, Long treeId, TreePhotoUpload treePhotoUpload) {
         Tree treeInOwnedProject = findTreeInProjectOwnedByCurrentUserHandler.handle(currentUserEmail, projectId, treeId);
+        String clientUploadId = validatedClientUploadIdOf(treePhotoUpload.clientUploadId());
+        if (clientUploadId != null) {
+            Optional<TreePhoto> alreadyUploadedPhoto = treePhotoRepository
+                    .findByTreeIdAndClientUploadId(treeInOwnedProject.getId(), clientUploadId);
+            if (alreadyUploadedPhoto.isPresent()) return responseOf(alreadyUploadedPhoto.get());
+        }
         SupportedTreePhotoType photoType = validatedPhotoTypeOf(treePhotoUpload);
 
         // Fizyczna nazwa pliku nigdy nie pochodzi od uzytkownika - UUID wyklucza "../", nadpisanie i kolizje nazw.
@@ -70,11 +86,33 @@ public class UploadTreePhotoHandler {
             TreePhoto savedTreePhoto = treePhotoRepository.save(TreePhoto.createForTree(treeInOwnedProject,
                     displayableOriginalFileNameOf(treePhotoUpload.originalFileName()), storageKey,
                     photoType.contentType(), treePhotoUpload.fileSizeBytes(),
-                    Instant.now().truncatedTo(ChronoUnit.MICROS)));
+                    Instant.now().truncatedTo(ChronoUnit.MICROS), clientUploadId));
             return treePhotoMapper.toTreePhotoResponse(savedTreePhoto, null);
+        } catch (DataIntegrityViolationException duplicateUpload) {
+            // Rownolegly upload z tym samym clientUploadId zdazyl zapisac rekord - nasz plik jest zbedny.
+            deleteStoredFileAfterFailedSave(storageKey, duplicateUpload);
+            if (clientUploadId == null) throw duplicateUpload;
+            return treePhotoRepository.findByTreeIdAndClientUploadId(treeInOwnedProject.getId(), clientUploadId)
+                    .map(this::responseOf)
+                    .orElseThrow(() -> duplicateUpload);
         } catch (RuntimeException metadataSavingError) {
             deleteStoredFileAfterFailedSave(storageKey, metadataSavingError);
             throw metadataSavingError;
+        }
+    }
+
+    private TreePhotoResponse responseOf(TreePhoto treePhoto) {
+        return treePhotoMapper.toTreePhotoResponse(treePhoto,
+                treePhotoAnnotationRepository.findByTreePhotoId(treePhoto.getId()).orElse(null));
+    }
+
+    /** null albo pusty = upload bez identyfikatora; cokolwiek innego musi byc UUID (zapisywany malymi literami). */
+    private static String validatedClientUploadIdOf(String clientUploadId) {
+        if (clientUploadId == null || clientUploadId.isBlank()) return null;
+        try {
+            return UUID.fromString(clientUploadId.trim()).toString();
+        } catch (IllegalArgumentException notUuid) {
+            throw new InvalidClientUploadIdException("Client upload id must be a UUID");
         }
     }
 

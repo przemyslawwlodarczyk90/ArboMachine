@@ -42,15 +42,18 @@ public class TreePhotoController {
     }
 
     @Operation(summary = "Dodanie zdjecia (multipart, pole \"file\"; JPEG/PNG/WebP, limit app.tree-photos.max-file-size); "
-            + "typ sprawdzany z zawartosci pliku; cudzy projekt/drzewo daje 404")
+            + "typ sprawdzany z zawartosci pliku; cudzy projekt/drzewo daje 404. Opcjonalnie \"clientUploadId\" (UUID z "
+            + "urzadzenia, etap 33): ponowne wyslanie z tym samym id zwraca juz zapisane zdjecie zamiast duplikatu")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TreePhotoResponse> uploadTreePhoto(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                              @PathVariable Long projectId,
                                                              @PathVariable Long treeId,
-                                                             @RequestParam("file") MultipartFile file) {
+                                                             @RequestParam("file") MultipartFile file,
+                                                             @RequestParam(value = "clientUploadId", required = false)
+                                                             String clientUploadId) {
         TreePhotoResponse uploadedTreePhoto = treePhotoFacade.uploadPhotoOfTreeOfCurrentUser(
                 authenticatedUser.getUsername(), projectId, treeId,
-                new TreePhotoUpload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file));
+                new TreePhotoUpload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file, clientUploadId));
         return ResponseEntity.created(URI.create("/api/projects/" + projectId + "/trees/" + treeId + "/photos/"
                 + uploadedTreePhoto.id() + "/content")).body(uploadedTreePhoto);
     }

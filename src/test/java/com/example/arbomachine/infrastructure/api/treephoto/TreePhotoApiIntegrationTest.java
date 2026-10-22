@@ -190,6 +190,54 @@ class TreePhotoApiIntegrationTest {
                 .andExpect(status().isCreated()));
     }
 
+    // --- etap 33: idempotentny upload (zdjecia offline wysylane ponownie po zerwanym polaczeniu) ---
+
+    private ResultActions uploadWithClientIdAs(UserAccount userAccount, long projectId, long treeId, String clientUploadId)
+            throws Exception {
+        return mockMvc.perform(multipart("/api/projects/{projectId}/trees/{treeId}/photos", projectId, treeId)
+                .file(jpegFile("IMG_OFFLINE.jpg"))
+                .param("clientUploadId", clientUploadId)
+                .header("Authorization", bearerTokenOf(userAccount)));
+    }
+
+    @Test
+    void repeatedUploadWithSameClientUploadIdReturnsExistingPhotoWithoutDuplicate() throws Exception {
+        String clientUploadId = "0f8fad5b-d9cb-469f-a165-70867728950e";
+        long firstPhotoId = readId(uploadWithClientIdAs(userAccountA, projectIdA1, treeIdA1First, clientUploadId)
+                .andExpect(status().isCreated()));
+        long repeatedPhotoId = readId(uploadWithClientIdAs(userAccountA, projectIdA1, treeIdA1First, clientUploadId.toUpperCase())
+                .andExpect(status().isCreated()));
+
+        assertThat(repeatedPhotoId).isEqualTo(firstPhotoId);
+        assertThat(treePhotoRepository.findAllByTreeIdOrderByCreatedAtAscIdAsc(treeIdA1First)).hasSize(1);
+        assertThat(storedFiles()).hasSize(1);
+    }
+
+    @Test
+    void sameClientUploadIdInAnotherTreeAndUploadsWithoutIdCreateSeparatePhotos() throws Exception {
+        String clientUploadId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+        uploadWithClientIdAs(userAccountA, projectIdA1, treeIdA1First, clientUploadId).andExpect(status().isCreated());
+        uploadWithClientIdAs(userAccountA, projectIdA1, treeIdA1Second, clientUploadId).andExpect(status().isCreated());
+        uploadJpegOfUserA();
+        uploadJpegOfUserA();
+
+        assertThat(treePhotoRepository.findAllByTreeIdOrderByCreatedAtAscIdAsc(treeIdA1First)).hasSize(3);
+        assertThat(treePhotoRepository.findAllByTreeIdOrderByCreatedAtAscIdAsc(treeIdA1Second)).hasSize(1);
+    }
+
+    @Test
+    void clientUploadIdThatIsNotUuidIsRejectedWithoutStoringFile() throws Exception {
+        uploadWithClientIdAs(userAccountA, projectIdA1, treeIdA1First, "nie-uuid").andExpect(status().isBadRequest());
+        assertThat(treePhotoRepository.count()).isZero();
+        assertThat(storedFiles()).isEmpty();
+    }
+
+    @Test
+    void clientUploadIdOfAnotherUsersTreeIsNotFound() throws Exception {
+        uploadWithClientIdAs(userAccountB, projectIdA1, treeIdA1First, "0f8fad5b-d9cb-469f-a165-70867728950e")
+                .andExpect(status().isNotFound());
+    }
+
     // --- dodawanie, lista, tresc, usuwanie ---
 
     @Test

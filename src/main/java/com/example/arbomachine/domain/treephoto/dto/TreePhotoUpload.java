@@ -11,10 +11,12 @@ import org.springframework.core.io.InputStreamSource;
  * @param declaredContentType typ zadeklarowany przez przegladarke (moze byc null)
  * @param fileSizeBytes       rozmiar pliku w bajtach
  * @param content             zrodlo tresci pliku (mozna otworzyc kilka razy)
+ * @param clientUploadId      etap 33: UUID nadany przez urzadzenie (null = bez ochrony przed powtorzeniem)
  */
 public record TreePhotoUpload(
         String originalFileName,
         String declaredContentType,
         long fileSizeBytes,
-        InputStreamSource content
+        InputStreamSource content,
+        String clientUploadId
 ) {}

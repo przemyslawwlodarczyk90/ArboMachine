@@ -17,7 +17,9 @@ import java.time.Instant;
  * TreePhoto -> Tree -> Project -> owner. Relacja jednokierunkowa - Tree nie trzyma kolekcji zdjec.
  */
 @Entity
-@Table(name = "tree_photo", indexes = @Index(name = "idx_tree_photo_tree_id", columnList = "tree_id"))
+@Table(name = "tree_photo", indexes = @Index(name = "idx_tree_photo_tree_id", columnList = "tree_id"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_tree_photo_tree_client_upload",
+                columnNames = {"tree_id", "client_upload_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TreePhoto {
@@ -51,8 +53,16 @@ public class TreePhoto {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * Etap 33 (zdjecia offline): identyfikator nadany przez urzadzenie (UUID) - ponowne wyslanie tego samego zdjecia
+     * (np. odpowiedz HTTP zginela po zapisie) zwraca istniejacy rekord zamiast drugiego. null = upload bez
+     * identyfikatora (zdjecia sprzed etapu 33). Unikalny w ramach drzewa.
+     */
+    @Column(name = "client_upload_id", length = 36)
+    private String clientUploadId;
+
     public static TreePhoto createForTree(Tree tree, String originalFileName, String storageKey, String contentType,
-                                          long fileSizeBytes, Instant creationTime) {
+                                          long fileSizeBytes, Instant creationTime, String clientUploadId) {
         TreePhoto treePhoto = new TreePhoto();
         treePhoto.tree = tree;
         treePhoto.originalFileName = originalFileName;
@@ -60,6 +70,7 @@ public class TreePhoto {
         treePhoto.contentType = contentType;
         treePhoto.fileSizeBytes = fileSizeBytes;
         treePhoto.createdAt = creationTime;
+        treePhoto.clientUploadId = clientUploadId;
         return treePhoto;
     }
 }

@@ -2,6 +2,7 @@ package com.example.arbomachine.infrastructure.api.treephoto;
 
 import com.example.arbomachine.domain.project.exception.ProjectNotFoundException;
 import com.example.arbomachine.domain.tree.exception.TreeNotFoundException;
+import com.example.arbomachine.domain.treephoto.exception.InvalidClientUploadIdException;
 import com.example.arbomachine.domain.treephoto.exception.InvalidPhotoAnnotationException;
 import com.example.arbomachine.domain.treephoto.exception.InvalidRenderedAnnotationImageException;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoAnnotationNotFoundException;
@@ -36,6 +37,11 @@ public class TreePhotoApiExceptionHandler {
     @ExceptionHandler(TreePhotoNotFoundException.class)
     public ResponseEntity<String> handleTreePhotoNotFound(TreePhotoNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidClientUploadIdException.class)
+    public ResponseEntity<String> handleInvalidClientUploadId(InvalidClientUploadIdException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
     }
 
     @ExceptionHandler(TreePhotoFileMissingException.class)

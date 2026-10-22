@@ -54,7 +54,7 @@ class SaveTreePhotoAnnotationHandlerTest {
     @Test
     void failedMetadataSaveDeletesNewlyStoredRenderedFileAndKeepsPreviousOne() {
         TreePhoto treePhoto = TreePhoto.createForTree(mock(Tree.class), "a.jpg", "0f8fad5b-d9cb-469f-a165-70867728950e.jpg",
-                "image/jpeg", 10, Instant.now());
+                "image/jpeg", 10, Instant.now(), null);
         TreePhotoAnnotation previousAnnotation = TreePhotoAnnotation.createForPhoto(treePhoto, 1, "{}",
                 "1b4e28ba-2fa1-11d2-883f-0016d3cca427.png", "image/png", 5, Instant.now());
         when(findTreePhotoHandler.handle(anyString(), any(), any(), any())).thenReturn(treePhoto);
@@ -73,7 +73,7 @@ class SaveTreePhotoAnnotationHandlerTest {
     @Test
     void failedStorageLeavesDatabaseUntouched() {
         TreePhoto treePhoto = TreePhoto.createForTree(mock(Tree.class), "a.jpg", "0f8fad5b-d9cb-469f-a165-70867728950e.jpg",
-                "image/jpeg", 10, Instant.now());
+                "image/jpeg", 10, Instant.now(), null);
         when(findTreePhotoHandler.handle(anyString(), any(), any(), any())).thenReturn(treePhoto);
         doThrow(new RuntimeException("disk full")).when(photoStorage).store(anyString(), any(InputStream.class));
 

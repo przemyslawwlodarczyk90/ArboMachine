@@ -140,7 +140,7 @@ class ProjectSummaryApiIntegrationTest {
     private void addPhotosToTree(long treeId, int photoCount) {
         for (int photoNumber = 0; photoNumber < photoCount; photoNumber++) {
             treePhotoRepository.save(TreePhoto.createForTree(treeRepository.findById(treeId).orElseThrow(), "photo.jpg",
-                    UUID.randomUUID() + ".jpg", "image/jpeg", 100, Instant.now()));
+                    UUID.randomUUID() + ".jpg", "image/jpeg", 100, Instant.now(), null));
         }
     }
 
