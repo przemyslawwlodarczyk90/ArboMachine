@@ -166,6 +166,19 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Etap 38: migracje bazy przygotowane, ale aplikacja nadal uzywa ddl-auto=update.
+             Flyway tylko w testach (sprawdzenie, ze migracje daja schemat zgodny z encjami).
+             Wlaczenie w aplikacji: zmiana scope na domyslny - decyzja wlasciciela, patrz docs/MIGRACJE_BAZY.md. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
