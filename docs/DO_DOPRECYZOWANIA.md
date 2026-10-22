@@ -403,7 +403,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Podsumowanie | Dodatkowe liczby (drzewa ze zdjęciami, bez prac, lista braków do uzupełnienia) | OPEN |
 | Dokumentacja | „Dokument projektu” PDF — V1 od etapu 22 (jeden neutralny szablon; od etapu 29 dane zlecenia: zleceniodawca, adres obiektu, data zlecenia, monitoring i grupy drzew; autor nadal placeholderem); brak DOCX, mapy w dokumencie, szablonów per rodzaj opracowania, historii dokumentów, edycji przed eksportem | OPEN / BRAK |
 | Import/eksport | CSV, XLSX, GeoJSON, GeoPackage, Shapefile ZIP, DXF (etapy 23–24, 29); arkusze aplikacji terenowych; obszary grup drzew; brak DWG, QGZ, QML, importu pliku projektu aplikacji terenowej (format własny), aktualizacji drzew przy imporcie, importu prac, kontroli i zdjęć, ręcznego wyboru układu współrzędnych, eksportu w PL-2000 | OPEN / BRAK |
-| Teren | GPS urządzenia (etap 25) i praca offline z synchronizacją (etap 26) — V1; kontrole stanu offline od etapu 29; brak RTK/NTRIP, odbiorników Bluetooth, zdjęć i grup drzew offline, pobierania całego projektu „na wyjazd”, pełnego PWA | OPEN / BRAK |
+| Teren | GPS urządzenia (etap 25) i praca offline z synchronizacją (etap 26) — V1; kontrole stanu offline od etapu 29; **od etapu 32 tryb terenowy** (mapa na cały ekran + panel drzewa, „Przygotuj projekt do pracy bez zasięgu”, manifest PWA). **Następny priorytet: zdjęcia offline** (kolejka plików w IndexedDB). Brak: RTK/NTRIP, odbiorników Bluetooth, grup drzew offline, podkładów offline | OPEN / BRAK |
 | Dyktowanie | Dyktowanie danych strukturalnych, nazw łacińskich, komendy głosowe, offline, nagrania audio | OPEN |
 | Monitoring | V1 od etapu 29: kontrola = data + ocena Dobry / Umiarkowany / Zły (umowna, nie VTA) + uwagi; brak strukturalnej karty oceny (pień, konary, korzenie, ubytki, posusz…), kontroli cyklicznych z terminem następnej, zdjęć przy kontroli, oceny ryzyka | OPEN |
 | Powiadomienia | V1 od etapu 30: lista w aplikacji + Web Push (ocena „Zły”, prace na jutro, test); brak e-mail/SMS, ustawień, które powiadomienia otrzymywać i o której, oznaczania jako przeczytane, powiadomień dla urzędu/zleceniodawcy | OPEN / BRAK |
@@ -424,6 +424,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Dyktowanie | Docelowe tablety/przeglądarki (Safari na iPadzie, Chrome na Androidzie), jakość polskiego rozpoznawania w terenie | DO SPRAWDZENIA |
 | Dyktowanie | Prywatność: Chrome rozpoznaje mowę przez usługę Google (wymaga internetu, dźwięk opuszcza urządzenie przez przeglądarkę) | OPEN |
 | Tablet | Obsługa dotykiem na fizycznym tablecie (testy tylko w emulowanych rozmiarach ekranu) | DO SPRAWDZENIA |
+| Tryb terenowy | Etap 32 sprawdzony tylko w emulacji (headless Chrome, `scripts/e2e/field-mode-e2e.mjs`, 43/43 PASS): NIE sprawdzono na prawdziwym tablecie dotyku panelu i przycisków pływających, aparatu po „Zrób zdjęcie”, GPS / odbiornika RTK (pozycja na żywo i pomiar), Safari na iPadzie (`100dvh`, pola 16 px, instalacja PWA), obrotu ekranu, uśpienia tabletu w trakcie pracy offline, scenariusza offline przez HTTPS na serwerze | DO SPRAWDZENIA |
 | GPS | Dokładność i czas pomiaru GPS tabletu w terenie (pod koronami, przy budynkach) — testy tylko z emulowaną pozycją | DO SPRAWDZENIA |
 | Offline | Praca bez zasięgu na prawdziwym tablecie (przełączanie sieci, uśpienie, Safari/iPad, setki zmian) — testy w emulowanym braku sieci | DO SPRAWDZENIA |
 | Adnotacje | Rysowanie palcem i rysikiem na FIZYCZNYM tablecie, eksport PNG z dużych zdjęć (12+ Mpx) na słabszym tablecie (pamięć, czas). Sprawdzone w etapie 22 E2E w headless Chrome: mysz, emulowany dotyk, tekst, zapis, anulowanie, ekrany 390/768/1024 px | DO SPRAWDZENIA |
@@ -920,3 +921,46 @@ obszary nazywano „porostami” — w interfejsie przyjęto nazwę **„Grupy d
 | Wersjonowanie | V1: tag Git `vX.Y.Z` + JAR z sumą SHA-256 (`scripts/build-release.*`). |
 | Dane demonstracyjne | V1: `scripts/demo/seed-demo-project.mjs` (przykładowy park albo prawdziwe pliki arborysty). |
 | RODO / regulamin | OPEN: polityka prywatności, umowa powierzenia (zdjęcia, lokalizacje, dane zleceniodawców). |
+
+---
+
+## 45. Tryb terenowy — etap 32
+
+**Źródło:** instrukcja etapu 32 (część B) i analiza pokrycia wymagań klienta — w terenie mapa i karta drzewa były
+osobnymi stronami w wąskiej kolumnie (mapa → karta → przewijanie → powrót do mapy, która ładowała się od nowa).
+Prototyp do sprawdzenia na tablecie klienta, nie ostateczny projekt UX.
+
+### Co zrobiono (V1)
+
+| Obszar | V1 |
+|---|---|
+| Zakładki „w budowie” | Usunięte z menu arborysty razem z kodem (Oceny drzew, Raporty z prac, Wnioski, Harmonogram) — poza zamówieniem klienta. Stare adresy `/arborist/...` → „Projekty”. Menu: Projekty, Mój profil, przycisk „Tryb terenowy”. |
+| Trasy i przełączanie | `/field` (lista projektów do dotyku) i `/field/projects/:id?drzewo=ID` (mapa + panel drzewa), ten sam strażnik roli co widok biurowy. Przycisk „Tryb terenowy” / „Widok biurowy” w obie strony z zachowaniem projektu i drzewa (karta drzewa ↔ panel drzewa, mapa ↔ mapa). Niezapisane zmiany formularza → okno „Zapisz / Odrzuć zmiany / Zostań”. |
+| Zapamiętany tryb | `arbomachine.workMode` na urządzeniu; strona `/` i logowanie bez zapamiętanej ścieżki prowadzą do ostatniego trybu. Manifest PWA (`start_url: /`) — aplikacja dodana do ekranu głównego startuje w ostatnim trybie. |
+| Ekran mapy | Mapa na cały ekran pod paskiem (56 px: wstecz, projekt, GPS ±m, online/offline + kolejka, „Widok biurowy”); strona się nie przewija; mapa nie zmienia przybliżenia po zapisie drzewa. Bieżąca pozycja (kropka z kołem dokładności), śledzenie tylko przy widocznej stronie i wstrzymane na czas pomiaru drzewa. |
+| Przyciski pływające | „+ Drzewo tutaj” (pomiar GPS → podgląd: źródło, dokładność zgłoszona przez urządzenie, czas → numer z propozycją → panel nowego drzewa), „Wskaż na mapie”, „Moja pozycja”, „Warstwy”. |
+| Panel drzewa | Od dołu na wąskim ekranie (3 wysokości przyciskami), z prawej od 900 px. Te same komponenty co karta biurowa: dane drzewa, oznaczenia, zdjęcia („Zrób zdjęcie” od razu aparat / „Z galerii”), zalecenia i prace, lokalizacja bez drugiej mapy (ponowny pomiar GPS, „Przesuń na mapie”), link do pełnej karty. Pasek „Następne drzewo” / „Zamknij”. Zmiany od razu widać na mapie. |
+| Warstwy | Tryb mapy, podkład, grupy drzew, widoczność warstw referencyjnych (bez wgrywania), legenda, jedna zwijana notatka „Do doprecyzowania”. |
+| Praca bez zasięgu | „Przygotuj projekt do pracy bez zasięgu”: projekt, drzewa, prace, oznaczenia, katalogi, waloryzacje, grupy, warstwy referencyjne i karta/oznaczenia/prace każdego drzewa do pamięci urządzenia; maks. 4 zapytania naraz, postęp, anulowanie, podsumowanie, data ostatniego przygotowania, ostrzeżenie powyżej 500 drzew. |
+| Uczciwy opis lokalizacji | W trybie terenowym bez słowa „RTK”: „GPS urządzenia (przeglądarka)”, „±2 cm (dokładność zgłoszona przez urządzenie)”, czas pomiaru (tylko przed zapisem). |
+| Testy | Logika `node --test` (adresy, tryb, rejestr niezapisanych zmian, pozycja na żywo, propozycja numeru, opis lokalizacji, przygotowanie offline). Ochrona danych: zmiana jednego pola nie gubi pozostałych (formularz, kolejka offline, PATCH backendu) + test dokumentujący, że pominięte pole czyści wartość. E2E `scripts/e2e/field-mode-e2e.mjs` (headless Chrome, emulacja): 43/43 PASS 2026-10-22 lokalnie. |
+
+### Otwarte (OPEN) i założenia bez potwierdzenia
+
+| Temat | Stan |
+|---|---|
+| Kolejność sekcji w panelu | Założenie V1: dane drzewa → oznaczenia → zdjęcia → zalecenia i prace → lokalizacja → pełna karta. Do potwierdzenia na spotkaniu (sekcja 24). |
+| Podział teren / biuro | Założenie V1: waloryzacja, kontrole stanu i symbol drzewa na mapie tylko w widoku biurowym (link „Pełna karta”). |
+| Domyślny tryb mapy w terenie | Założenie V1: „Oznaczenia drzew” (zapamiętany wybór na urządzeniu). |
+| Proponowany numer drzewa | Założenie V1: największy numer czysto liczbowy w projekcie + 1, pole można zmienić; bez autonumeracji i reguły unikalności (sekcja 8). |
+| Rodzaj pomiaru | Założenie V1: domyślnie pojedynczy odczyt, uśrednianie na przełącznik (zapamiętane na urządzeniu). |
+| Pierwsze uruchomienie | Założenie V1: brak zapisanego trybu + ekran dotykowy (`pointer: coarse`) → tryb terenowy; nie zgadujemy po szerokości ekranu. |
+| Panel dolny / boczny | Założenie V1: granica 900 px. Bez przeciągania i animacji — możliwe usprawnienie po spotkaniu. |
+| Zakres „Przygotuj projekt” | Założenie V1: bez podkładu mapy i bez zdjęć; tylko dane używane przez tryb terenowy. Bez przygotowania offline widać tylko to, co było otwarte online. |
+| Zdjęcia offline | BRAK — NASTĘPNY PRIORYTET (etap „Zdjęcia offline”, kolejka plików w IndexedDB). Dziś bez połączenia panel pokazuje komunikat „Zdjęcia wymagają połączenia… zapisz numer drzewa”; przy kilkudziesięciu drzewach ręczne przypisywanie zdjęć jest uciążliwe i łatwo o pomyłkę. Tryb terenowy uznajemy za gotowy do testu bez zasięgu dopiero po tym etapie. |
+| Etykiety „RTK” w biurze | OPEN: widok biurowy nadal nazywa dokładność do 10 cm „geodezyjna (RTK)”, choć przeglądarka nie zna typu rozwiązania — do ujednolicenia z trybem terenowym. |
+| Czas pomiaru | OPEN (sekcja 34): pokazywany tylko przed zapisem, backend go nie zapisuje (bez zmian modelu w tym etapie). |
+| Pozycja na żywo a pomiar | Ustalenie z testów: przy aktywnym `watchPosition` Chrome potrafi nie oddać nowego odczytu do `getCurrentPosition(maximumAge: 0)`, gdy pozycja się nie zmienia (timeout). V1: śledzenie na żywo wstrzymane na czas pomiaru. DO SPRAWDZENIA na tablecie z odbiornikiem. |
+| Podkłady offline, Bluetooth/NMEA, dyktowanie „kolejno do pól”, łączenie `mapSymbolCode` z oznaczeniami | Poza zakresem etapu 32 — bez zmian, OPEN jak w sekcjach 34, 44. |
+| Manifest | Ikona tylko SVG (`favicon.svg`); część Androidów wymaga ikon PNG 192/512 do instalacji. Spring serwuje `.webmanifest` bez dedykowanego typu MIME. DO SPRAWDZENIA na tablecie. |
+| Weryfikacja | NIESPRAWDZONE na prawdziwym tablecie: dotyk, aparat (`capture`), GPS / odbiornik, Safari na iPadzie, obrót ekranu, praca offline z uśpieniem urządzenia. Scenariusz offline przeszedł tylko w emulacji headless Chrome przez http://localhost (bezpieczny kontekst) — nie przez HTTPS na serwerze. |
