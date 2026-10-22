@@ -10,14 +10,16 @@ import { layoutWorkBadges } from '../../../map/mapSymbolShapeSpec';
 import { createMapSymbolStyles, createOverflowBadgeStyle } from '../../../map/mapSymbolStyleFactory';
 import {
   createMapWithBasemap, createTreeMarkerStyle, fitViewToCoordinates, MARKER_HIT_TOLERANCE_PX,
-  SAVED_TREE_MARKER_COLOR,
+  PENDING_TREE_MARKER_COLOR, SAVED_TREE_MARKER_COLOR, TREE_FOCUS_ZOOM,
 } from '../../../map/openLayersBaseMap';
 import { valuationColorOf } from '../valuation/valuationColors';
 import type { TreeValuationCategory } from '../valuation/valuationDataTypes';
 import { managementColorOf, type TreeManagementSummary } from '../works/workManagement';
 import type { MapViewMode } from './mapViewMode';
 import type { TreeMapPoint } from './treeMapPoints';
-import Polygon from 'ol/geom/Polygon';
+import Polygon, { circular } from 'ol/geom/Polygon';
+import { fromLonLat } from 'ol/proj';
+import { toMapCoordinate } from '../location/treeLocationMapCoordinates';
 import { Fill, Stroke, Style, Text } from 'ol/style';
 import { type SpeciesGroup } from '../../../map/speciesGroup';
 import { type TreeMarkerShape } from '../../../map/openLayersBaseMap';
@@ -50,6 +52,40 @@ function referenceStyleOf(color: string): Style {
 
 /** Pusta mapa oznaczen - domyslna wartosc propsa bez nowego obiektu przy kazdym renderze. */
 const NO_MARKINGS = new globalThis.Map<string, MapMarkingAppearance>();
+
+/** Etap 32 (tryb terenowy): biezaca pozycja uzytkownika - niebieska kropka z kolem dokladnosci zglaszanej przez urzadzenie. */
+export interface LivePositionOnMap {
+  latitude: number;
+  longitude: number;
+  accuracyM: number;
+}
+
+/** Etap 32: jednorazowe wysrodkowanie mapy; nowy requestId = nowe wysrodkowanie (takze na ten sam punkt). */
+export interface MapCenterRequest {
+  latitude: number;
+  longitude: number;
+  requestId: number;
+}
+
+const LIVE_POSITION_DOT_STYLE = new Style({
+  image: new CircleStyle({ radius: 7, fill: new Fill({ color: '#1c7ed6' }), stroke: new Stroke({ color: '#ffffff', width: 3 }) }),
+});
+const LIVE_POSITION_ACCURACY_STYLE = new Style({
+  fill: new Fill({ color: 'rgba(28, 126, 214, 0.15)' }), stroke: new Stroke({ color: 'rgba(28, 126, 214, 0.6)', width: 1 }),
+});
+const SELECTED_TREE_RING_STYLE = new Style({
+  image: new CircleStyle({ radius: 17, stroke: new Stroke({ color: '#1d2419', width: 3 }), fill: new Fill({ color: 'rgba(255, 255, 255, 0.25)' }) }),
+});
+const PENDING_LOCATION_STYLE = createTreeMarkerStyle(PENDING_TREE_MARKER_COLOR);
+const PENDING_ACCURACY_STYLE = new Style({
+  fill: new Fill({ color: 'rgba(217, 72, 15, 0.12)' }), stroke: new Stroke({ color: 'rgba(217, 72, 15, 0.7)', width: 1, lineDash: [6, 4] }),
+});
+/** Kolo dokladnosci rysujemy tylko do 500 m - wieksze (lokalizacja z sieci) zaslonilyby cala mape. */
+const MAXIMUM_DRAWN_ACCURACY_M = 500;
+
+/** Kolo dokladnosci w metrach na ziemi (geodezyjnie), przeliczone do widoku mapy EPSG:3857. */
+const accuracyCircleOf = (latitude: number, longitude: number, accuracyM: number) =>
+  circular([longitude, latitude], Math.min(accuracyM, MAXIMUM_DRAWN_ACCURACY_M), 64).transform('EPSG:4326', 'EPSG:3857');
 
 /** Nazwy wlasciwosci Feature - po nich klikniety marker jest wiazany z konkretnym drzewem. */
 const TREE_ID_FEATURE_PROPERTY = 'treeId';
@@ -136,7 +172,27 @@ function buildManagementStyles(management: TreeManagementSummary, openWorkSymbol
  */
 export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicked, viewMode = 'SYMBOLS', stands = [],
                                  markingByCode = NO_MARKINGS, focusedTreeId = null, onEmptyMapClicked,
-                                 referenceLayers = NO_REFERENCE_LAYERS }: {
+                                 referenceLayers = NO_REFERENCE_LAYERS, fitViewOnPointsChange = 'always',
+                                 livePosition = null, selectedTreeId = null, pendingLocation = null,
+                                 fillsContainer = false, centerOn = null }: {
+  /**
+   * etap 32: 'always' (domyslnie) - kazda zmiana punktow dopasowuje widok do drzew; 'firstLoadOnly' (teren) - tylko
+   * pierwsze punkty, zeby mapa nie skakala po zapisaniu drzewa
+   */
+  fitViewOnPointsChange?: 'always' | 'firstLoadOnly';
+  /** etap 32: biezaca pozycja (osobna, nieklikalna warstwa nad drzewami) */
+  livePosition?: LivePositionOnMap | null;
+  /** etap 32: wyroznienie wybranego drzewa pierscieniem */
+  selectedTreeId?: number | null;
+  /** etap 32: tymczasowy punkt przed zapisem (podglad pomiaru GPS albo wskazania na mapie) */
+  pendingLocation?: TreeLocation | null;
+  /** etap 32: mapa na cala wysokosc kontenera zamiast stalej wysokosci .map-container */
+  fillsContainer?: boolean;
+  /**
+   * etap 32: "Moja pozycja" - props z requestId zamiast refa z useImperativeHandle: prosciej (bez forwardRef),
+   * a nowy requestId wystarcza, zeby wysrodkowac ponownie na tym samym punkcie
+   */
+  centerOn?: MapCenterRequest | null;
   /** etap 31: widoczne warstwy referencyjne projektu (podklad wektorowy z QGIS) - pod grupami drzew i drzewami */
   referenceLayers?: ReferenceLayerOnMap[];
   /** etap 31: tryb "Dodaj drzewo na mapie" - klik obok markerow zglasza punkt WGS 84 (brak = zwykly podglad) */
@@ -170,6 +226,11 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
   const markingByCodeRef = useRef(markingByCode);
   const focusedTreeIdRef = useRef(focusedTreeId);
   focusedTreeIdRef.current = focusedTreeId;
+  const fitViewOnPointsChangeRef = useRef(fitViewOnPointsChange);
+  fitViewOnPointsChangeRef.current = fitViewOnPointsChange;
+  const hasFittedViewToPointsRef = useRef(false);
+  const livePositionSourceRef = useRef<VectorSource | null>(null);
+  const highlightSourceRef = useRef<VectorSource | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -230,7 +291,14 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     referenceSourceRef.current = referenceSource;
     const referenceLayer = new VectorLayer({ source: referenceSource,
       style: (feature: FeatureLike) => referenceStyleOf(String(feature.get(REFERENCE_COLOR_PROPERTY) ?? '#495057')) });
-    const map = createMapWithBasemap(mapContainerRef.current, [referenceLayer, standLayer, treeMarkerLayer]);
+    // Etap 32: wyroznienie wybranego drzewa i punkt przed zapisem (nad drzewami) oraz biezaca pozycja (na wierzchu).
+    // Obie warstwy nieklikalne - klik sprawdza tylko warstwe drzew (layerFilter).
+    const highlightSource = new VectorSource();
+    highlightSourceRef.current = highlightSource;
+    const livePositionSource = new VectorSource();
+    livePositionSourceRef.current = livePositionSource;
+    const map = createMapWithBasemap(mapContainerRef.current, [referenceLayer, standLayer, treeMarkerLayer,
+      new VectorLayer({ source: highlightSource }), new VectorLayer({ source: livePositionSource })]);
     treeMarkerLayerRef.current = treeMarkerLayer;
 
     map.on('singleclick', (clickEvent) => {
@@ -293,10 +361,58 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
       [SPECIES_GROUP_FEATURE_PROPERTY]: treeMapPoint.speciesGroup,
       [MARKING_CODES_FEATURE_PROPERTY]: treeMapPoint.markingCodes,
     })));
+    if (fitViewOnPointsChangeRef.current === 'firstLoadOnly' && hasFittedViewToPointsRef.current) return;
     const focusedPoint = treeMapPoints.find((treeMapPoint) => treeMapPoint.treeId === focusedTreeIdRef.current);
     fitViewToCoordinates(map, focusedPoint ? [focusedPoint.mapCoordinate]
       : treeMapPoints.map((treeMapPoint) => treeMapPoint.mapCoordinate));
+    // Projekt bez drzew (widok Polski) - pierwsze dodane drzewo jeszcze dopasuje widok.
+    if (treeMapPoints.length > 0) hasFittedViewToPointsRef.current = true;
   }, [treeMapPoints]);
+
+  // Etap 32: wybrane drzewo (pierscien) i punkt przed zapisem - zmiana nie zmienia widoku mapy.
+  useEffect(() => {
+    const highlightSource = highlightSourceRef.current;
+    if (!highlightSource) return;
+    highlightSource.clear();
+    const selectedPoint = selectedTreeId === null ? undefined : treeMapPoints.find((point) => point.treeId === selectedTreeId);
+    if (selectedPoint) {
+      const ring = new Feature({ geometry: new Point(selectedPoint.mapCoordinate) });
+      ring.setStyle(SELECTED_TREE_RING_STYLE);
+      highlightSource.addFeature(ring);
+    }
+    if (pendingLocation) {
+      if (pendingLocation.accuracyM) {
+        const accuracyArea = new Feature({
+          geometry: accuracyCircleOf(pendingLocation.latitude, pendingLocation.longitude, pendingLocation.accuracyM) });
+        accuracyArea.setStyle(PENDING_ACCURACY_STYLE);
+        highlightSource.addFeature(accuracyArea);
+      }
+      const pendingPoint = new Feature({ geometry: new Point(toMapCoordinate(pendingLocation)) });
+      pendingPoint.setStyle(PENDING_LOCATION_STYLE);
+      highlightSource.addFeature(pendingPoint);
+    }
+  }, [selectedTreeId, pendingLocation, treeMapPoints]);
+
+  // Etap 32: biezaca pozycja uzytkownika.
+  useEffect(() => {
+    const livePositionSource = livePositionSourceRef.current;
+    if (!livePositionSource) return;
+    livePositionSource.clear();
+    if (!livePosition) return;
+    const accuracyArea = new Feature({ geometry: accuracyCircleOf(livePosition.latitude, livePosition.longitude, livePosition.accuracyM) });
+    accuracyArea.setStyle(LIVE_POSITION_ACCURACY_STYLE);
+    const dot = new Feature({ geometry: new Point(fromLonLat([livePosition.longitude, livePosition.latitude])) });
+    dot.setStyle(LIVE_POSITION_DOT_STYLE);
+    livePositionSource.addFeatures([accuracyArea, dot]);
+  }, [livePosition]);
+
+  // Etap 32: "Moja pozycja" - wysrodkowanie z przyblizeniem co najmniej do poziomu dzialki.
+  useEffect(() => {
+    const view = mapRef.current?.getView();
+    if (!view || !centerOn) return;
+    view.animate({ center: fromLonLat([centerOn.longitude, centerOn.latitude]),
+      zoom: Math.max(view.getZoom() ?? 0, TREE_FOCUS_ZOOM - 1), duration: 300 });
+  }, [centerOn]);
 
   // Warstwy referencyjne (etap 31) - jedno zrodlo dla wszystkich widocznych warstw; zmiana nie zmienia widoku mapy.
   useEffect(() => {
@@ -323,6 +439,7 @@ export function ProjectTreeMap({ treeMapPoints, symbolByCode, onTreeMarkerClicke
     standSource.addFeatures(stands.map((stand) => new Feature({ geometry: standPolygonOf(stand), name: stand.name })));
   }, [stands]);
 
-  return <div ref={mapContainerRef} className={`map-container${onEmptyMapClicked ? ' map-container-picking' : ''}`}
+  return <div ref={mapContainerRef}
+              className={`map-container${fillsContainer ? ' map-container-fill' : ''}${onEmptyMapClicked ? ' map-container-picking' : ''}`}
               role="region" aria-label="Mapa drzew projektu" />;
 }
