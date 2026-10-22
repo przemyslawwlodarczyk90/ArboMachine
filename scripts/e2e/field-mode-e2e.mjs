@@ -6,7 +6,7 @@
 // To NIE jest test na prawdziwym tablecie: dotyk, aparat, GPS i brak sieci sa emulowane (pozycja podstawiona przez
 // Emulation.setGeolocationOverride, brak sieci przez Network.emulateNetworkConditions na stronie i service workerze).
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -150,6 +150,37 @@ async function pickGalleryPhoto(filePath) {
   await waitFor('okno dodawania zdjecia', 'return !!document.querySelector(".modal img")');
   await clickButton('Dodaj zdjęcie', 'document.querySelector(".modal")');
   await waitFor('zdjecie na urzadzeniu', 'return !!document.querySelector(".field-sheet .tree-photo-tile-pending")');
+}
+
+/** Etap 40: zdjecie wyslane wczesniej (przez API) - do sprawdzenia podgladu bez zasiegu. */
+async function uploadPhotoThroughApi(treeId, filePath, fileName) {
+  const formData = new FormData();
+  formData.append('file', new Blob([readFileSync(filePath)], { type: 'image/jpeg' }), fileName);
+  const response = await fetch(`${BASE}/api/projects/${PROJECT_ID}/trees/${treeId}/photos`, {
+    method: 'POST', headers: { Authorization: `Bearer ${apiToken}` }, body: formData });
+  if (!response.ok) throw new Error(`upload zdjecia -> ${response.status} ${await response.text()}`);
+  return response.json();
+}
+
+/** Etap 40: prawdziwy, duzy JPEG z canvasu przegladarki (szum - slabo sie kompresuje), zapisany na dysk. */
+async function writeLargeJpeg(filePath) {
+  const base64 = await evaluate(`
+    const canvas = document.createElement('canvas');
+    canvas.width = 3200; canvas.height = 2400;
+    const context = canvas.getContext('2d');
+    const image = context.createImageData(canvas.width, canvas.height);
+    for (let index = 0; index < image.data.length; index += 4) {
+      const value = (index / 4) % canvas.width;
+      image.data[index] = value % 256; image.data[index + 1] = (Math.random() * 255) | 0; image.data[index + 2] = 90; image.data[index + 3] = 255;
+    }
+    context.putImageData(image, 0, 0);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+    return btoa(binary);`);
+  writeFileSync(filePath, Buffer.from(base64, 'base64'));
+  return statSync(filePath).size;
 }
 
 const pendingPhotoTileCount = () => evaluate('return document.querySelectorAll(".field-sheet .tree-photo-tile-pending").length');
@@ -319,10 +350,17 @@ async function main() {
     await clickButton('Warstwy');
     await waitFor('arkusz warstw', 'return !!document.querySelector(".field-overlay h2")');
     await screenshot('07-teren-warstwy');
+    // Etap 40: zdjecie wyslane wczesniej + opcja "takze zdjecia" - podglad bez zasiegu.
+    const editedTree = treesBefore[1];
+    const earlierPhoto = await uploadPhotoThroughApi(editedTree.id, photoFilePath, 'IMG_E2E_WCZESNIEJ.jpg');
+    await evaluate(`const box = [...document.querySelectorAll('.field-overlay input[type=checkbox]')]
+      .find((input) => input.parentElement.innerText.includes('wcześniej wysłane zdjęcia'));
+      if (!box.checked) box.click();`);
     await clickButton('Przygotuj projekt do pracy bez zasięgu');
     await waitFor('podsumowanie przygotowania', 'return document.body.innerText.includes("Gotowe:")', 60_000);
     const summary = await evaluate('return [...document.querySelectorAll(".field-overlay p")].map((p) => p.innerText).find((text) => text.startsWith("Gotowe:"))');
     check('Przygotowanie projektu konczy sie podsumowaniem', summary.includes(`${treesBefore.length + 1} drzew`), summary);
+    check('Przygotowanie z opcja zdjec pobiera zdjecia (podsumowanie "Zdjęcia: N")', /Zdjęcia: [1-9]/.test(summary), summary);
     await clickButton('Zamknij', 'document.querySelector(".field-overlay")');
 
     // Service worker przejmuje strone dopiero po przeladowaniu - powloka i pliki trafiaja do cache.
@@ -331,7 +369,6 @@ async function main() {
     await waitFor('mapa terenowa', 'return !!document.querySelector(".field-map-area canvas")');
 
     // --- Offline ---
-    const editedTree = treesBefore[1];
     const offlineNote = `Notatka offline E2E ${new Date().toISOString()}`;
     await setOffline(true);
     await send('Page.reload');
@@ -342,6 +379,9 @@ async function main() {
     await waitFor('panel drzewa offline', `return document.querySelector(".field-sheet h2")?.textContent === "Drzewo ${editedTree.inventoryNumber}"`);
     await waitFor('formularz offline', 'return !!document.querySelector(".field-sheet .tree-field-form textarea")');
     check('Panel drzewa dostepny offline', true);
+    await waitFor('podglad zdjecia z urzadzenia', `return [...document.querySelectorAll('.field-sheet .tree-photo-tile:not(.tree-photo-tile-pending)')]
+      .some((tile) => tile.innerText.includes('IMG_E2E_WCZESNIEJ') && tile.querySelector('img')?.src.startsWith('blob:'))`);
+    check('Offline: podglad zdjecia wyslanego wczesniej (z pamieci urzadzenia)', true, `zdjecie ${earlierPhoto.id}`);
     check('Offline: komunikat, ze zdjecia zapisza sie na urzadzeniu', (await bodyText()).includes('zdjęcia zapisują się na tym urządzeniu'));
     // Etap 33: zdjecie istniejacego drzewa bez sieci.
     const photosOfEditedTreeBefore = (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`)).length;
@@ -429,6 +469,22 @@ async function main() {
     check('Po synchronizacji brak zdjec czekajacych i brak duplikatow po ponownym otwarciu',
       (await pendingPhotoTileCount()) === 0
         && (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`)).length === photosOfEditedTreeAfter);
+
+    // --- Etap 40: zmniejszenie zdjecia przed wyslaniem (online) ---
+    const largePhotoPath = join(OUT, 'IMG_E2E_DUZE.jpg');
+    const largePhotoSize = await writeLargeJpeg(largePhotoPath);
+    const { root } = await send('DOM.getDocument', { depth: -1 });
+    const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '.field-sheet input[type=file]:not([capture])' });
+    await send('DOM.setFileInputFiles', { nodeId, files: [largePhotoPath] });
+    await waitFor('okno dodawania duzego zdjecia', 'return !!document.querySelector(".modal img")');
+    await evaluate(`const box = document.querySelector('.modal input[type=checkbox]'); if (!box.checked) box.click();`);
+    await clickButton('Dodaj zdjęcie', 'document.querySelector(".modal")');
+    await waitFor('zdjecie wyslane', 'return !document.querySelector(".modal")', 60_000);
+    const newestPhoto = (await api(`/api/projects/${PROJECT_ID}/trees/${editedTree.id}/photos`))
+      .filter((photo) => photo.originalFileName === 'IMG_E2E_DUZE.jpg').sort((first, second) => second.id - first.id)[0];
+    check('Zmniejszone zdjecie: na serwerze mniejsze niz oryginal (JPEG)',
+      !!newestPhoto && newestPhoto.fileSizeBytes < largePhotoSize * 0.9 && newestPhoto.contentType === 'image/jpeg',
+      `${largePhotoSize} B -> ${newestPhoto?.fileSizeBytes} B`);
 
     // --- Ekrany ---
     await navigate(`/field/projects/${PROJECT_ID}?drzewo=${newTreeId}`);
