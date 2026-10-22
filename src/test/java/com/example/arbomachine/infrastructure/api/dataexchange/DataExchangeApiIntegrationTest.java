@@ -4,6 +4,7 @@ import com.example.arbomachine.domain.tree.entity.Tree;
 import com.example.arbomachine.domain.user.entity.UserAccount;
 import com.example.arbomachine.domain.user.enums.UserRole;
 import com.example.arbomachine.infrastructure.repository.ProjectRepository;
+import com.example.arbomachine.infrastructure.repository.TreeMarkingRepository;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import com.example.arbomachine.infrastructure.repository.UserAccountRepository;
@@ -83,6 +84,9 @@ class DataExchangeApiIntegrationTest {
 
     private UserAccount userAccountA;
     private UserAccount userAccountB;
+
+    @Autowired
+    private TreeMarkingRepository treeMarkingRepository;
     private long projectIdA;
     private long projectIdB;
     private long treeIdOfB;
@@ -100,6 +104,7 @@ class DataExchangeApiIntegrationTest {
     @AfterEach
     void deleteAllData() {
         treeWorkRepository.deleteAll();
+        treeMarkingRepository.deleteAll();
         treeRepository.deleteAll();
         projectRepository.deleteAll();
         userAccountRepository.deleteAll();
@@ -300,7 +305,7 @@ class DataExchangeApiIntegrationTest {
         try {
             Files.write(geoPackageFile, geoPackageBytes);
             try (GeoPackage geoPackage = GeoPackageManager.open(geoPackageFile.toFile(), false)) {
-                assertThat(geoPackage.getFeatureTables()).containsExactlyInAnyOrder("trees", "stands");
+                assertThat(geoPackage.getFeatureTables()).containsExactlyInAnyOrder("trees", "stands", "tree_markings");
                 FeatureDao trees = geoPackage.getFeatureDao("trees");
                 assertThat(trees.getGeometryType()).isEqualTo(GeometryType.POINT);
                 assertThat(trees.getSrs().getOrganization()).isEqualToIgnoringCase("EPSG");
@@ -331,6 +336,123 @@ class DataExchangeApiIntegrationTest {
         } finally {
             Files.deleteIfExists(geoPackageFile);
         }
+    }
+
+    // --- etap 34: eksport dla QGIS w PL-2000 / PL-1992, warstwa oznaczen i style ---
+
+    private Path writeTemporaryGeoPackage(byte[] content) throws Exception {
+        Path geoPackageFile = Files.createTempFile("export-test-", ".gpkg");
+        Files.write(geoPackageFile, content);
+        return geoPackageFile;
+    }
+
+    private static List<FeatureRow> rowsOf(FeatureDao featureDao) {
+        List<FeatureRow> rows = new ArrayList<>();
+        FeatureResultSet resultSet = featureDao.queryForAll();
+        try {
+            while (resultSet.moveToNext()) rows.add(resultSet.getRow());
+        } finally {
+            resultSet.close();
+        }
+        return rows;
+    }
+
+    private long fullTreeIdOfA() {
+        return treesOfA().stream().filter(tree -> "L-1".equals(tree.getInventoryNumber())).findFirst().orElseThrow().getId();
+    }
+
+    @Test
+    void geoPackageInPl2000HasMetricCoordinatesMarkingsLayerAndDefaultQgisStyles() throws Exception {
+        createTreesOfA();
+        performAs(userAccountA, put("/api/projects/{p}/trees/{t}/markings", projectIdA, fullTreeIdOfA())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"codes\":[\"HAZARD\",\"VALUABLE\"]}")).andExpect(status().isOk());
+
+        byte[] geoPackageBytes = performAs(userAccountA, get("/api/projects/{p}/exports/trees.gpkg", projectIdA).param("crs", "EPSG:2177"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+
+        Path geoPackageFile = writeTemporaryGeoPackage(geoPackageBytes);
+        try (GeoPackage geoPackage = GeoPackageManager.open(geoPackageFile.toFile(), false)) {
+            FeatureDao trees = geoPackage.getFeatureDao("trees");
+            assertThat(trees.getSrs().getOrganizationCoordsysId()).isEqualTo(2177);
+            FeatureRow full = rowsOf(trees).stream().filter(row -> "L-1".equals(row.getValue("inventory_no"))).findFirst().orElseThrow();
+            Point point = (Point) full.getGeometry().getGeometry();
+            double[] expected = com.example.arbomachine.domain.dataexchange.crs.PolishGridCrs.PL_2000_ZONE_6.fromWgs84(19.456, 51.7592);
+            assertThat(point.getX()).isCloseTo(expected[0], org.assertj.core.api.Assertions.within(0.001));
+            assertThat(point.getY()).isCloseTo(expected[1], org.assertj.core.api.Assertions.within(0.001));
+            assertThat(point.getX()).as("easting strefy 6").isBetween(6_000_000.0, 7_000_000.0);
+
+            FeatureDao markings = geoPackage.getFeatureDao("tree_markings");
+            assertThat(markings.getSrs().getOrganizationCoordsysId()).isEqualTo(2177);
+            assertThat(geoPackage.getFeatureDao("stands").getSrs().getOrganizationCoordsysId()).isEqualTo(2177);
+            List<FeatureRow> markingRows = rowsOf(markings);
+            assertThat(markingRows).extracting(row -> row.getValue("marking_code")).containsExactly("VALUABLE", "HAZARD");
+            assertThat(markingRows).extracting(row -> row.getValue("marking_label"))
+                    .containsExactly("Drzewo wartościowe", "Zagrożenie dla ludzi lub mienia");
+            assertThat(markingRows).allSatisfy(row -> {
+                assertThat(row.getValue("inventory_no")).isEqualTo("L-1");
+                assertThat(((Point) row.getGeometry().getGeometry()).getX()).isEqualTo(point.getX());
+            });
+
+            try (var styles = geoPackage.getConnection().getConnection().createStatement()
+                    .executeQuery("select f_table_name, useAsDefault, styleQML from layer_styles order by f_table_name")) {
+                List<String> styledTables = new ArrayList<>();
+                while (styles.next()) {
+                    styledTables.add(styles.getString(1));
+                    assertThat(styles.getBoolean(2)).isTrue();
+                    assertThat(styles.getString(3)).startsWith("<!DOCTYPE qgis");
+                }
+                assertThat(styledTables).containsExactly("stands", "tree_markings", "trees");
+            }
+            assertThat(geoPackage.getAttributesTables()).contains("layer_styles");
+        } finally {
+            Files.deleteIfExists(geoPackageFile);
+        }
+    }
+
+    @Test
+    void automaticPl2000ZoneAndPl1992AreSupportedAndUnknownCrsIsRejected() throws Exception {
+        createTreesOfA();
+        for (String[] crsAndCode : new String[][]{{"PL-2000", "2177"}, {"EPSG:2180", "2180"}, {"EPSG:4326", "4326"}}) {
+            byte[] geoPackageBytes = performAs(userAccountA, get("/api/projects/{p}/exports/trees.gpkg", projectIdA).param("crs", crsAndCode[0]))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+            Path geoPackageFile = writeTemporaryGeoPackage(geoPackageBytes);
+            try (GeoPackage geoPackage = GeoPackageManager.open(geoPackageFile.toFile(), false)) {
+                assertThat(geoPackage.getFeatureDao("trees").getSrs().getOrganizationCoordsysId())
+                        .as(crsAndCode[0]).isEqualTo(Long.parseLong(crsAndCode[1]));
+            } finally {
+                Files.deleteIfExists(geoPackageFile);
+            }
+        }
+        performAs(userAccountA, get("/api/projects/{p}/exports/trees.gpkg", projectIdA).param("crs", "EPSG:3857"))
+                .andExpect(status().isBadRequest());
+        performAs(userAccountA, get("/api/projects/{p}/exports/qgis.zip", projectIdA).param("crs", "PL-1965"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void qgisPackageContainsGeoPackageStylesAndReadme() throws Exception {
+        createTreesOfA();
+        byte[] zipBytes = performAs(userAccountA, get("/api/projects/{p}/exports/qgis.zip", projectIdA).param("crs", "PL-2000"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/zip"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"arbomachine-projekt-" + projectIdA + "-qgis.zip\""))
+                .andReturn().getResponse().getContentAsByteArray();
+        List<String> entryNames = new ArrayList<>();
+        String readme = null;
+        try (var zip = new java.util.zip.ZipInputStream(new ByteArrayInputStream(zipBytes), StandardCharsets.UTF_8)) {
+            for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
+                entryNames.add(entry.getName());
+                byte[] content = zip.readAllBytes();
+                if (entry.getName().equals("README.txt")) readme = new String(content, StandardCharsets.UTF_8);
+                if (entry.getName().endsWith(".gpkg")) {
+                    assertThat(new String(content, 0, 15, StandardCharsets.US_ASCII)).isEqualTo("SQLite format 3");
+                }
+            }
+        }
+        assertThat(entryNames).containsExactly("arbomachine-projekt-" + projectIdA + "-drzewa.gpkg", "trees.qml", "tree_markings.qml",
+                "stands.qml", "README.txt");
+        assertThat(readme).contains("EPSG:2177").contains("tree_markings");
+        performAs(userAccountB, get("/api/projects/{p}/exports/qgis.zip", projectIdA)).andExpect(status().isNotFound());
     }
 
     @Test

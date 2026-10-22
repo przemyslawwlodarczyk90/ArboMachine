@@ -34,7 +34,9 @@ public record TreeExportData(
         /** etap 29: nazwy grup drzew, do ktorych nalezy drzewo */
         List<String> standNames,
         /** etap 31: nazwy oznaczen drzewa w kolejnosci katalogu (pusta lista = brak) */
-        List<String> markingNames
+        List<String> markingNames,
+        /** etap 34: kody tych samych oznaczen (warstwa tree_markings w GeoPackage, kategorie stylu QGIS) */
+        List<String> markingCodes
 ) {
 
     public static final String STAND_NAMES_SEPARATOR = "; ";

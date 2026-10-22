@@ -28,7 +28,7 @@ class TreeWorksIcsExporterTest {
                         work(2, "Kontrola", null, "RECOMMENDED", null, LocalDate.of(2026, 12, 31)),
                         work(3, "Bez terminu", null, "PLANNED", null, null),
                         work(4, "Wykonana", null, "COMPLETED", null, LocalDate.of(2026, 10, 1))),
-                null, List.of(), List.of(), List.of());
+                null, List.of(), List.of(), List.of(), List.of());
         String ics = new String(exporter.export(new ProjectExportData(5, "Park, Zamkowy", null,
                 Instant.parse("2026-10-02T08:00:00Z"), List.of(tree), null, null, null, List.of())).content(), StandardCharsets.UTF_8);
         String unfolded = ics.replace("\r\n ", "");

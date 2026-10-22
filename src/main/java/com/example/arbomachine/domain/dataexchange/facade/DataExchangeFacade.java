@@ -14,6 +14,7 @@ import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.Va
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreeWorksAsIcsHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsCsvHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsGeoJsonHandler;
+import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportQgisPackageHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsGeoPackageHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ExportTreesAsXlsxHandler;
 import com.example.arbomachine.domain.dataexchange.service.dataexchangefacade.ImportTreesHandler;
@@ -30,6 +31,7 @@ public class DataExchangeFacade {
     private final ExportTreesAsXlsxHandler exportTreesAsXlsxHandler;
     private final ExportTreesAsGeoJsonHandler exportTreesAsGeoJsonHandler;
     private final ExportTreesAsGeoPackageHandler exportTreesAsGeoPackageHandler;
+    private final ExportQgisPackageHandler exportQgisPackageHandler;
     private final ValidateTreeImportHandler validateTreeImportHandler;
     private final ImportTreesHandler importTreesHandler;
     private final ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler;
@@ -42,6 +44,7 @@ public class DataExchangeFacade {
     public DataExchangeFacade(ExportTreesAsCsvHandler exportTreesAsCsvHandler, ExportTreesAsXlsxHandler exportTreesAsXlsxHandler,
                               ExportTreesAsGeoJsonHandler exportTreesAsGeoJsonHandler,
                               ExportTreesAsGeoPackageHandler exportTreesAsGeoPackageHandler,
+                              ExportQgisPackageHandler exportQgisPackageHandler,
                               ValidateTreeImportHandler validateTreeImportHandler, ImportTreesHandler importTreesHandler,
                               ExportTreeWorksAsCsvHandler exportTreeWorksAsCsvHandler,
                               ExportTreeWorksAsIcsHandler exportTreeWorksAsIcsHandler,
@@ -53,6 +56,7 @@ public class DataExchangeFacade {
         this.exportTreesAsXlsxHandler = exportTreesAsXlsxHandler;
         this.exportTreesAsGeoJsonHandler = exportTreesAsGeoJsonHandler;
         this.exportTreesAsGeoPackageHandler = exportTreesAsGeoPackageHandler;
+        this.exportQgisPackageHandler = exportQgisPackageHandler;
         this.validateTreeImportHandler = validateTreeImportHandler;
         this.importTreesHandler = importTreesHandler;
         this.exportTreeWorksAsCsvHandler = exportTreeWorksAsCsvHandler;
@@ -75,8 +79,14 @@ public class DataExchangeFacade {
         return exportTreesAsGeoJsonHandler.handle(currentUserEmail, projectId);
     }
 
-    public ExportedFile exportTreesAsGeoPackageOfCurrentUser(String currentUserEmail, Long projectId) {
-        return exportTreesAsGeoPackageHandler.handle(currentUserEmail, projectId);
+    /** requestedCrs: null = EPSG:4326; EPSG:2180, EPSG:2176-2179 albo "PL-2000" (strefa wg drzew projektu). */
+    public ExportedFile exportTreesAsGeoPackageOfCurrentUser(String currentUserEmail, Long projectId, String requestedCrs) {
+        return exportTreesAsGeoPackageHandler.handle(currentUserEmail, projectId, requestedCrs);
+    }
+
+    /** Etap 34: pakiet dla QGIS (ZIP) w wybranym ukladzie. */
+    public ExportedFile exportQgisPackageOfCurrentUser(String currentUserEmail, Long projectId, String requestedCrs) {
+        return exportQgisPackageHandler.handle(currentUserEmail, projectId, requestedCrs);
     }
 
     public ExportedFile exportTreeWorksAsCsvOfCurrentUser(String currentUserEmail, Long projectId) {

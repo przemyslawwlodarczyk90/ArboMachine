@@ -25,6 +25,12 @@ public class DataExchangeApiExceptionHandler {
         return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(exception.validation());
     }
 
+    @ExceptionHandler(com.example.arbomachine.domain.dataexchange.exception.UnsupportedExportCrsException.class)
+    public ResponseEntity<String> handleUnsupportedExportCrs(
+            com.example.arbomachine.domain.dataexchange.exception.UnsupportedExportCrsException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN).body(exception.getMessage());
+    }
+
     @ExceptionHandler(TreeImportRejectedException.class)
     public ResponseEntity<TreeImportValidationResponse> handleRejectedImport(TreeImportRejectedException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.validationResult());

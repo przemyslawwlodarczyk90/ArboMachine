@@ -78,7 +78,8 @@ public class ProjectExportDataAssembler {
         List<TreeExportData> trees = treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(ownedProject.getId()).stream()
                 .map(tree -> treeDataOf(tree, worksByTreeId.getOrDefault(tree.getId(), List.of()), valuationByTreeId.get(tree.getId()),
                         monitoringByTreeId.getOrDefault(tree.getId(), List.of()), standNamesByTreeId.getOrDefault(tree.getId(), List.of()),
-                        treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of()))))
+                        treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of())),
+                        treeMarkingCatalog.inCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of()))))
                 .toList();
         return new ProjectExportData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 exportedAt, trees, ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
@@ -106,7 +107,7 @@ public class ProjectExportDataAssembler {
 
     private static TreeExportData treeDataOf(Tree tree, List<TreeWorkExportData> works, TreeValuation valuation,
                                              List<TreeMonitoringExportData> monitoringRecords, List<String> standNames,
-                                             List<String> markingNames) {
+                                             List<String> markingNames, List<String> markingCodes) {
         return new TreeExportData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(), tree.getSpeciesLatin(),
                 tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(), tree.getNotes(),
                 tree.getConditionNotes(), tree.getHazardNotes(),
@@ -115,6 +116,6 @@ public class ProjectExportDataAssembler {
                 tree.getLocation() == null ? null : tree.getLocation().getAccuracyM(),
                 tree.getLocation() == null ? null : tree.getLocation().getAltitudeM(),
                 tree.getLocation() == null || tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name(),
-                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames, markingNames);
+                tree.getMapSymbolCode(), works, valuationDataOf(valuation), monitoringRecords, standNames, markingNames, markingCodes);
     }
 }

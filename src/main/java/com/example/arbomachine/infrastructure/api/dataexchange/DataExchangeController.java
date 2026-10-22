@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -83,10 +84,19 @@ public class DataExchangeController {
         return fileResponse(dataExchangeFacade.exportTreesAsGeoJsonOfCurrentUser(authenticatedUser.getUsername(), projectId));
     }
 
-    @Operation(summary = "Drzewa z lokalizacja jako GeoPackage (warstwa \"trees\", POINT, EPSG:4326) - QGIS compatibility profile V1")
+    @Operation(summary = "Drzewa z lokalizacja jako GeoPackage (warstwy trees, tree_markings, stands + style QGIS w layer_styles); "
+            + "crs: EPSG:4326 (domyslnie), EPSG:2180 (PL-1992), EPSG:2176-2179 (PL-2000) albo PL-2000 (strefa wg drzew)")
     @GetMapping("/exports/trees.gpkg")
-    public ResponseEntity<byte[]> exportTreesAsGeoPackage(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId) {
-        return fileResponse(dataExchangeFacade.exportTreesAsGeoPackageOfCurrentUser(authenticatedUser.getUsername(), projectId));
+    public ResponseEntity<byte[]> exportTreesAsGeoPackage(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId,
+                                                          @RequestParam(value = "crs", required = false) String crs) {
+        return fileResponse(dataExchangeFacade.exportTreesAsGeoPackageOfCurrentUser(authenticatedUser.getUsername(), projectId, crs));
+    }
+
+    @Operation(summary = "Etap 34: pakiet dla QGIS (ZIP: GeoPackage ze stylami, pliki QML, README) w wybranym ukladzie (crs jak w trees.gpkg)")
+    @GetMapping("/exports/qgis.zip")
+    public ResponseEntity<byte[]> exportQgisPackage(@AuthenticationPrincipal UserDetails authenticatedUser, @PathVariable Long projectId,
+                                                    @RequestParam(value = "crs", required = false) String crs) {
+        return fileResponse(dataExchangeFacade.exportQgisPackageOfCurrentUser(authenticatedUser.getUsername(), projectId, crs));
     }
 
     @Operation(summary = "Sprawdzenie pliku importu drzew (CSV/XLSX/GeoJSON/Shapefile ZIP/GeoPackage/DXF, pole \"file\") - nic nie zapisuje")

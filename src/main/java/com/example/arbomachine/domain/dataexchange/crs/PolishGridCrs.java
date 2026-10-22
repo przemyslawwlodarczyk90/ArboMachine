@@ -50,6 +50,38 @@ public enum PolishGridCrs {
         return "EPSG:" + epsgCode;
     }
 
+    /** Etap 34: nazwa ukladu jak w rejestrze EPSG (np. do GeoPackage i README eksportu). */
+    public String displayName() {
+        return switch (this) {
+            case WGS84 -> "WGS 84";
+            case PL_1992 -> "ETRS89 / Poland CS92";
+            default -> "ETRS89 / Poland CS2000 zone " + (epsgCode - 2171);
+        };
+    }
+
+    /**
+     * Etap 34: definicja WKT (OGC WKT1) ukladu polskiego - biblioteka GeoPackage nie ma EPSG:2176-2180 w swoich
+     * definicjach, wiec zapisujemy je sami (parametry jak w rejestrze EPSG; programy GIS i tak rozpoznaja uklad po
+     * AUTHORITY). Bez AXIS - wspolrzedne w pliku sa w kolejnosci GIS: x = easting, y = northing.
+     */
+    public String wktDefinition() {
+        if (this == WGS84) throw new IllegalStateException("WGS 84 is defined by the GeoPackage library");
+        return "PROJCS[\"" + displayName() + "\",GEOGCS[\"ETRS89\",DATUM[\"European_Terrestrial_Reference_System_1989\","
+                + "SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],"
+                + "AUTHORITY[\"EPSG\",\"6258\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],"
+                + "UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4258\"]],"
+                + "PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],"
+                + "PARAMETER[\"central_meridian\"," + plainNumber(centralMeridianDegrees) + "],"
+                + "PARAMETER[\"scale_factor\"," + plainNumber(scaleFactor) + "],"
+                + "PARAMETER[\"false_easting\"," + plainNumber(falseEasting) + "],"
+                + "PARAMETER[\"false_northing\"," + plainNumber(falseNorthing) + "],"
+                + "UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AUTHORITY[\"EPSG\",\"" + epsgCode + "\"]]";
+    }
+
+    private static String plainNumber(double value) {
+        return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+
     public static Optional<PolishGridCrs> fromEpsgCode(int epsgCode) {
         return Arrays.stream(values()).filter(crs -> crs.epsgCode == epsgCode).findFirst();
     }
