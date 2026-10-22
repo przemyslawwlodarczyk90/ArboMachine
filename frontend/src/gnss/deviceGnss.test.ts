@@ -129,3 +129,8 @@ test('seria odczytow konczy sie po 10 odczytach; po czasie usrednia zebrane; bez
   fireTimeout();
   await assert.rejects(empty.result, (error: GnssReadingError) => error.reason === 'TIMEOUT');
 });
+
+test('etap 35: opis zapisanej lokalizacji z czasem pomiaru', () => {
+  assert.equal(describeLocationMeasurement({ source: 'DEVICE_GNSS', accuracyM: 4, measuredAt: '2026-11-20T10:31:22Z' }, 'UTC'),
+    'GPS urządzenia, dokładność ±4 m, pomiar 20.11.2026, 10:31');
+});

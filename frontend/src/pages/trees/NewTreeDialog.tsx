@@ -104,5 +104,9 @@ function toLocationRequest(location: TreeLocation): TreeLocationRequest {
     source: location.source && location.source !== 'IMPORT' ? location.source : 'MAP',
     ...(location.accuracyM !== null && location.accuracyM !== undefined ? { accuracyM: location.accuracyM } : {}),
     ...(location.altitudeM !== null && location.altitudeM !== undefined ? { altitudeM: location.altitudeM } : {}),
+    // Etap 35: czas i sposob pomiaru GNSS (punkt wskazany na mapie ich nie ma).
+    ...(location.measuredAt ? { measuredAt: location.measuredAt } : {}),
+    ...(location.adapterCode ? { adapterCode: location.adapterCode } : {}),
+    ...(location.deviceLabel ? { deviceLabel: location.deviceLabel } : {}),
   };
 }

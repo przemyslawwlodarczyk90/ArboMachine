@@ -288,6 +288,10 @@ async function main() {
     const newTree = await api(`/api/projects/${PROJECT_ID}/trees/${newTreeId}`);
     check('"+ Drzewo tutaj" zapisuje punkt GPS ze zrodlem i dokladnoscia',
       newTree.location?.source === 'DEVICE_GNSS' && Number(newTree.location?.accuracyM) === 4, JSON.stringify(newTree.location));
+    // Etap 35: czas i sposob pomiaru zapisane przy punkcie.
+    check('Punkt z GPS ma zapisany czas pomiaru i sposob pomiaru (adapter przegladarki)',
+      newTree.location?.adapterCode === 'browser-geolocation' && !!newTree.location?.measuredAt
+        && Math.abs(Date.parse(newTree.location.measuredAt) - Date.now()) < 10 * 60 * 1000, JSON.stringify(newTree.location));
     await screenshot('06-teren-nowe-drzewo-panel');
 
     // --- Oznaczenia z panelu ---

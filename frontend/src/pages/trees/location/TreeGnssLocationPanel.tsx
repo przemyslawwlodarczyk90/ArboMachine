@@ -3,16 +3,16 @@ import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import {
-  collectAveragedGnssReading, formatAccuracy, GNSS_AVERAGING, gnssAccuracyQuality, GnssReadingError,
-  readDeviceGnssPosition, type AveragedGnssReading, type GnssReading,
+  formatAccuracy, GNSS_AVERAGING, gnssAccuracyQuality, GnssReadingError, type AveragedGnssReading, type GnssReading,
 } from '../../../gnss/deviceGnss';
+import { createBrowserGeolocationAdapter, locationFieldsOfFix, type GnssAdapter, type GnssFix } from '../../../gnss/gnssAdapter';
 import type { Tree, TreeLocation } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import { fieldLocationSourceLabel, formatMeasurementTime, formatReportedAccuracy } from '../../../fieldmode/fieldLocationDescription';
 
 type GnssState =
   | { status: 'measuring'; sampleCount: number }
-  | { status: 'measured'; reading: GnssReading | AveragedGnssReading }
+  | { status: 'measured'; reading: GnssFix }
   | { status: 'failed'; errorMessage: string };
 
 /** Jeden odczyt (szybko) albo seria usredniona (etap 31 - pod odbiornik RTK, ok. 10 odczytow). */
@@ -36,7 +36,7 @@ const isAveraged = (reading: GnssReading | AveragedGnssReading): reading is Aver
  */
 export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChanged, onTreeLocationSaved, cancel,
                                         onReadingConfirmed, describesForField = false, initialMeasurementMode = 'SINGLE',
-                                        onMeasurementModeChange }: {
+                                        onMeasurementModeChange, adapter }: {
   projectId: number;
   /** null tylko razem z onReadingConfirmed (pomiar przed utworzeniem drzewa) */
   tree: Tree | null;
@@ -47,7 +47,9 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
    * etap 32 ("+ Drzewo tutaj"): zamiast zapisu lokalizacji oddaje zaakceptowany odczyt (np. do okna numeru nowego
    * drzewa); przycisk glowny to wtedy "Dalej"
    */
-  onReadingConfirmed?: (reading: GnssReading) => void;
+  onReadingConfirmed?: (reading: GnssFix) => void;
+  /** etap 35: zrodlo pozycji (domyslnie przegladarka); kolejne adaptery - po poznaniu odbiornika klienta */
+  adapter?: GnssAdapter;
   /** etap 32 (tryb terenowy): zrodlo i czas pomiaru, dokladnosc "zgloszona przez urzadzenie" - bez slowa "RTK" */
   describesForField?: boolean;
   initialMeasurementMode?: MeasurementMode;
@@ -69,11 +71,11 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
     let isResultStillWanted = true;
     setGnssState({ status: 'measuring', sampleCount: 0 });
     onPendingLocationChanged(null);
-    const geolocation = typeof navigator !== 'undefined' ? navigator.geolocation : null;
-    const series = measurementMode === 'AVERAGED'
-      ? collectAveragedGnssReading(geolocation, window.isSecureContext,
-        (sampleCount) => { if (isResultStillWanted) setGnssState({ status: 'measuring', sampleCount }); })
-      : { result: readDeviceGnssPosition(geolocation, window.isSecureContext), abort: () => {} };
+    // Etap 35: pomiar przez adapter (domyslnie przegladarka) - wynik niesie czas i sposob pomiaru.
+    const gnssAdapter = adapter ?? createBrowserGeolocationAdapter(
+      typeof navigator !== 'undefined' ? navigator.geolocation : null, window.isSecureContext);
+    const series = gnssAdapter.measure(measurementMode,
+      (sampleCount) => { if (isResultStillWanted) setGnssState({ status: 'measuring', sampleCount }); });
     series.result
       .then((reading) => {
         if (!isResultStillWanted) return;
@@ -92,7 +94,7 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
     // onPendingLocationChanged celowo poza zaleznosciami - nowy pomiar tylko po "Zmierz ponownie" / zmianie trybu.
   }, [measurementNumber, measurementMode]);
 
-  const saveReading = async (reading: GnssReading) => {
+  const saveReading = async (reading: GnssFix) => {
     if (isSubmissionInProgress.current) return;
     if (onReadingConfirmed || !tree) {
       onReadingConfirmed?.(reading);
@@ -102,10 +104,7 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
     setIsSaving(true);
     setSavingErrorMessage(null);
     try {
-      onTreeLocationSaved(await treesApi.setTreeLocation(projectId, tree.id, {
-        latitude: reading.latitude, longitude: reading.longitude, accuracyM: reading.accuracyM,
-        ...(reading.altitudeM !== null ? { altitudeM: reading.altitudeM } : {}), source: 'DEVICE_GNSS',
-      }));
+      onTreeLocationSaved(await treesApi.setTreeLocation(projectId, tree.id, locationFieldsOfFix(reading)));
     } catch (savingError) {
       setSavingErrorMessage(savingError instanceof ApiRequestError
         ? Object.values(savingError.errorMessageByFieldName).join(' ') || savingError.message

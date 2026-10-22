@@ -22,3 +22,8 @@ test('dokladnosc centymetrowa nie jest nazywana RTK - tylko "zgloszona przez urz
 test('czas pomiaru jako godzina', () => {
   assert.equal(formatMeasurementTime('2026-11-20T10:31:22Z', 'UTC'), '10:31:22');
 });
+
+test('etap 35: zapisany czas pomiaru w opisie punktu', () => {
+  assert.equal(describeFieldLocation({ source: 'DEVICE_GNSS', accuracyM: 4, measuredAt: '2026-11-20T10:31:22Z' }, 'UTC'),
+    'GPS urządzenia (przeglądarka) · ±4 m (dokładność zgłoszona przez urządzenie) · pomiar o 10:31:22');
+});

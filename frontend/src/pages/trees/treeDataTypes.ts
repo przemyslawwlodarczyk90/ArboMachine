@@ -42,6 +42,10 @@ export interface TreeLocation {
   altitudeM?: number | null;
   accuracyM?: number | null;
   source?: TreeLocationSource | null;
+  /** etap 35: chwila pomiaru wg urzadzenia (ISO UTC), sposob pomiaru (kod adaptera GNSS), opis urzadzenia */
+  measuredAt?: string | null;
+  adapterCode?: string | null;
+  deviceLabel?: string | null;
 }
 
 /**
@@ -54,6 +58,10 @@ export interface TreeLocationRequest {
   altitudeM?: number;
   accuracyM?: number;
   source?: Exclude<TreeLocationSource, 'IMPORT'>;
+  /** etap 35 - tylko z pomiaru GNSS (adapter); punkt z mapy albo wpisany recznie ich nie ma */
+  measuredAt?: string;
+  adapterCode?: string;
+  deviceLabel?: string;
 }
 
 /**

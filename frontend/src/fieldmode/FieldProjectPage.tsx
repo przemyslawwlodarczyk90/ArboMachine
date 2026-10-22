@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { ApiRequestError } from '../api/httpClient';
 import { Alert } from '../components/Alert';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import type { GnssReading } from '../gnss/deviceGnss';
+import type { GnssFix } from '../gnss/gnssAdapter';
 import { useLivePosition } from '../gnss/useLivePosition';
 import { buildProjectMapLegend } from '../map/mapSymbolLegend';
 import type { Project } from '../pages/projects/projectDataTypes';
@@ -143,9 +143,10 @@ export function FieldProjectPage() {
     setMapInteraction((current) => (current === 'PICKING_NEW_TREE' ? 'NONE' : 'PICKING_NEW_TREE'));
   });
 
-  const confirmMeasuredNewTree = (reading: GnssReading) => {
-    setNewTreeLocation({ latitude: reading.latitude, longitude: reading.longitude, accuracyM: reading.accuracyM,
-      altitudeM: reading.altitudeM, source: 'DEVICE_GNSS' });
+  const confirmMeasuredNewTree = (fix: GnssFix) => {
+    setNewTreeLocation({ latitude: fix.latitude, longitude: fix.longitude, accuracyM: fix.accuracyM,
+      altitudeM: fix.altitudeM, source: 'DEVICE_GNSS', measuredAt: fix.measuredAt, adapterCode: fix.adapterCode,
+      deviceLabel: fix.deviceLabel });
     setMapInteraction('NONE');
   };
 

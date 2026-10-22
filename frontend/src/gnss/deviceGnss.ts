@@ -216,15 +216,22 @@ const SOURCE_LABELS: Record<string, string> = {
   IMPORT: 'import z pliku',
 };
 
-/** Opis pomiaru zapisanej lokalizacji, np. "GPS urządzenia, dokładność ±4 m, wysokość 104 m n.p.m."; null = brak danych. */
+/**
+ * Opis pomiaru zapisanej lokalizacji, np. "GPS urządzenia, dokładność ±4 m, wysokość 104 m n.p.m., pomiar 22.10.2026
+ * 10:31"; null = brak danych. Etap 35: czas pomiaru (czas lokalny urzadzenia), gdy zostal zapisany.
+ */
 export function describeLocationMeasurement(location: {
-  accuracyM?: number | null; altitudeM?: number | null; source?: string | null;
-}): string | null {
+  accuracyM?: number | null; altitudeM?: number | null; source?: string | null; measuredAt?: string | null;
+}, timeZone?: string): string | null {
   const parts: string[] = [];
   if (location.source && SOURCE_LABELS[location.source]) parts.push(SOURCE_LABELS[location.source]);
   if (location.accuracyM !== null && location.accuracyM !== undefined) parts.push(`dokładność ${formatAccuracy(location.accuracyM)}`);
   if (location.altitudeM !== null && location.altitudeM !== undefined) {
     parts.push(`wysokość ${Math.round(location.altitudeM).toString()} m n.p.m.`);
+  }
+  if (location.measuredAt) {
+    parts.push(`pomiar ${new Date(location.measuredAt).toLocaleString('pl-PL', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone })}`);
   }
   if (parts.length === 0) return null;
   const text = parts.join(', ');
