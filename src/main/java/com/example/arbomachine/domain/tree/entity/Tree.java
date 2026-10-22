@@ -134,7 +134,7 @@ public class Tree {
      * symbolu. Zapis formularza z nieaktualna wersja (inne urzadzenie zmienilo dane w miedzyczasie) -> 409 zamiast
      * cichego nadpisania. Wlasny licznik zamiast @Version: przesuniecie punktu w terenie nie unieważnia formularza.
      */
-    @Column(name = "data_version", nullable = false, columnDefinition = "bigint default 0 not null")
+    @Column(name = "data_version", nullable = false, columnDefinition = "bigint default 0")
     private long dataVersion;
 
     /**
