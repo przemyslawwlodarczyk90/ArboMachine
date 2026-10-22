@@ -53,7 +53,9 @@ export interface TreeImportResult {
 export type TreeExportFormat = 'csv' | 'xlsx' | 'geojson' | 'gpkg';
 
 /** Pliki eksportu projektu: drzewa w formatach jak wyzej + (etap 28) CSV prac - jeden wiersz na prace. */
-export type ProjectExportFile = TreeExportFormat | 'works-csv' | 'calendar-ics' | 'shapefile-zip' | 'stands-geojson';
+export type ProjectExportFile = TreeExportFormat | 'works-csv' | 'calendar-ics' | 'shapefile-zip' | 'stands-geojson'
+  /** etap 34: pakiet dla QGIS - GeoPackage ze stylami + pliki QML + README */
+  | 'qgis-zip';
 
 /** Etap 29: wynik "Sprawdz plik" importu grup drzew (obszarow). */
 export interface TreeStandImportValidation {

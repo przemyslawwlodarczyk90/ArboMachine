@@ -2,6 +2,7 @@ import { sendApiRequest, sendApiRequestForBlob } from '../../../api/httpClient';
 import type {
   ProjectExportFile, TreeImportResult, TreeImportValidation, TreeStandImportResult, TreeStandImportValidation,
 } from './dataExchangeDataTypes';
+import { exportQueryOf, type GisExportCrs } from './gisExportCrs';
 
 const projectPath = (projectId: number) => `/api/projects/${projectId}`;
 
@@ -13,8 +14,10 @@ const fileFormData = (file: File) => {
 
 /** Import i eksport drzew projektu (backend: domain.dataexchange). Wlasnosc projektu sprawdza backend (404). */
 export const dataExchangeApi = {
-  downloadProjectExport: (projectId: number, exportFile: ProjectExportFile) =>
-    sendApiRequestForBlob(`${projectPath(projectId)}/exports/${exportPathOf(exportFile)}`, { sendAccessToken: true }),
+  /** Etap 34: crs - uklad GeoPackage i pakietu QGIS (inne formaty go ignoruja). */
+  downloadProjectExport: (projectId: number, exportFile: ProjectExportFile, crs: GisExportCrs | null = null) =>
+    sendApiRequestForBlob(`${projectPath(projectId)}/exports/${exportPathOf(exportFile)}${exportQueryOf(exportFile, crs)}`,
+      { sendAccessToken: true }),
 
   /** "Sprawdz plik" - nic nie zapisuje. */
   validateTreeImport: (projectId: number, file: File) =>
@@ -46,6 +49,7 @@ const exportPathOf = (exportFile: ProjectExportFile) => {
   if (exportFile === 'calendar-ics') return 'calendar.ics';
   if (exportFile === 'shapefile-zip') return 'shapefile.zip';
   if (exportFile === 'stands-geojson') return 'stands.geojson';
+  if (exportFile === 'qgis-zip') return 'qgis.zip';
   return `trees.${exportFile}`;
 };
 
@@ -55,5 +59,6 @@ export const projectExportFileName = (projectId: number, exportFile: ProjectExpo
   if (exportFile === 'calendar-ics') return `arbomachine-projekt-${projectId}-kalendarz-prac.ics`;
   if (exportFile === 'shapefile-zip') return `arbomachine-projekt-${projectId}-shapefile.zip`;
   if (exportFile === 'stands-geojson') return `arbomachine-projekt-${projectId}-grupy-drzew.geojson`;
+  if (exportFile === 'qgis-zip') return `arbomachine-projekt-${projectId}-qgis.zip`;
   return `arbomachine-projekt-${projectId}-drzewa.${exportFile}`;
 };
