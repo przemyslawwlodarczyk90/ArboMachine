@@ -412,6 +412,7 @@ w realnych warunkach, **OPERACYJNE** — sprawy środowiska.
 | Konto | Zmiana hasła z poziomu „Mój profil” (dziś tylko przez „Nie pamiętasz hasła?”) | BRAK |
 | Konto | Po „Wyloguj” kolejne logowanie w tej samej karcie wraca na ostatnią stronę panelu (np. `/projects`) | OPEN |
 | Role | Panel urzędnika — tylko pulpit z zapowiedziami modułów; brak workflow urząd ↔ wykonawca, organizacji | BRAK / FUTURE |
+| Panel arborysty | Etap 32: **usunięto zakładki modułów planowanych** (Oceny drzew, Raporty z prac, Wnioski, Harmonogram), poza zamówieniem klienta; stare adresy `/arborist/...` przekierowują na „Projekty”. Backend `/api/arborist/panel` nie jest już wywoływany przez frontend — kandydat do usunięcia (decyzja w „KONSPEKTY NOWE/03-DECYZJE-V1.md”) | ROZWIĄZANE / OPEN |
 | Współpraca | Wielu użytkowników w jednym projekcie (ProjectMembership) | FUTURE |
 | Język | Wielojęzyczność (i18n) — dziś tylko polski UI | OPEN |
 

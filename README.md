@@ -25,7 +25,6 @@ komunikaty błędów API są po angielsku (kontrakt), frontend tłumaczy je w `u
 | Obszar | Co jest | Szczegóły |
 |---|---|---|
 | 👥 Konta | rejestracja z potwierdzeniem e-mail, logowanie JWT, reset hasła, panele: arborysta / urzędnik / administrator | arborysta startuje od „Projekty”; urzędnik - na razie tylko pulpit |
-| 🚧 Moduły w budowie | zakładki **Oceny drzew, Raporty z prac, Wnioski, Harmonogram**: co już działa w projektach, co planujemy, pytania do arborysty | etap 31 |
 | 📁 Projekty | lista, tworzenie, edycja; **dane zlecenia**: zleceniodawca, adres obiektu, data zlecenia; podsumowanie z liczbami | etap 29 |
 | 🌳 Drzewa | formularz terenowy (tablet-first): numer, gatunek, obwód, wysokość, korona, stan, zagrożenia, notatki; dyktowanie | [etap 8](docs/discovery/etap-8-karta-drzewa-discovery.md) |
 | 📍 Lokalizacja | punkt WGS 84 z mapy, ręcznie albo z **GPS urządzenia** (dokładność, wysokość, źródło); **pomiar uśredniony**, progi RTK, odbiornik RTK przez pozorowaną lokalizację Androida; współrzędne **PL-2000 / PL-1992** na karcie i w PDF, wpisywanie w układzie krajowym | [etap 25](docs/discovery/etap-25-gnss.md), 31 |
