@@ -42,9 +42,10 @@ public class TreeMonitoringController {
     @PostMapping
     public ResponseEntity<TreeMonitoringRecordResponse> createRecord(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                                      @PathVariable Long projectId, @PathVariable Long treeId,
-                                                                     @Valid @RequestBody TreeMonitoringRecordRequest request) {
+                                                                     @Valid @RequestBody TreeMonitoringRecordRequest request,
+                                                                     @RequestParam(value = "clientRequestId", required = false) String clientRequestId) {
         TreeMonitoringRecordResponse createdRecord = treeMonitoringFacade.createRecordForTreeOfCurrentUser(
-                authenticatedUser.getUsername(), projectId, treeId, request);
+                authenticatedUser.getUsername(), projectId, treeId, request, clientRequestId);
         return ResponseEntity.created(URI.create("/api/projects/" + projectId + "/trees/" + treeId + "/monitoring/"
                 + createdRecord.id())).body(createdRecord);
     }

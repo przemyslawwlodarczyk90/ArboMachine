@@ -52,7 +52,13 @@ public class TreeFacade {
 
     public TreeResponse createTreeInProjectOfCurrentUser(String currentUserEmail, Long projectId,
                                                          CreateTreeRequest createTreeRequest) {
-        return createTreeHandler.handle(currentUserEmail, projectId, createTreeRequest);
+        return createTreeHandler.handle(currentUserEmail, projectId, createTreeRequest, null);
+    }
+
+    /** Etap 36: tworzenie z identyfikatorem urzadzenia (ponowienie bez duplikatu). */
+    public TreeResponse createTreeInProjectOfCurrentUser(String currentUserEmail, Long projectId,
+                                                         CreateTreeRequest createTreeRequest, String clientRequestId) {
+        return createTreeHandler.handle(currentUserEmail, projectId, createTreeRequest, clientRequestId);
     }
 
     public List<TreeResponse> getTreesOfProjectOfCurrentUser(String currentUserEmail, Long projectId) {

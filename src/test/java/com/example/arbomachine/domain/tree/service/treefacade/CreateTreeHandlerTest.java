@@ -44,7 +44,7 @@ class CreateTreeHandlerTest {
     @Test
     void treeBelongsToOwnedProjectAndHasEqualCreationAndUpdateTime() {
         createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("1", "Quercus robur", "Dąb szypułkowy", new BigDecimal("314"), new BigDecimal("18.5"), new BigDecimal("12"), "Example field note.",
-                "  Posusz w koronie  ", "Nad chodnikiem"));
+                "  Posusz w koronie  ", "Nad chodnikiem"), null);
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getProject()).isSameAs(ownedProject);
@@ -61,7 +61,7 @@ class CreateTreeHandlerTest {
 
     @Test
     void trimsInventoryNumberAndStoresBlankOptionalFieldsAsNull() {
-        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", null, null, null, "", " ", ""));
+        createTreeHandler.handle(OWNER_EMAIL, 5L, new CreateTreeRequest("  A-12 ", "  ", " ", null, null, null, "", " ", ""), null);
 
         Tree createdTree = savedTree();
         assertThat(createdTree.getInventoryNumber()).isEqualTo("A-12");

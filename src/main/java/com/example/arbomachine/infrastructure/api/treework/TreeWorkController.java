@@ -39,9 +39,10 @@ public class TreeWorkController {
     public ResponseEntity<TreeWorkResponse> createTreeWork(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                            @PathVariable Long projectId,
                                                            @PathVariable Long treeId,
-                                                           @Valid @RequestBody CreateTreeWorkRequest createTreeWorkRequest) {
+                                                           @Valid @RequestBody CreateTreeWorkRequest createTreeWorkRequest,
+                                                           @RequestParam(value = "clientRequestId", required = false) String clientRequestId) {
         TreeWorkResponse createdTreeWork = treeWorkFacade.createWorkForTreeOfCurrentUser(
-                authenticatedUser.getUsername(), projectId, treeId, createTreeWorkRequest);
+                authenticatedUser.getUsername(), projectId, treeId, createTreeWorkRequest, clientRequestId);
         return ResponseEntity.created(URI.create("/api/projects/" + projectId + "/trees/" + treeId + "/works/"
                 + createdTreeWork.id())).body(createdTreeWork);
     }

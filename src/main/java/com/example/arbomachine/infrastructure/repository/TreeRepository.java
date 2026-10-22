@@ -20,6 +20,9 @@ public interface TreeRepository extends JpaRepository<Tree, Long> {
     /** Pusty wynik takze dla drzewa, ktore istnieje, ale nalezy do innego projektu. */
     Optional<Tree> findByIdAndProjectId(Long treeId, Long projectId);
 
+    /** Etap 36: drzewo juz utworzone z tym identyfikatorem urzadzenia (ponowienie z kolejki offline). */
+    Optional<Tree> findByProjectIdAndClientRequestId(Long projectId, String clientRequestId);
+
     /** Liczba drzew projektu - COUNT w bazie (podsumowanie projektu). */
     long countByProjectId(Long projectId);
 

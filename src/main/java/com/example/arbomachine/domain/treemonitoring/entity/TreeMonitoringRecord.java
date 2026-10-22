@@ -1,5 +1,6 @@
 package com.example.arbomachine.domain.treemonitoring.entity;
 
+import com.example.arbomachine.domain.tree.entity.ClientRequestId;
 import com.example.arbomachine.domain.tree.entity.Tree;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -19,7 +20,9 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "tree_monitoring_record",
-        indexes = @Index(name = "idx_tree_monitoring_record_tree_date", columnList = "tree_id, inspection_date"))
+        indexes = @Index(name = "idx_tree_monitoring_record_tree_date", columnList = "tree_id, inspection_date"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_tree_monitoring_tree_client_request",
+                columnNames = {"tree_id", "client_request_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TreeMonitoringRecord {
@@ -51,6 +54,18 @@ public class TreeMonitoringRecord {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /**
+     * Etap 36: identyfikator utworzenia z urzadzenia (kolejka offline) - ponowienie po zerwanej odpowiedzi zwraca ten
+     * rekord zamiast duplikatu. null = utworzony bez identyfikatora (online przed etapem 36, import).
+     */
+    @Column(name = "client_request_id", length = ClientRequestId.LENGTH, updatable = false)
+    private String clientRequestId;
+
+    /** Etap 36: tylko przy tworzeniu (kolumna nie jest aktualizowana). */
+    public void assignClientRequestId(String normalizedClientRequestId) {
+        this.clientRequestId = normalizedClientRequestId;
+    }
 
     /** Komplet pol wpisu ustawianych formularzem (znormalizowany; data nigdy null). */
     public record Fields(LocalDate inspectionDate, TreeHealthStatus healthStatus, String notes) {

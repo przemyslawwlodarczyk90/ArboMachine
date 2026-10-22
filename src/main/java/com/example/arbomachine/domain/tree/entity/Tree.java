@@ -20,7 +20,8 @@ import java.util.Objects;
  * Relacja jednokierunkowa - Project nie trzyma kolekcji drzew (liste daje TreeRepository).
  */
 @Entity
-@Table(name = "tree", indexes = @Index(name = "idx_tree_project_id", columnList = "project_id"))
+@Table(name = "tree", indexes = @Index(name = "idx_tree_project_id", columnList = "project_id"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_tree_project_client_request", columnNames = {"project_id", "client_request_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Tree {
@@ -127,6 +128,18 @@ public class Tree {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /**
+     * Etap 36: identyfikator utworzenia z urzadzenia (kolejka offline) - ponowienie po zerwanej odpowiedzi zwraca ten
+     * rekord zamiast duplikatu. null = utworzony bez identyfikatora (online przed etapem 36, import).
+     */
+    @Column(name = "client_request_id", length = ClientRequestId.LENGTH, updatable = false)
+    private String clientRequestId;
+
+    /** Etap 36: tylko przy tworzeniu (kolumna nie jest aktualizowana). */
+    public void assignClientRequestId(String normalizedClientRequestId) {
+        this.clientRequestId = normalizedClientRequestId;
+    }
 
     public static Tree createInProject(Project project, TreeEditableAttributes initialAttributes, Instant creationTime) {
         Tree tree = new Tree();

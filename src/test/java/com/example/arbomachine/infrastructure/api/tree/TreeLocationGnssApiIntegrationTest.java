@@ -54,6 +54,7 @@ class TreeLocationGnssApiIntegrationTest {
     @Autowired private ProjectRepository projectRepository;
     @Autowired private TreeRepository treeRepository;
     @Autowired private TreeWorkRepository treeWorkRepository;
+    @Autowired private com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository treeMonitoringRecordRepository;
     @Autowired private JwtTokenService jwtTokenService;
 
     private UserAccount userAccountA;
@@ -72,6 +73,7 @@ class TreeLocationGnssApiIntegrationTest {
 
     @AfterEach
     void deleteAllData() {
+        treeMonitoringRecordRepository.deleteAll();
         treeWorkRepository.deleteAll();
         treeRepository.deleteAll();
         projectRepository.deleteAll();
@@ -230,5 +232,48 @@ class TreeLocationGnssApiIntegrationTest {
         putLocation(userAccountA, treeIdA, "{\"latitude\":52.1,\"longitude\":21.0,\"deviceLabel\":\"" + "x".repeat(101) + "\"}")
                 .andExpect(status().isBadRequest());
         assertThat(storedTree(treeIdA).getLocation()).isNull();
+    }
+
+    // --- etap 36: ponowienie tworzenia z kolejki offline nie tworzy duplikatow ---
+
+    @Test
+    void repeatedCreateWithSameClientRequestIdReturnsSameTreeWorkAndRecord() throws Exception {
+        String treeRequestId = "3f1c2a8e-7b4d-4c9e-9a1f-2d3e4f5a6b7c";
+        long firstTreeId = readId(performAs(userAccountA, post("/api/projects/{p}/trees", projectIdA)
+                .param("clientRequestId", treeRequestId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"OFF-2\"}")));
+        long repeatedTreeId = readId(performAs(userAccountA, post("/api/projects/{p}/trees", projectIdA)
+                .param("clientRequestId", treeRequestId.toUpperCase())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"OFF-2\"}")));
+        assertThat(repeatedTreeId).isEqualTo(firstTreeId);
+        assertThat(treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(projectIdA))
+                .filteredOn(tree -> "OFF-2".equals(tree.getInventoryNumber())).hasSize(1);
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            performAs(userAccountA, post("/api/projects/{p}/trees/{t}/works", projectIdA, firstTreeId)
+                    .param("clientRequestId", "11111111-2222-4333-8444-555555555555")
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Cięcie posuszu\"}")).andExpect(status().isCreated());
+            performAs(userAccountA, post("/api/projects/{p}/trees/{t}/monitoring", projectIdA, firstTreeId)
+                    .param("clientRequestId", "66666666-7777-4888-9999-000000000000")
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"inspectionDate\":\"2026-10-20\",\"healthStatus\":\"GOOD\"}"))
+                    .andExpect(status().isCreated());
+        }
+        assertThat(treeWorkRepository.findAllByTreeIdOrderByCreatedAtAscIdAsc(firstTreeId)).hasSize(1);
+        performAs(userAccountA, get("/api/projects/{p}/trees/{t}/monitoring", projectIdA, firstTreeId))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+
+        // Ten sam identyfikator w innym projekcie / bez identyfikatora - zwykle tworzenie.
+        performAs(userAccountA, post("/api/projects/{p}/trees", projectIdA)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"OFF-2\"}")).andExpect(status().isCreated());
+        assertThat(treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(projectIdA))
+                .filteredOn(tree -> "OFF-2".equals(tree.getInventoryNumber())).hasSize(2);
+    }
+
+    @Test
+    void clientRequestIdThatIsNotUuidIsRejected() throws Exception {
+        performAs(userAccountA, post("/api/projects/{p}/trees", projectIdA).param("clientRequestId", "abc")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"BAD\"}")).andExpect(status().isBadRequest());
+        performAs(userAccountA, post("/api/projects/{p}/trees", 999999L).param("clientRequestId", "3f1c2a8e-7b4d-4c9e-9a1f-2d3e4f5a6b7c")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"inventoryNumber\":\"X\"}")).andExpect(status().isNotFound());
     }
 }

@@ -24,6 +24,9 @@ public interface TreeWorkRepository extends JpaRepository<TreeWork, Long> {
     /** Pusty wynik takze dla pracy, ktora istnieje, ale nalezy do innego drzewa. */
     Optional<TreeWork> findByIdAndTreeId(Long treeWorkId, Long treeId);
 
+    /** Etap 36: praca juz utworzona z tym identyfikatorem urzadzenia. */
+    Optional<TreeWork> findByTreeIdAndClientRequestId(Long treeId, String clientRequestId);
+
     /**
      * Prace wszystkich drzew projektu JEDNYM zapytaniem (mapa projektu bez N+1), pogrupowane po drzewie
      * i w kolejnosci dodawania. Wlasnosc projektu sprawdza wczesniej handler.

@@ -16,6 +16,10 @@ import java.util.Optional;
 @Repository
 public interface TreeMonitoringRecordRepository extends JpaRepository<TreeMonitoringRecord, Long> {
 
+    /** Etap 36: kontrola juz utworzona z tym identyfikatorem urzadzenia. */
+    Optional<TreeMonitoringRecord> findByTreeIdAndClientRequestId(Long treeId, String clientRequestId);
+
+
     /** Historia drzewa: najnowsza kontrola pierwsza (data, potem kolejnosc dodania). */
     List<TreeMonitoringRecord> findAllByTreeIdOrderByInspectionDateDescIdDesc(Long treeId);
 

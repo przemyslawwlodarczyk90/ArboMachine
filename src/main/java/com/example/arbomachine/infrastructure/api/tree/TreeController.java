@@ -38,9 +38,10 @@ public class TreeController {
     @PostMapping
     public ResponseEntity<TreeResponse> createTree(@AuthenticationPrincipal UserDetails authenticatedUser,
                                                    @PathVariable Long projectId,
-                                                   @Valid @RequestBody CreateTreeRequest createTreeRequest) {
+                                                   @Valid @RequestBody CreateTreeRequest createTreeRequest,
+                                                   @RequestParam(value = "clientRequestId", required = false) String clientRequestId) {
         TreeResponse createdTree = treeFacade.createTreeInProjectOfCurrentUser(authenticatedUser.getUsername(),
-                projectId, createTreeRequest);
+                projectId, createTreeRequest, clientRequestId);
         return ResponseEntity.created(URI.create("/api/projects/" + projectId + "/trees/" + createdTree.id()))
                 .body(createdTree);
     }

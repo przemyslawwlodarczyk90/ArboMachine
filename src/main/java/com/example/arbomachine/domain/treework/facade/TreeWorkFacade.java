@@ -55,7 +55,13 @@ public class TreeWorkFacade {
 
     public TreeWorkResponse createWorkForTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
                                                            CreateTreeWorkRequest createTreeWorkRequest) {
-        return createTreeWorkHandler.handle(currentUserEmail, projectId, treeId, createTreeWorkRequest);
+        return createTreeWorkHandler.handle(currentUserEmail, projectId, treeId, createTreeWorkRequest, null);
+    }
+
+    /** Etap 36: tworzenie z identyfikatorem urzadzenia (ponowienie bez duplikatu). */
+    public TreeWorkResponse createWorkForTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
+                                                           CreateTreeWorkRequest createTreeWorkRequest, String clientRequestId) {
+        return createTreeWorkHandler.handle(currentUserEmail, projectId, treeId, createTreeWorkRequest, clientRequestId);
     }
 
     public List<TreeWorkResponse> getWorksOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {

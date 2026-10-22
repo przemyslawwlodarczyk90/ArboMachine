@@ -41,7 +41,13 @@ public class TreeMonitoringFacade {
 
     public TreeMonitoringRecordResponse createRecordForTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
                                                                          TreeMonitoringRecordRequest request) {
-        return createTreeMonitoringRecordHandler.handle(currentUserEmail, projectId, treeId, request);
+        return createTreeMonitoringRecordHandler.handle(currentUserEmail, projectId, treeId, request, null);
+    }
+
+    /** Etap 36: tworzenie z identyfikatorem urzadzenia (ponowienie bez duplikatu). */
+    public TreeMonitoringRecordResponse createRecordForTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
+                                                                         TreeMonitoringRecordRequest request, String clientRequestId) {
+        return createTreeMonitoringRecordHandler.handle(currentUserEmail, projectId, treeId, request, clientRequestId);
     }
 
     public List<TreeMonitoringRecordResponse> getRecordsOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {

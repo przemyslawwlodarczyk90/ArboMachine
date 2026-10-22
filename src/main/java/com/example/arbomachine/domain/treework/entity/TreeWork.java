@@ -1,5 +1,6 @@
 package com.example.arbomachine.domain.treework.entity;
 
+import com.example.arbomachine.domain.tree.entity.ClientRequestId;
 import com.example.arbomachine.domain.tree.entity.Tree;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -22,7 +23,8 @@ import java.util.Objects;
  * Relacja jednokierunkowa - Tree nie trzyma kolekcji prac (liste daje TreeWorkRepository).
  */
 @Entity
-@Table(name = "tree_work", indexes = @Index(name = "idx_tree_work_tree_id", columnList = "tree_id"))
+@Table(name = "tree_work", indexes = @Index(name = "idx_tree_work_tree_id", columnList = "tree_id"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_tree_work_tree_client_request", columnNames = {"tree_id", "client_request_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TreeWork {
@@ -78,6 +80,18 @@ public class TreeWork {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /**
+     * Etap 36: identyfikator utworzenia z urzadzenia (kolejka offline) - ponowienie po zerwanej odpowiedzi zwraca ten
+     * rekord zamiast duplikatu. null = utworzony bez identyfikatora (online przed etapem 36, import).
+     */
+    @Column(name = "client_request_id", length = ClientRequestId.LENGTH, updatable = false)
+    private String clientRequestId;
+
+    /** Etap 36: tylko przy tworzeniu (kolumna nie jest aktualizowana). */
+    public void assignClientRequestId(String normalizedClientRequestId) {
+        this.clientRequestId = normalizedClientRequestId;
+    }
 
     /** Komplet pol pracy ustawianych formularzem (znormalizowany; status nigdy null). */
     public record Fields(String name, String description, TreeWorkStatus status, TreeWorkPriority priority,
