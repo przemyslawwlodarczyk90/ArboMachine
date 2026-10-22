@@ -4,6 +4,7 @@ import { ApiRequestError } from '../api/httpClient';
 import { toUserFacingErrorMessage } from '../api/userFacingErrorMessages';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { resolvePanelPathAfterSignIn } from '../auth/userRoles';
+import { currentWorkMode } from '../fieldmode/fieldModePreference';
 import { Alert } from '../components/Alert';
 import { AuthCardPageLayout } from '../components/AuthCardPageLayout';
 import { LabeledInputField } from '../components/LabeledInputField';
@@ -37,7 +38,7 @@ export function SignInPage() {
     try {
       const signedInAccount = await signIn(email.trim(), password);
       // Kazda rola ma swoj panel.
-      navigate(resolvePanelPathAfterSignIn(signedInAccount.role, navigationState.pathBeforeSignIn), { replace: true });
+      navigate(resolvePanelPathAfterSignIn(signedInAccount.role, navigationState.pathBeforeSignIn, currentWorkMode()), { replace: true });
     } catch (requestError) {
       setSignInError(requestError instanceof ApiRequestError ? requestError : new ApiRequestError(0, 'Nieoczekiwany błąd.'));
     } finally {

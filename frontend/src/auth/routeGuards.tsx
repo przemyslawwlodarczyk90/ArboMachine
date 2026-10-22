@@ -1,7 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { UserRole } from '../api/apiDataTypes';
 import { useAuthentication } from './AuthenticationContext';
-import { PANEL_HOME_PATH_BY_ROLE, resolvePanelPathAfterSignIn } from './userRoles';
+import { panelHomePathOf, PANEL_HOME_PATH_BY_ROLE, resolvePanelPathAfterSignIn } from './userRoles';
+import { currentWorkMode } from '../fieldmode/fieldModePreference';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 /**
@@ -17,11 +18,11 @@ export function RequireSignedInUserWithRole({ requiredRole }: { requiredRole: Us
   return <Outlet />;
 }
 
-/** Strona "/" - zalogowanego wysyla do jego panelu, pozostalych do logowania. */
+/** Strona "/" - zalogowanego wysyla do jego panelu (arborysta: wg zapamietanego trybu pracy), pozostalych do logowania. */
 export function RedirectToPanelOrSignIn() {
   const { currentUserAccount, isRestoringSession } = useAuthentication();
   if (isRestoringSession) return <LoadingSpinner fillsWholePage />;
-  return <Navigate to={currentUserAccount ? PANEL_HOME_PATH_BY_ROLE[currentUserAccount.role] : '/login'} replace />;
+  return <Navigate to={currentUserAccount ? panelHomePathOf(currentUserAccount.role, currentWorkMode()) : '/login'} replace />;
 }
 
 /** Strony dla niezalogowanych (logowanie, rejestracja) - zalogowanego od razu przenosi do jego panelu. */
@@ -29,6 +30,6 @@ export function RedirectSignedInUserToPanel() {
   const { currentUserAccount, isRestoringSession } = useAuthentication();
   const pathBeforeSignIn = (useLocation().state as { pathBeforeSignIn?: string } | null)?.pathBeforeSignIn;
   if (isRestoringSession) return <LoadingSpinner fillsWholePage />;
-  if (currentUserAccount) return <Navigate to={resolvePanelPathAfterSignIn(currentUserAccount.role, pathBeforeSignIn)} replace />;
+  if (currentUserAccount) return <Navigate to={resolvePanelPathAfterSignIn(currentUserAccount.role, pathBeforeSignIn, currentWorkMode())} replace />;
   return <Outlet />;
 }

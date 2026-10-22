@@ -1,0 +1,14 @@
+{
+  "name": "ArboMachine",
+  "short_name": "ArboMachine",
+  "description": "Inwentaryzacja i dokumentacja drzew dla arborysty",
+  "lang": "pl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f2",
+  "theme_color": "#2f6b3c",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

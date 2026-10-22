@@ -9,6 +9,7 @@ import {
   type TreeFormValues,
 } from './treeFormValues';
 import { treesApi } from './treesApi';
+import { unsavedChangesStore } from '../../fieldmode/unsavedChangesStore';
 
 /** Sekcja formularza terenowego - naglowek + pola. Kolejnosc sekcji to uklad V1, nie potwierdzony workflow. */
 function TreeFieldFormSection({ title, children }: { title: string; children: ReactNode }) {
@@ -48,6 +49,18 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     onUnsavedChangesChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
+  // Etap 32: niezapisane zmiany w rejestrze aplikacji - przelaczenie trybu albo inne drzewo w terenie pyta
+  // "Zapisz / Odrzuc / Zostan". Zapis z rejestru to ten sam zapis co przycisk "Zapisz zmiany" (najnowsza wersja z refa).
+  const saveTreeChangesRef = useRef<() => Promise<boolean>>(async () => false);
+  const discardChangesRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const sourceId = `tree-field-form-${savedTree.id}`;
+    unsavedChangesStore.setSource(sourceId, hasUnsavedChanges
+      ? { save: () => saveTreeChangesRef.current(), discard: () => discardChangesRef.current() }
+      : null);
+    return () => unsavedChangesStore.setSource(sourceId, null);
+  }, [hasUnsavedChanges, savedTree.id]);
+
   const changeFormField = (fieldName: keyof TreeFormValues, newValue: string) => {
     setWasJustSaved(false);
     setTreeFormValues((previousValues) => ({ ...previousValues, [fieldName]: newValue }));
@@ -73,7 +86,12 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
 
   const submitTreeChanges = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (isSubmissionInProgress.current) return;
+    await saveTreeChanges();
+  };
+
+  /** Zapis formularza; true = zapisano (takze na urzadzeniu offline), false = blad walidacji / zapisu albo zapis w toku. */
+  const saveTreeChanges = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     setFormErrorMessage(null);
     setWasJustSaved(false);
 
@@ -81,7 +99,7 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     setErrorMessageByFieldName(clientSideErrors);
     if (Object.keys(clientSideErrors).length) {
       setFormErrorMessage('Popraw zaznaczone pola.');
-      return;
+      return false;
     }
 
     isSubmissionInProgress.current = true;
@@ -93,6 +111,7 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
       setTreeFormValues(toTreeFormValues(updatedTree));
       onTreeSaved(updatedTree);
       setWasJustSaved(true);
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
@@ -100,11 +119,15 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
       } else {
         setFormErrorMessage('Nie udało się zapisać zmian. Nieoczekiwany błąd.');
       }
+      return false;
     } finally {
       isSubmissionInProgress.current = false;
       setIsSaving(false);
     }
   };
+
+  saveTreeChangesRef.current = saveTreeChanges;
+  discardChangesRef.current = discardChanges;
 
   return (
     <form onSubmit={submitTreeChanges} className="form tree-field-form" noValidate aria-labelledby="tree-data-heading">

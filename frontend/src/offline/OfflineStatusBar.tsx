@@ -10,7 +10,10 @@ const changesLabel = (count: number) => (count === 1 ? '1 zmiana' : count >= 2 &
  * synchronizacja, blad synchronizacji (Sprobuj ponownie / Pomin te zmiane) i krotkie potwierdzenie sukcesu.
  * Niewidoczny, gdy jest polaczenie i nic nie czeka.
  */
-export function OfflineStatusBar() {
+export function OfflineStatusBar({ isCompact = false }: {
+  /** etap 32 (tryb terenowy): brak polaczenia jako jedna linia, pelny opis po dotknieciu - ekran nad mapa jest cenny */
+  isCompact?: boolean;
+} = {}) {
   const offlineState = useOfflineState();
   const [shownSuccessGeneration, setShownSuccessGeneration] = useState(offlineState.syncGeneration);
   const [isSuccessVisible, setIsSuccessVisible] = useState(false);
@@ -42,6 +45,21 @@ export function OfflineStatusBar() {
           </button>
         </span>
       </div>
+    );
+  }
+
+  if (!isOnline && isCompact) {
+    return (
+      <details className="offline-status-bar offline-status-offline offline-status-compact" role="status">
+        <summary>
+          <strong>Offline</strong> - zmiany zapisują się na urządzeniu
+          {pendingChangeCount > 0 ? ` (czeka: ${changesLabel(pendingChangeCount)})` : ''}
+        </summary>
+        <span>
+          Zmiany drzew, lokalizacji, oznaczeń i prac zostaną wysłane po połączeniu. Zdjęcia, symbole i dokumenty wymagają
+          połączenia. Podkład mapy bez zasięgu się nie wczytuje.
+        </span>
+      </details>
     );
   }
 

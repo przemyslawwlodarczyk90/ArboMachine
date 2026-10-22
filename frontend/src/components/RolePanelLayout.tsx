@@ -4,6 +4,7 @@ import type { UserRole } from '../api/apiDataTypes';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { PANEL_HOME_PATH_BY_ROLE, USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
 import { ArboMachineLogo } from './ArboMachineLogo';
+import { WorkModeSwitchButton } from '../fieldmode/WorkModeSwitchButton';
 
 interface PanelNavigationLink {
   path: string;
@@ -59,6 +60,8 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
           ))}
         </nav>
         <div className="topbar-user">
+          {/* Etap 32: przejscie do trybu terenowego (ten sam projekt i drzewo) - tylko arborysta. */}
+          {panelRole === 'ARBORIST' && <WorkModeSwitchButton targetMode="FIELD" className="btn btn-secondary btn-small" />}
           <span className="muted">{currentUserAccount?.firstName} {currentUserAccount?.lastName}</span>
           <button className="btn btn-ghost" onClick={signOutAndGoToSignInPage}>Wyloguj</button>
         </div>

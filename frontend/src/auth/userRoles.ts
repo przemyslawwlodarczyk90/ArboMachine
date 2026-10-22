@@ -1,4 +1,5 @@
 import type { AssignableUserRole, UserRole } from '../api/apiDataTypes';
+import type { WorkMode } from '../fieldmode/fieldModePreference';
 
 export const USER_ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   ARBORIST: 'Arborysta',
@@ -29,7 +30,7 @@ export const REGISTRATION_ACCOUNT_TYPE_OPTIONS: { role: AssignableUserRole; disp
 
 /** Sciezki nalezace do panelu danej roli (poza strona glowna panelu - np. projekty arborysty). */
 const PANEL_PATH_PREFIXES_BY_ROLE: Record<UserRole, string[]> = {
-  ARBORIST: ['/arborist', '/projects'],
+  ARBORIST: ['/arborist', '/projects', '/field'],
   OFFICIAL: ['/official'],
   ADMIN: ['/admin'],
 };
@@ -38,8 +39,13 @@ const PANEL_PATH_PREFIXES_BY_ROLE: Record<UserRole, string[]> = {
  * Dokad przekierowac po zalogowaniu: na strone, z ktorej uzytkownika wyrzucilo do logowania,
  * ale tylko jesli nalezy do JEGO panelu - inaczej na glowna jego panelu (zeby nie trafil na 403).
  */
-export function resolvePanelPathAfterSignIn(role: UserRole, pathBeforeSignIn?: string): string {
+export function resolvePanelPathAfterSignIn(role: UserRole, pathBeforeSignIn?: string, workMode: WorkMode = 'OFFICE'): string {
   const pathBelongsToRolePanel = !!pathBeforeSignIn
     && PANEL_PATH_PREFIXES_BY_ROLE[role].some((panelPathPrefix) => pathBeforeSignIn.startsWith(panelPathPrefix));
-  return pathBelongsToRolePanel ? pathBeforeSignIn! : PANEL_HOME_PATH_BY_ROLE[role];
+  return pathBelongsToRolePanel ? pathBeforeSignIn! : panelHomePathOf(role, workMode);
+}
+
+/** Etap 32: arborysta z zapamietanym trybem terenowym startuje od listy projektow w terenie (/field). */
+export function panelHomePathOf(role: UserRole, workMode: WorkMode = 'OFFICE'): string {
+  return role === 'ARBORIST' && workMode === 'FIELD' ? '/field' : PANEL_HOME_PATH_BY_ROLE[role];
 }
