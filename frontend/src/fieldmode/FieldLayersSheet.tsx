@@ -45,7 +45,7 @@ export function FieldLayersSheet({ viewMode, onViewModeChange, standCount, areSt
 
       <section aria-label="Podkład mapy">
         <h3>Podkład</h3>
-        <BasemapControls />
+        <BasemapControls showsToBeClarifiedNotes={false} />
       </section>
 
       {(standCount > 0 || (referenceLayersState.status === 'loaded' && referenceLayersState.layers.length > 0)) && (
@@ -80,7 +80,8 @@ export function FieldLayersSheet({ viewMode, onViewModeChange, standCount, areSt
           Układ trybu terenowego to wersja V1 do sprawdzenia na tablecie: kolejność sekcji w panelu drzewa, domyślny
           widok „Oznaczenia drzew”, proponowany numer drzewa (największy + 1), pomiar pojedynczy domyślnie. Podkład mapy
           i zdjęcia nie działają bez zasięgu. Przeglądarka nie podaje typu rozwiązania odbiornika (FIX/FLOAT) - pokazujemy
-          tylko dokładność zgłoszoną przez urządzenie.
+          tylko dokładność zgłoszoną przez urządzenie. Google Maps: wymaga klucza API i licencji. Które podkłady
+          (mapa zasadnicza, BDOT10k, własne z QGIS) są potrzebne w terenie?
         </ToBeClarifiedNote>
       </details>
     </div>

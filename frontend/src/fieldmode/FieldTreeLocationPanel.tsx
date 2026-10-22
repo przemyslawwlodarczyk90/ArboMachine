@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiRequestError } from '../api/httpClient';
 import { Alert } from '../components/Alert';
 import { formatTreeLocationForDisplay } from '../pages/trees/location/formatTreeLocationForDisplay';
@@ -18,7 +18,8 @@ type LocationMode = 'viewing' | 'gnss' | 'moving';
  * Ten sam endpoint (PUT .../location) co karta biurowa, takze offline (kolejka).
  */
 export function FieldTreeLocationPanel({ projectId, tree, onTreeChanged, onPendingLocationChanged, pickLocationOnMap,
-                                         stopPickingOnMap, pickedLocation, measurementMode, onMeasurementModeChange }: {
+                                         stopPickingOnMap, pickedLocation, measurementMode, onMeasurementModeChange,
+                                         onMeasuringChange }: {
   projectId: number;
   tree: Tree;
   onTreeChanged: (tree: Tree) => void;
@@ -30,8 +31,14 @@ export function FieldTreeLocationPanel({ projectId, tree, onTreeChanged, onPendi
   pickedLocation: TreeLocation | null;
   measurementMode: MeasurementMode;
   onMeasurementModeChange: (mode: MeasurementMode) => void;
+  /** trwa pomiar GPS - rodzic wstrzymuje wtedy sledzenie pozycji na zywo (patrz FieldProjectPage) */
+  onMeasuringChange: (isMeasuring: boolean) => void;
 }) {
   const [mode, setMode] = useState<LocationMode>('viewing');
+  useEffect(() => {
+    onMeasuringChange(mode === 'gnss');
+    return () => onMeasuringChange(false);
+  }, [mode, onMeasuringChange]);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isSubmissionInProgress = useRef(false);

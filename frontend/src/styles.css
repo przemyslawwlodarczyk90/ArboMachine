@@ -893,6 +893,7 @@ th.right, td.right { text-align: right; }
 .field-sheet-heading { flex: 1; min-width: 0; display: grid; gap: 0.15rem; }
 .field-sheet-heading h2 { margin: 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .field-sheet-heading .tree-marking-list { flex-wrap: nowrap; overflow: hidden; }
+.field-sheet-heading .badge { justify-self: start; }
 .field-sheet-header .btn { min-height: 48px; min-width: 48px; }
 .field-sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem; display: grid; gap: 1rem; align-content: start; }
 .field-sheet-COLLAPSED .field-sheet-body, .field-sheet-COLLAPSED .field-sheet-actions { display: none; }

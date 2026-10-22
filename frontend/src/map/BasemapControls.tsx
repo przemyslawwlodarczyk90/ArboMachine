@@ -6,7 +6,10 @@ import { BASEMAP_OPTIONS, basemapPreferenceStore, type BasemapId } from './basem
  * Wybor podkladu mapy i nakladki dzialek (etap 31) - pod kazda mapa. Wybor jest wspolny dla wszystkich map
  * i zapamietany na urzadzeniu; mapy same go sledza (createMapWithBasemap), wiec komponent niczego mapie nie przekazuje.
  */
-export function BasemapControls() {
+export function BasemapControls({ showsToBeClarifiedNotes = true }: {
+  /** etap 32: w trybie terenowym notatki sa zebrane w jednej zwijanej notatce arkusza "Warstwy" */
+  showsToBeClarifiedNotes?: boolean;
+} = {}) {
   const selection = useSyncExternalStore(basemapPreferenceStore.subscribe, basemapPreferenceStore.getSelection);
   const selectId = useId();
   const unavailableOptions = BASEMAP_OPTIONS.filter((option) => !option.isAvailable);
@@ -29,13 +32,13 @@ export function BasemapControls() {
           <span>Działki ewidencyjne <span className="muted small">(po przybliżeniu)</span></span>
         </label>
       </div>
-      {unavailableOptions.map((option) => (
+      {showsToBeClarifiedNotes && unavailableOptions.map((option) => (
         <ToBeClarifiedNote key={option.id}>{option.toBeClarifiedNote}</ToBeClarifiedNote>
       ))}
-      <ToBeClarifiedNote>
+      {showsToBeClarifiedNotes && <ToBeClarifiedNote>
         Podkłady Geoportalu wymagają internetu (nie są zapisywane offline). Mapa zasadnicza / BDOT10k i własne podkłady
         wektorowe z QGIS - które warstwy są potrzebne w terenie?
-      </ToBeClarifiedNote>
+      </ToBeClarifiedNote>}
     </div>
   );
 }

@@ -57,11 +57,14 @@ export function FieldProjectPage() {
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
   const setTopBarContent = useFieldTopBar();
   const mapData = useProjectMapData(projectId);
-  const { liveStatus, lastReading } = useLivePosition();
+  // Pomiar drzewa wstrzymuje sledzenie na zywo: przy aktywnym watchPosition Chrome potrafi nie oddac nowego
+  // odczytu do getCurrentPosition(maximumAge: 0), gdy pozycja sie nie zmienia (sprawdzone na emulowanej pozycji).
+  const [isMeasuringInSheet, setIsMeasuringInSheet] = useState(false);
+  const [mapInteraction, setMapInteraction] = useState<MapInteraction>('NONE');
+  const { liveStatus, lastReading } = useLivePosition(mapInteraction !== 'MEASURING_NEW_TREE' && !isMeasuringInSheet);
   const [viewMode, setViewMode] = useState<MapViewMode>(() => readFieldMapViewMode(browserStorageOrNull()));
   const [measurementMode, setMeasurementMode] = useState<MeasurementMode>(
     () => (readFieldGnssAveraging(browserStorageOrNull()) ? 'AVERAGED' : 'SINGLE'));
-  const [mapInteraction, setMapInteraction] = useState<MapInteraction>('NONE');
   const [pendingLocation, setPendingLocation] = useState<TreeLocation | null>(null);
   const [newTreeLocation, setNewTreeLocation] = useState<TreeLocation | null>(null);
   const [sheetSize, setSheetSize] = useState<FieldSheetSize>('HALF');
@@ -286,7 +289,7 @@ export function FieldProjectPage() {
                         stopPickingOnMap={stopMapInteraction}
                         pickedLocation={mapInteraction === 'PICKING_TREE_LOCATION' ? pendingLocation : null}
                         measurementMode={measurementMode} onMeasurementModeChange={changeMeasurementMode}
-                        closeSheet={closeSheet} startNextTree={startTreeHere} />
+                        onMeasuringChange={setIsMeasuringInSheet} closeSheet={closeSheet} startNextTree={startTreeHere} />
       )}
 
       {newTreeLocation && (

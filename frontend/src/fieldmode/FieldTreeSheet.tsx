@@ -41,7 +41,7 @@ type SheetTreeState =
 export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, markingByCode, size, onSizeChange,
                                  onTreeChanged, onTreeIdReplaced, onMarkingsSaved, onWorksChanged, onPendingLocationChanged,
                                  pickLocationOnMap, stopPickingOnMap, pickedLocation, measurementMode, onMeasurementModeChange,
-                                 closeSheet, startNextTree }: {
+                                 onMeasuringChange, closeSheet, startNextTree }: {
   projectId: number;
   treeId: number;
   /** drzewo z listy projektu - pokazywane od razu, zanim przyjdzie karta drzewa */
@@ -60,6 +60,7 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
   pickedLocation: TreeLocation | null;
   measurementMode: MeasurementMode;
   onMeasurementModeChange: (mode: MeasurementMode) => void;
+  onMeasuringChange: (isMeasuring: boolean) => void;
   /** zamkniecie i "Nastepne drzewo" - rodzic sam pyta o niezapisane zmiany */
   closeSheet: () => void;
   startNextTree: () => void;
@@ -172,7 +173,8 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
             <FieldTreeLocationPanel key={`location-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree}
                                     onPendingLocationChanged={onPendingLocationChanged} pickLocationOnMap={pickLocationOnMap}
                                     stopPickingOnMap={stopPickingOnMap} pickedLocation={pickedLocation}
-                                    measurementMode={measurementMode} onMeasurementModeChange={onMeasurementModeChange} />
+                                    measurementMode={measurementMode} onMeasurementModeChange={onMeasurementModeChange}
+                                    onMeasuringChange={onMeasuringChange} />
             <button type="button" className="btn btn-ghost" onClick={openFullOfficeCard}>
               Pełna karta (widok biurowy) - waloryzacja i kontrole stanu
             </button>
