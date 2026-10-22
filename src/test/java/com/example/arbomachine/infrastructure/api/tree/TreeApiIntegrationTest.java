@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -610,6 +611,65 @@ class TreeApiIntegrationTest {
         mockMvc.perform(get("/api/projects/{projectId}/trees", projectIdA1).header("Authorization", bearerTokenOf(userAccountA)))
                 .andExpect(jsonPath("$[0].speciesPolish").value("Lipa drobnolistna"))
                 .andExpect(jsonPath("$[0].heightM").value(21.4));
+    }
+
+    // --- etap 32: ochrona danych przy zapisie z panelu terenowego ---
+
+    private static final String FULL_TREE_JSON = "{\"inventoryNumber\":\"15\",\"speciesLatin\":\"Quercus robur\","
+            + "\"speciesPolish\":\"Dab szypulkowy\",\"trunkCircumferenceCm\":314,\"heightM\":18.5,\"crownDiameterM\":12.25,"
+            + "\"notes\":\"Przy lawce\",\"conditionNotes\":\"Posusz w koronie\",\"hazardNotes\":\"Konar nad chodnikiem\"}";
+
+    private long createFullyFilledTreeWithLocationAs(UserAccount userAccount, long projectId) throws Exception {
+        long treeId = readId(postTreeAs(userAccount, projectId, FULL_TREE_JSON).andExpect(status().isCreated()));
+        mockMvc.perform(put("/api/projects/{projectId}/trees/{treeId}/location", projectId, treeId)
+                        .header("Authorization", bearerTokenOf(userAccount)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"latitude\":52.1,\"longitude\":21.0,\"accuracyM\":3.5,\"source\":\"DEVICE_GNSS\"}"))
+                .andExpect(status().isOk());
+        return treeId;
+    }
+
+    @Test
+    void patchWithAllFieldsAndOneChangedFieldKeepsOtherColumnsAndLocation() throws Exception {
+        long treeId = createFullyFilledTreeWithLocationAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                FULL_TREE_JSON.replace("Posusz w koronie", "Posusz i ubytek"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.conditionNotes").value("Posusz i ubytek"));
+
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getConditionNotes()).isEqualTo("Posusz i ubytek");
+        assertThat(storedTree.getInventoryNumber()).isEqualTo("15");
+        assertThat(storedTree.getSpeciesLatin()).isEqualTo("Quercus robur");
+        assertThat(storedTree.getSpeciesPolish()).isEqualTo("Dab szypulkowy");
+        assertThat(storedTree.getTrunkCircumferenceCm()).isEqualTo(314);
+        assertThat(storedTree.getHeightM()).isEqualByComparingTo("18.5");
+        assertThat(storedTree.getCrownDiameterM()).isEqualByComparingTo("12.25");
+        assertThat(storedTree.getNotes()).isEqualTo("Przy lawce");
+        assertThat(storedTree.getHazardNotes()).isEqualTo("Konar nad chodnikiem");
+        assertThat(storedTree.getLocation()).isNotNull();
+        assertThat(storedTree.getLocation().getLatitude()).isEqualByComparingTo("52.1");
+        assertThat(storedTree.getLocation().getAccuracyM()).isEqualByComparingTo("3.5");
+    }
+
+    /** Dokumentuje obecna zasade PATCH (formularze zawsze wysylaja komplet pol) - zmiana tej zasady wymaga decyzji. */
+    @Test
+    void patchClearsOptionalFieldsOmittedFromRequestButKeepsLocation() throws Exception {
+        long treeId = createFullyFilledTreeWithLocationAs(userAccountA, projectIdA1);
+
+        patchTreeAs(userAccountA, projectIdA1, treeId, "{\"inventoryNumber\":\"15\",\"conditionNotes\":\"Posusz w koronie\"}")
+                .andExpect(status().isOk());
+
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getConditionNotes()).isEqualTo("Posusz w koronie");
+        assertThat(storedTree.getSpeciesLatin()).isNull();
+        assertThat(storedTree.getSpeciesPolish()).isNull();
+        assertThat(storedTree.getTrunkCircumferenceCm()).isNull();
+        assertThat(storedTree.getHeightM()).isNull();
+        assertThat(storedTree.getCrownDiameterM()).isNull();
+        assertThat(storedTree.getNotes()).isNull();
+        assertThat(storedTree.getHazardNotes()).isNull();
+        assertThat(storedTree.getLocation()).isNotNull();
     }
 
     // --- brak zalogowania ---

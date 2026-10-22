@@ -273,3 +273,39 @@ test('oznaczenia offline (etap 31): od razu w karcie i liscie projektu, synchron
   await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'SET_TREE_MARKINGS', treeId: 3, body: { codes: [] } });
   assert.deepEqual((await store.readCachedResponse(projectTreeMarkingsPath(PROJECT)) as { treeId: number }[]).map((item) => item.treeId), [800]);
 });
+
+// Etap 32 (ochrona danych przed panelem terenowym): zapis drzewa offline z kompletem pol, w ktorym zmieniono jedno
+// pole, nie gubi pozostalych pol ani lokalizacji w kopii drzewa na urzadzeniu.
+const fullyFilledCachedTree = {
+  id: 3, projectId: PROJECT, inventoryNumber: '15', speciesPolish: 'dąb', speciesLatin: 'Quercus robur', trunkCircumferenceCm: 314,
+  heightM: 18.5, crownDiameterM: 12.25, notes: 'przy ławce', conditionNotes: 'posusz', hazardNotes: 'konar nad chodnikiem',
+  location: { latitude: 52.1, longitude: 21.0, accuracyM: 3, source: 'DEVICE_GNSS' }, mapSymbolCode: null,
+  createdAt: '2026-09-30T10:00:00Z', updatedAt: '2026-09-30T10:00:00Z',
+};
+const editableFieldsOf = (tree: Record<string, unknown>) => {
+  const { inventoryNumber, speciesPolish, speciesLatin, trunkCircumferenceCm, heightM, crownDiameterM, notes, conditionNotes, hazardNotes } = tree;
+  return { inventoryNumber, speciesPolish, speciesLatin, trunkCircumferenceCm, heightM, crownDiameterM, notes, conditionNotes, hazardNotes };
+};
+
+test('offline: zmiana jednego pola drzewa zostawia pozostale pola i lokalizacje w kopii drzewa', async () => {
+  const store = createMemoryOfflineStore();
+  await store.writeCachedResponse(treePath(PROJECT, 3), fullyFilledCachedTree);
+  await store.writeCachedResponse(treesListPath(PROJECT), [fullyFilledCachedTree]);
+  const body = { ...editableFieldsOf(fullyFilledCachedTree), conditionNotes: 'posusz i ubytek' };
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE', treeId: 3, body });
+  for (const cachedTree of [await store.readCachedResponse(treePath(PROJECT, 3)),
+    ((await store.readCachedResponse(treesListPath(PROJECT))) as Record<string, unknown>[])[0]] as Record<string, unknown>[]) {
+    assert.deepEqual(editableFieldsOf(cachedTree), { ...editableFieldsOf(fullyFilledCachedTree), conditionNotes: 'posusz i ubytek' });
+    assert.deepEqual(cachedTree.location, fullyFilledCachedTree.location);
+  }
+});
+
+test('offline: pole pominiete w zapisie jest czyszczone (ta sama zasada co PATCH backendu)', async () => {
+  const store = createMemoryOfflineStore();
+  await store.writeCachedResponse(treePath(PROJECT, 3), fullyFilledCachedTree);
+  const { hazardNotes: _omitted, ...bodyWithoutHazard } = editableFieldsOf(fullyFilledCachedTree);
+  const result = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE', treeId: 3, body: bodyWithoutHazard }) as Record<string, unknown>;
+  assert.equal(result.hazardNotes, null);
+  assert.equal(result.conditionNotes, 'posusz');
+  assert.equal(result.heightM, 18.5);
+});

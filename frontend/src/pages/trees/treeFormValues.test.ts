@@ -52,3 +52,33 @@ test('"niezapisane zmiany": 18,50 wobec zapisanego 18.5 i dopisane spacje nie sa
   assert.ok(areTreeFormValuesEquivalent({ ...savedValues, heightM: '18,50', conditionNotes: ' posusz ' }, savedValues));
   assert.ok(!areTreeFormValuesEquivalent({ ...savedValues, hazardNotes: 'konar' }, savedValues));
 });
+
+// Etap 32 (ochrona danych przed panelem terenowym): zapis wysyla komplet pol, a pominiete pole czysci wartosc
+// na backendzie - zmiana jednego pola nie moze zgubic pozostalych.
+const fullyFilledTree: Tree = {
+  id: 2, projectId: 1, inventoryNumber: '15', speciesPolish: 'dąb szypułkowy', speciesLatin: 'Quercus robur',
+  trunkCircumferenceCm: 314, heightM: 18.5, crownDiameterM: 12.25, notes: 'przy ławce', conditionNotes: 'posusz w koronie',
+  hazardNotes: 'konar nad chodnikiem', createdAt: '2026-09-30T10:00:00Z', updatedAt: '2026-09-30T10:00:00Z',
+};
+
+test('zmiana jednego pola: zadanie zapisu ma pozostale pola z poprzednimi wartosciami', () => {
+  const before = toTreeEditableFieldsRequest(toTreeFormValues(fullyFilledTree));
+  assert.deepEqual(before, {
+    inventoryNumber: '15', speciesLatin: 'Quercus robur', speciesPolish: 'dąb szypułkowy', trunkCircumferenceCm: 314,
+    heightM: 18.5, crownDiameterM: 12.25, notes: 'przy ławce', conditionNotes: 'posusz w koronie', hazardNotes: 'konar nad chodnikiem',
+  });
+  for (const fieldName of Object.keys(emptyTreeFormValues) as (keyof typeof emptyTreeFormValues)[]) {
+    const changedValue = fieldName === 'trunkCircumferenceCm' ? '400' : fieldName === 'heightM' || fieldName === 'crownDiameterM' ? '20' : 'zmiana';
+    const after = toTreeEditableFieldsRequest({ ...toTreeFormValues(fullyFilledTree), [fieldName]: changedValue });
+    for (const otherField of Object.keys(before) as (keyof typeof before)[]) {
+      if (otherField !== fieldName) assert.deepEqual(after[otherField], before[otherField], `${fieldName} -> ${otherField}`);
+    }
+  }
+});
+
+test('wyczyszczenie pola w formularzu = pole pominiete w zadaniu (backend czysci tylko to pole)', () => {
+  const request = toTreeEditableFieldsRequest({ ...toTreeFormValues(fullyFilledTree), hazardNotes: '  ' });
+  assert.equal('hazardNotes' in request && request.hazardNotes !== undefined, false);
+  assert.equal(request.conditionNotes, 'posusz w koronie');
+  assert.equal(request.heightM, 18.5);
+});
