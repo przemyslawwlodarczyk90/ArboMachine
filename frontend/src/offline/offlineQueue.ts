@@ -63,14 +63,23 @@ export interface QueuedChangeDraft {
   workId?: number;
   monitoringRecordId?: number;
   body?: unknown;
+  /** etap 36: identyfikator utworzenia (CREATE_*) - nadawany przez offlineService, jesli go brak */
+  clientRequestId?: string;
 }
+
+/** Etap 36: operacje tworzenia - jedyne, ktore przy ponowieniu moglyby utworzyc duplikat. */
+export const CREATING_CHANGE_KINDS: readonly PendingChangeKind[] = ['CREATE_TREE', 'CREATE_TREE_WORK', 'CREATE_TREE_MONITORING_RECORD'];
+
+/** Sciezka tworzenia z identyfikatorem urzadzenia (bez identyfikatora - bez zmian). */
+const withClientRequestId = (path: string, clientRequestId: string | undefined) =>
+  (clientRequestId ? `${path}?clientRequestId=${encodeURIComponent(clientRequestId)}` : path);
 
 /** Zadanie HTTP zmiany (id juz rozwiazane do id z serwera). */
 export function toPendingChangeRequest(change: PendingChange, treeId: number, workId?: number,
                                        monitoringRecordId?: number): PendingChangeRequest {
   switch (change.kind) {
     case 'CREATE_TREE':
-      return { httpMethod: 'POST', path: treesListPath(change.projectId), body: change.body };
+      return { httpMethod: 'POST', path: withClientRequestId(treesListPath(change.projectId), change.clientRequestId), body: change.body };
     case 'UPDATE_TREE':
       return { httpMethod: 'PATCH', path: treePath(change.projectId, treeId), body: change.body };
     case 'SET_TREE_LOCATION':
@@ -78,7 +87,7 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
     case 'CLEAR_TREE_LOCATION':
       return { httpMethod: 'DELETE', path: `${treePath(change.projectId, treeId)}/location` };
     case 'CREATE_TREE_WORK':
-      return { httpMethod: 'POST', path: treeWorksPath(change.projectId, treeId), body: change.body };
+      return { httpMethod: 'POST', path: withClientRequestId(treeWorksPath(change.projectId, treeId), change.clientRequestId), body: change.body };
     case 'UPDATE_TREE_WORK':
       return { httpMethod: 'PATCH', path: `${treeWorksPath(change.projectId, treeId)}/${workId}`, body: change.body };
     case 'DELETE_TREE_WORK':
@@ -90,7 +99,8 @@ export function toPendingChangeRequest(change: PendingChange, treeId: number, wo
     case 'SET_TREE_MARKINGS':
       return { httpMethod: 'PUT', path: treeMarkingsPath(change.projectId, treeId), body: change.body };
     case 'CREATE_TREE_MONITORING_RECORD':
-      return { httpMethod: 'POST', path: treeMonitoringPath(change.projectId, treeId), body: change.body };
+      return { httpMethod: 'POST', path: withClientRequestId(treeMonitoringPath(change.projectId, treeId), change.clientRequestId),
+        body: change.body };
     case 'UPDATE_TREE_MONITORING_RECORD':
       return { httpMethod: 'PUT', path: `${treeMonitoringPath(change.projectId, treeId)}/${monitoringRecordId}`, body: change.body };
     case 'DELETE_TREE_MONITORING_RECORD':
@@ -292,7 +302,8 @@ export async function queueChange(store: OfflineStore, queuedDraft: QueuedChange
   }
 
   await store.addChange({ ownerEmail: draft.ownerEmail, projectId, kind: draft.kind, treeId, workId,
-    monitoringRecordId: draft.monitoringRecordId, body: draft.body, createdAt: timestamp, failure: null });
+    monitoringRecordId: draft.monitoringRecordId, body: draft.body, createdAt: timestamp, failure: null,
+    ...(draft.clientRequestId ? { clientRequestId: draft.clientRequestId } : {}) });
   return result;
 }
 

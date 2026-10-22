@@ -44,6 +44,11 @@ export interface PendingChange {
   body?: unknown;
   createdAt: string;
   failure?: PendingChangeFailure | null;
+  /**
+   * Etap 36: identyfikator utworzenia (UUID z urzadzenia) dla CREATE_* - wysylany jako ?clientRequestId=, wiec
+   * ponowienie po zerwanej odpowiedzi nie tworzy na serwerze drugiego drzewa, pracy ani kontroli.
+   */
+  clientRequestId?: string;
 }
 
 /** Zadanie HTTP odpowiadajace zmianie (to samo, co wyslalby formularz online). */

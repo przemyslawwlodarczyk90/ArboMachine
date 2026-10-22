@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { createMemoryOfflineStore } from './memoryOfflineStore.ts';
 import {
   describePendingChange, discardChange, isLocalOnlyPath, projectValuationsPath, projectWorksPath, queueChange, syncPendingChanges,
+  toPendingChangeRequest,
   projectLatestMonitoringPath, treeMonitoringPath, treePath, treesListPath, treeValuationPath, treeWorksPath,
   projectTreeMarkingsPath, treeMarkingsPath,
 } from './offlineQueue.ts';
@@ -308,4 +309,39 @@ test('offline: pole pominiete w zapisie jest czyszczone (ta sama zasada co PATCH
   assert.equal(result.hazardNotes, null);
   assert.equal(result.conditionNotes, 'posusz');
   assert.equal(result.heightM, 18.5);
+});
+
+// Etap 36: tworzenie z identyfikatorem urzadzenia - ponowienie po zgubionej odpowiedzi bez duplikatu na serwerze.
+test('CREATE_* wysylane z ?clientRequestId=, inne zmiany bez; brak identyfikatora = zwykla sciezka', async () => {
+  const store = createMemoryOfflineStore();
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE', body: { inventoryNumber: 'N-1' },
+    clientRequestId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' });
+  const [change] = await store.listChanges();
+  assert.equal(change.clientRequestId, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
+  assert.equal(toPendingChangeRequest(change, 0).path, `/api/projects/${PROJECT}/trees?clientRequestId=aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee`);
+  assert.equal(toPendingChangeRequest({ ...change, kind: 'CREATE_TREE_WORK' }, 5).path,
+    `/api/projects/${PROJECT}/trees/5/works?clientRequestId=aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee`);
+  assert.equal(toPendingChangeRequest({ ...change, clientRequestId: undefined }, 0).path, `/api/projects/${PROJECT}/trees`);
+  assert.equal(toPendingChangeRequest({ ...change, kind: 'UPDATE_TREE' }, 5).path, `/api/projects/${PROJECT}/trees/5`);
+});
+
+test('zgubiona odpowiedz przy tworzeniu drzewa: ponowienie z tym samym identyfikatorem daje jedno drzewo i mapowanie id', async () => {
+  const store = createMemoryOfflineStore();
+  const created = await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'CREATE_TREE', body: { inventoryNumber: 'N-1' },
+    clientRequestId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }) as { id: number };
+  const treesByRequestId = new Map<string, number>();
+  let responseLost = true;
+  const send = async (request: PendingChangeRequest) => {
+    const requestId = new URL(`http://x${request.path}`).searchParams.get('clientRequestId') ?? 'brak';
+    if (!treesByRequestId.has(requestId)) treesByRequestId.set(requestId, 500 + treesByRequestId.size);
+    if (responseLost) {
+      responseLost = false;
+      throw Object.assign(new Error('Brak połączenia'), { httpStatus: 0 });
+    }
+    return { id: treesByRequestId.get(requestId), projectId: PROJECT, inventoryNumber: 'N-1', location: null };
+  };
+  assert.equal((await syncPendingChanges(store, OWNER, send)).status, 'offline');
+  assert.equal((await syncPendingChanges(store, OWNER, send)).status, 'completed');
+  assert.equal(treesByRequestId.size, 1, 'serwer ma jedno drzewo');
+  assert.equal(await store.readIdMapping('tree', created.id), 500);
 });

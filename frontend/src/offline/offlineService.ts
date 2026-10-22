@@ -2,7 +2,8 @@ import { ApiRequestError, registerApiReadCache, sendApiRequest } from '../api/ht
 import { createIndexedDbOfflineStore } from './indexedDbOfflineStore';
 import { createMemoryOfflineStore } from './memoryOfflineStore';
 import {
-  discardChange, isLocalOnlyPath, queueChange, syncPendingChanges, toPendingChangeRequest, type QueuedChangeDraft,
+  CREATING_CHANGE_KINDS, discardChange, isLocalOnlyPath, queueChange, syncPendingChanges, toPendingChangeRequest,
+  type QueuedChangeDraft,
 } from './offlineQueue';
 import {
   createClientUploadId, pendingPhotosOfTree, queuePhotoUpload, retryFailedPhotoUpload, syncPendingPhotoUploads,
@@ -129,7 +130,11 @@ export const offlineService = {
    * dla obiektu z tymczasowym id -> zapis na urzadzeniu i synchronizacja pozniej. Bledy walidacji online sa
    * zwracane jak dotad (formularz pokazuje je przy polach).
    */
-  async mutate<T>(draft: Omit<QueuedChangeDraft, 'ownerEmail'>): Promise<T> {
+  async mutate<T>(requestedDraft: Omit<QueuedChangeDraft, 'ownerEmail'>): Promise<T> {
+    // Etap 36: tworzenie zawsze z identyfikatorem urzadzenia - ten sam przy wysylce online i z kolejki, wiec zerwana
+    // odpowiedz i ponowienie nie tworza duplikatu na serwerze.
+    const draft = CREATING_CHANGE_KINDS.includes(requestedDraft.kind) && !requestedDraft.clientRequestId
+      ? { ...requestedDraft, clientRequestId: createClientUploadId() } : requestedDraft;
     const change: PendingChange = { ...draft, ownerEmail: currentUserEmail ?? '', treeId: draft.treeId ?? 0, createdAt: '' };
     const sendOnline = () => {
       const request = toPendingChangeRequest(change, change.treeId, change.workId, change.monitoringRecordId);
