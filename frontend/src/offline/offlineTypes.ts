@@ -80,6 +80,20 @@ export interface PendingPhotoUpload {
   failure?: PendingChangeFailure | null;
 }
 
+/**
+ * Etap 40: tresc wczesniej wyslanego zdjecia zapisana do podgladu bez zasiegu (klucz: projekt/drzewo/zdjecie/rodzaj).
+ * Kasowana przy wylogowaniu jak kopie odczytow i automatycznie po przekroczeniu limitu (najstarsze pierwsze).
+ */
+export interface CachedPhotoContent {
+  key: string;
+  projectId: number;
+  contentVersion: string | null;
+  sizeBytes: number;
+  /** czas zapisu na urzadzeniu (ISO) - kolejnosc usuwania po przekroczeniu limitu */
+  storedAt: string;
+  blob: Blob;
+}
+
 /** Magazyn danych offline: kopie odpowiedzi GET, kolejka zmian, mapowanie tymczasowych id na id z serwera. */
 export interface OfflineStore {
   readCachedResponse(path: string): Promise<unknown | undefined>;
@@ -95,4 +109,11 @@ export interface OfflineStore {
   listPhotoUploads(): Promise<PendingPhotoUpload[]>;
   putPhotoUpload(photo: PendingPhotoUpload): Promise<void>;
   removePhotoUpload(clientUploadId: string): Promise<void>;
+  /** etap 40: zdjecia zapisane do podgladu bez zasiegu */
+  readPhotoContent(key: string): Promise<CachedPhotoContent | undefined>;
+  putPhotoContent(content: CachedPhotoContent): Promise<void>;
+  /** bez tresci (Blob) - do liczenia zajetego miejsca */
+  listPhotoContentInfos(): Promise<Omit<CachedPhotoContent, 'blob'>[]>;
+  removePhotoContents(keys: string[]): Promise<void>;
+  clearPhotoContents(): Promise<void>;
 }

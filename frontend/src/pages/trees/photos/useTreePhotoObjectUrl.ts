@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { offlineService } from '../../../offline/offlineService';
+import { photoContentCacheKey } from '../../../offline/photoContentCache';
 import { treePhotosApi } from './treePhotosApi';
 
 export type TreePhotoObjectUrlState =
@@ -13,6 +15,8 @@ export type TreePhotoContentKind = 'original' | 'documentation';
  * Pobiera tresc zdjecia (z tokenem) i wystawia ja jako lokalny adres blob: do <img>. Adres jest zwalniany
  * (URL.revokeObjectURL) przy odmontowaniu albo zmianie zdjecia - bez wyciekow pamieci na tablecie.
  * contentVersion (np. data ostatniej adnotacji) wymusza ponowne pobranie po zmianie tresci.
+ * Etap 40: pobrane zdjecie zostaje na urzadzeniu - ta sama wersja bez ponownego pobierania, bez zasiegu podglad
+ * z ostatniej zapisanej wersji.
  */
 export function useTreePhotoObjectUrl(projectId: number, treeId: number, photoId: number,
                                       contentKind: TreePhotoContentKind = 'original',
@@ -26,7 +30,9 @@ export function useTreePhotoObjectUrl(projectId: number, treeId: number, photoId
     const loadContent = contentKind === 'documentation'
       ? treePhotosApi.getTreePhotoDocumentationContent
       : treePhotosApi.getTreePhotoContent;
-    loadContent(projectId, treeId, photoId)
+    offlineService.loadPhotoContent(
+      { key: photoContentCacheKey(projectId, treeId, photoId, contentKind), projectId, contentVersion },
+      () => loadContent(projectId, treeId, photoId))
       .then((photoBlob) => {
         if (!isResponseStillWanted) return;
         createdObjectUrl = URL.createObjectURL(photoBlob);

@@ -10,6 +10,7 @@ import {
   type PhotoFileLike,
 } from './offlinePhotoQueue';
 import type { OfflineStore, PendingChange, PendingPhotoUpload } from './offlineTypes';
+import { readThroughPhotoContent, type PhotoContentRequest } from './photoContentCache';
 
 // Praca offline w przegladarce (etap 26). Jeden obiekt na aplikacje: stan polaczenia, kolejka zmian zalogowanego
 // konta, synchronizacja i kopie odczytow podpiete do httpClient. Logika kolejki jest w offlineQueue (testy).
@@ -116,9 +117,16 @@ export const offlineService = {
 
   getState: () => state,
 
-  /** AuthenticationContext: zalogowane konto (null = wylogowanie - kopie odczytow sa kasowane, kolejka zostaje). */
+  /**
+   * AuthenticationContext: zalogowane konto (null = wylogowanie - kopie odczytow i zdjecia do podgladu sa kasowane,
+   * kolejka zostaje).
+   */
   async setCurrentUser(email: string | null) {
-    if (email === null && currentUserEmail !== null) await (await store()).clearCachedResponses();
+    if (email === null && currentUserEmail !== null) {
+      const offlineStore = await store();
+      await offlineStore.clearCachedResponses();
+      await offlineStore.clearPhotoContents();
+    }
     currentUserEmail = email;
     setState({ syncStatus: 'idle', lastSyncedCount: 0 });
     await refreshPendingState();
@@ -250,6 +258,15 @@ export const offlineService = {
     await retryFailedPhotoUpload(await store(), clientUploadId);
     await refreshPendingState();
     scheduleSync();
+  },
+
+  /**
+   * Etap 40: tresc wczesniej wyslanego zdjecia - z urzadzenia (ta sama wersja albo brak polaczenia) albo z serwera
+   * (loadFromServer) z zapisem do podgladu bez zasiegu. Niezalogowany - zawsze z serwera, bez zapisu.
+   */
+  async loadPhotoContent(request: PhotoContentRequest, loadFromServer: () => Promise<Blob>): Promise<Blob> {
+    if (!currentUserEmail) return loadFromServer();
+    return readThroughPhotoContent(await store(), request, loadFromServer);
   },
 
   /** Id z serwera dla drzewa utworzonego offline (po synchronizacji) - karta drzewa przechodzi na nowy adres. */

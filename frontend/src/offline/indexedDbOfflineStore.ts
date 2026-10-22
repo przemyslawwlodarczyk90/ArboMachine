@@ -1,12 +1,13 @@
-import type { IdMappingEntity, OfflineStore, PendingChange, PendingPhotoUpload } from './offlineTypes';
+import type { CachedPhotoContent, IdMappingEntity, OfflineStore, PendingChange, PendingPhotoUpload } from './offlineTypes';
 
 const DATABASE_NAME = 'arbomachine-offline';
-/** 2 = etap 33: magazyn zdjec czekajacych na wyslanie. */
-const DATABASE_VERSION = 2;
+/** 2 = etap 33: magazyn zdjec czekajacych na wyslanie; 3 = etap 40: zdjecia do podgladu bez zasiegu. */
+const DATABASE_VERSION = 3;
 const RESPONSES = 'responses';
 const CHANGES = 'pendingChanges';
 const ID_MAPPINGS = 'idMappings';
 const PHOTO_UPLOADS = 'photoUploads';
+const PHOTO_CONTENTS = 'photoContents';
 
 const requestResult = <T>(request: IDBRequest<T>) => new Promise<T>((resolve, reject) => {
   request.onsuccess = () => resolve(request.result);
@@ -22,6 +23,7 @@ function openDatabase(): Promise<IDBDatabase> {
       if (!database.objectStoreNames.contains(CHANGES)) database.createObjectStore(CHANGES, { keyPath: 'id', autoIncrement: true });
       if (!database.objectStoreNames.contains(ID_MAPPINGS)) database.createObjectStore(ID_MAPPINGS);
       if (!database.objectStoreNames.contains(PHOTO_UPLOADS)) database.createObjectStore(PHOTO_UPLOADS, { keyPath: 'clientUploadId' });
+      if (!database.objectStoreNames.contains(PHOTO_CONTENTS)) database.createObjectStore(PHOTO_CONTENTS, { keyPath: 'key' });
     };
     openRequest.onsuccess = () => resolve(openRequest.result);
     openRequest.onerror = () => reject(openRequest.error);
@@ -30,7 +32,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
 /**
  * Magazyn offline w IndexedDB przegladarki (etap 26): kopie odpowiedzi GET (klucz = sciezka API), kolejka zmian
- * (autoIncrement = kolejnosc FIFO), mapowanie tymczasowych id i (etap 33) zdjecia jako Blob do czasu wyslania. Dane zostaja na urzadzeniu po zamknieciu karty;
+ * (autoIncrement = kolejnosc FIFO), mapowanie tymczasowych id, (etap 33) zdjecia jako Blob do czasu wyslania i (etap 40) zdjecia do podgladu bez zasiegu. Dane zostaja na urzadzeniu po zamknieciu karty;
  * kopie odczytow sa czyszczone przy wylogowaniu (dane klientow na wspoldzielonym tablecie).
  */
 export async function createIndexedDbOfflineStore(): Promise<OfflineStore> {
@@ -58,5 +60,19 @@ export async function createIndexedDbOfflineStore(): Promise<OfflineStore> {
       .sort((first, second) => first.capturedAt.localeCompare(second.capturedAt)),
     putPhotoUpload: async (photo) => { await run(PHOTO_UPLOADS, 'readwrite', (store) => store.put(photo)); },
     removePhotoUpload: async (clientUploadId) => { await run(PHOTO_UPLOADS, 'readwrite', (store) => store.delete(clientUploadId)); },
+    readPhotoContent: (key) => run<CachedPhotoContent | undefined>(PHOTO_CONTENTS, 'readonly', (store) => store.get(key)),
+    putPhotoContent: async (content) => { await run(PHOTO_CONTENTS, 'readwrite', (store) => store.put(content)); },
+    // getAll zwraca Blob jako uchwyt (tresc nie jest wczytywana do pamieci) - wystarczy do policzenia rozmiarow.
+    listPhotoContentInfos: async () => (await run<CachedPhotoContent[]>(PHOTO_CONTENTS, 'readonly', (store) => store.getAll()))
+      .map(({ blob: _blob, ...info }) => info),
+    removePhotoContents: async (keys) => {
+      const transaction = database.transaction(PHOTO_CONTENTS, 'readwrite');
+      keys.forEach((key) => transaction.objectStore(PHOTO_CONTENTS).delete(key));
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    },
+    clearPhotoContents: async () => { await run(PHOTO_CONTENTS, 'readwrite', (store) => store.clear()); },
   };
 }
