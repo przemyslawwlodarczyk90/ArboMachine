@@ -1,3 +1,4 @@
+Aktualna, zbiorcza wersja: KONSPEKTY NOWE/02-DO-DOPRECYZOWANIA.md. Ten plik zostaje jako historia etapów 1–32.
 # Do doprecyzowania
 
 **Zasada od etapu 17:** brak potwierdzenia przez arborystę nie zatrzymuje developmentu. Elementy łatwe do zmiany
