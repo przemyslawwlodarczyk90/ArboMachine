@@ -193,7 +193,12 @@ export const offlineService = {
   /** Ponowna proba po bledzie (np. po poprawieniu danych na serwerze albo chwilowym bledzie 5xx). */
   async retryFailedChange() {
     const failed = state.failedChange;
-    if (failed) await (await store()).updateChange({ ...failed, failure: null });
+    // Etap 37: ponowienie po konflikcie (409) = swiadome nadpisanie zmian z innego urzadzenia (bez wersji danych).
+    const body = failed?.body as Record<string, unknown> | undefined;
+    const retriedChange = failed && failed.failure?.httpStatus === 409 && failed.kind === 'UPDATE_TREE' && body
+      ? { ...failed, body: Object.fromEntries(Object.entries(body).filter(([field]) => field !== 'expectedDataVersion')) }
+      : failed;
+    if (retriedChange) await (await store()).updateChange({ ...retriedChange, failure: null });
     setState({ syncStatus: 'idle' });
     await refreshPendingState();
     await offlineService.syncNow();

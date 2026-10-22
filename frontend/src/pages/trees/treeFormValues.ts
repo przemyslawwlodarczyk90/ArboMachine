@@ -76,6 +76,16 @@ export const toTreeEditableFieldsRequest = (formValues: TreeFormValues): TreeEdi
   hazardNotes: trimmedOrUndefined(formValues.hazardNotes),
 });
 
+/**
+ * Etap 37: request zapisu formularza z wersja danych, ktora widzial formularz (wykrycie zmiany z innego urzadzenia).
+ * overwrite = "Zapisz mimo to" - bez wersji, swiadome nadpisanie. Drzewo bez wersji (utworzone offline) - bez wersji.
+ */
+export const toTreeUpdateRequest = (formValues: TreeFormValues, savedTree: { dataVersion?: number }, overwrite = false):
+  TreeEditableFieldsRequest => ({
+  ...toTreeEditableFieldsRequest(formValues),
+  ...(!overwrite && savedTree.dataVersion !== undefined ? { expectedDataVersion: savedTree.dataVersion } : {}),
+});
+
 /** Czy dwa stany formularza daja ten sam request (np. dopisanie samych spacji albo 18.50 zamiast 18.5 nie jest zmiana). */
 export const areTreeFormValuesEquivalent = (firstFormValues: TreeFormValues, secondFormValues: TreeFormValues) =>
   JSON.stringify(toTreeEditableFieldsRequest(firstFormValues)) === JSON.stringify(toTreeEditableFieldsRequest(secondFormValues));

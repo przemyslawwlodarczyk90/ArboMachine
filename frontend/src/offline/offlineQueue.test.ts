@@ -7,7 +7,7 @@ import {
   projectLatestMonitoringPath, treeMonitoringPath, treePath, treesListPath, treeValuationPath, treeWorksPath,
   projectTreeMarkingsPath, treeMarkingsPath,
 } from './offlineQueue.ts';
-import type { PendingChangeRequest } from './offlineTypes.ts';
+import type { PendingChange, PendingChangeRequest } from './offlineTypes.ts';
 
 // Uruchamianie: npm test (node --test). Magazyn w pamieci zamiast IndexedDB i falszywy serwer zamiast fetch.
 
@@ -344,4 +344,39 @@ test('zgubiona odpowiedz przy tworzeniu drzewa: ponowienie z tym samym identyfik
   assert.equal((await syncPendingChanges(store, OWNER, send)).status, 'completed');
   assert.equal(treesByRequestId.size, 1, 'serwer ma jedno drzewo');
   assert.equal(await store.readIdMapping('tree', created.id), 500);
+});
+
+// Etap 37: wersja danych drzewa w kolejce offline.
+function versionedTreeServer(startVersion: number) {
+  let dataVersion = startVersion;
+  const send = async (request: PendingChangeRequest) => {
+    const body = (request.body ?? {}) as { expectedDataVersion?: number };
+    if (body.expectedDataVersion !== undefined && body.expectedDataVersion !== dataVersion) {
+      throw Object.assign(new Error('Tree data was changed in the meantime'), { httpStatus: 409 });
+    }
+    dataVersion++;
+    return { id: 3, projectId: PROJECT, ...body, dataVersion };
+  };
+  return { send, version: () => dataVersion };
+}
+
+test('dwie zmiany offline tego samego drzewa: druga dostaje wersje z odpowiedzi na pierwsza - bez falszywego konfliktu', async () => {
+  const store = createMemoryOfflineStore();
+  await store.writeCachedResponse(treePath(PROJECT, 3), { ...fullyFilledCachedTree, dataVersion: 4 });
+  for (const notes of ['pierwsza', 'druga']) {
+    await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE', treeId: 3,
+      body: { ...editableFieldsOf(fullyFilledCachedTree), notes, expectedDataVersion: 4 } });
+  }
+  const server = versionedTreeServer(4);
+  assert.equal((await syncPendingChanges(store, OWNER, server.send)).status, 'completed');
+  assert.equal(server.version(), 6);
+});
+
+test('zmiana z innego urzadzenia w miedzyczasie: pierwsza zmiana offline konczy sie konfliktem 409 i czeka na decyzje', async () => {
+  const store = createMemoryOfflineStore();
+  await queueChange(store, { ownerEmail: OWNER, projectId: PROJECT, kind: 'UPDATE_TREE', treeId: 3,
+    body: { ...editableFieldsOf(fullyFilledCachedTree), notes: 'offline', expectedDataVersion: 4 } });
+  const outcome = await syncPendingChanges(store, OWNER, versionedTreeServer(5).send);
+  assert.equal(outcome.status, 'failed');
+  assert.equal((outcome as { failedChange: PendingChange }).failedChange.failure?.httpStatus, 409);
 });

@@ -25,6 +25,8 @@ export interface Tree {
   mapSymbolCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** etap 37: wersja danych drzewa (pol formularza) - odsylana przy zapisie, zeby wykryc zmiane z innego urzadzenia */
+  dataVersion?: number;
   /** tylko frontend (etap 26): zapisane na urzadzeniu, czeka na synchronizacje; id < 0 = drzewo utworzone offline */
   offlinePending?: boolean;
 }
@@ -78,6 +80,8 @@ export interface TreeEditableFieldsRequest {
   notes?: string;
   conditionNotes?: string;
   hazardNotes?: string;
+  /** etap 37: wersja danych, ktora widzial formularz - inna na serwerze = 409 (pominieta = zapis bez sprawdzania) */
+  expectedDataVersion?: number;
 }
 
 /** Body POST /api/projects/{projectId}/trees. */

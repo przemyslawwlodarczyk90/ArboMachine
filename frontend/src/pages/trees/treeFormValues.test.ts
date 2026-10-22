@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Tree, TreeEditableFieldsRequest } from './treeDataTypes';
 import {
-  areTreeFormValuesEquivalent, emptyTreeFormValues, toTreeEditableFieldsRequest, toTreeFormValues, validateTreeFormValues,
+  areTreeFormValuesEquivalent, emptyTreeFormValues, toTreeEditableFieldsRequest, toTreeFormValues, toTreeUpdateRequest,
+  validateTreeFormValues,
 } from './treeFormValues.ts';
 
 // Uruchamianie: npm test (node --test, bez dodatkowych zaleznosci). Logika formularza terenowego drzewa.
@@ -71,7 +72,7 @@ test('zmiana jednego pola: zadanie zapisu ma pozostale pola z poprzednimi wartos
     const changedValue = fieldName === 'trunkCircumferenceCm' ? '400' : fieldName === 'heightM' || fieldName === 'crownDiameterM' ? '20' : 'zmiana';
     const after = toTreeEditableFieldsRequest({ ...toTreeFormValues(fullyFilledTree), [fieldName]: changedValue });
     for (const otherField of Object.keys(before) as (keyof TreeEditableFieldsRequest)[]) {
-      if (otherField !== fieldName) assert.deepEqual(after[otherField], before[otherField], `${fieldName} -> ${otherField}`);
+      if (otherField !== fieldName) assert.deepEqual(after[otherField], (before as TreeEditableFieldsRequest)[otherField], `${fieldName} -> ${otherField}`);
     }
   }
 });
@@ -81,4 +82,12 @@ test('wyczyszczenie pola w formularzu = pole pominiete w zadaniu (backend czysci
   assert.equal('hazardNotes' in request && request.hazardNotes !== undefined, false);
   assert.equal(request.conditionNotes, 'posusz w koronie');
   assert.equal(request.heightM, 18.5);
+});
+
+test('etap 37: zapis z wersja danych, ktora widzial formularz; "Zapisz mimo to" i drzewo offline - bez wersji', () => {
+  const formValues = toTreeFormValues(fullyFilledTree);
+  assert.equal(toTreeUpdateRequest(formValues, { dataVersion: 3 }).expectedDataVersion, 3);
+  assert.equal('expectedDataVersion' in toTreeUpdateRequest(formValues, { dataVersion: 3 }, true), false);
+  assert.equal('expectedDataVersion' in toTreeUpdateRequest(formValues, {}), false);
+  assert.equal(toTreeUpdateRequest(formValues, { dataVersion: 0 }).expectedDataVersion, 0);
 });

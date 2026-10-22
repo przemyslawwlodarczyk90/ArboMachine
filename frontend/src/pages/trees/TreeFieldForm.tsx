@@ -5,8 +5,7 @@ import { LabeledInputField } from '../../components/LabeledInputField';
 import { VoiceEnabledTextAreaField } from '../../speech/VoiceEnabledTextAreaField';
 import type { Tree } from './treeDataTypes';
 import {
-  areTreeFormValuesEquivalent, toTreeEditableFieldsRequest, toTreeFormValues, validateTreeFormValues,
-  type TreeFormValues,
+  areTreeFormValuesEquivalent, toTreeFormValues, toTreeUpdateRequest, validateTreeFormValues, type TreeFormValues,
 } from './treeFormValues';
 import { treesApi } from './treesApi';
 import { unsavedChangesStore } from '../../fieldmode/unsavedChangesStore';
@@ -40,6 +39,8 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [wasJustSaved, setWasJustSaved] = useState(false);
+  // Etap 37: dane drzewa zmieniono w miedzyczasie na innym urzadzeniu - zapis wstrzymany do decyzji uzytkownika.
+  const [hasEditConflict, setHasEditConflict] = useState(false);
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isSubmissionInProgress = useRef(false);
 
@@ -89,11 +90,15 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     await saveTreeChanges();
   };
 
-  /** Zapis formularza; true = zapisano (takze na urzadzeniu offline), false = blad walidacji / zapisu albo zapis w toku. */
-  const saveTreeChanges = async (): Promise<boolean> => {
+  /**
+   * Zapis formularza; true = zapisano (takze na urzadzeniu offline), false = blad walidacji / zapisu, konflikt albo
+   * zapis w toku. overwrite (etap 37) = "Zapisz mimo to" po konflikcie.
+   */
+  const saveTreeChanges = async (overwrite = false): Promise<boolean> => {
     if (isSubmissionInProgress.current) return false;
     setFormErrorMessage(null);
     setWasJustSaved(false);
+    setHasEditConflict(false);
 
     const clientSideErrors = validateTreeFormValues(treeFormValues);
     setErrorMessageByFieldName(clientSideErrors);
@@ -106,14 +111,16 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     setIsSaving(true);
     try {
       const updatedTree = await treesApi.updateTreeOfProject(projectId, savedTree.id,
-        toTreeEditableFieldsRequest(treeFormValues));
+        toTreeUpdateRequest(treeFormValues, savedTree, overwrite));
       // Odpowiedz backendu jest zrodlem prawdy (np. 18.50 zamiast wpisanego 18,5; przyciete spacje).
       setTreeFormValues(toTreeFormValues(updatedTree));
       onTreeSaved(updatedTree);
       setWasJustSaved(true);
       return true;
     } catch (savingError) {
-      if (savingError instanceof ApiRequestError) {
+      if (savingError instanceof ApiRequestError && savingError.httpStatus === 409) {
+        setHasEditConflict(true);
+      } else if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
         setFormErrorMessage(`Nie udało się zapisać zmian. ${savingError.message}`);
       } else {
@@ -126,13 +133,40 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     }
   };
 
-  saveTreeChangesRef.current = saveTreeChanges;
+  saveTreeChangesRef.current = () => saveTreeChanges();
+
+  // Etap 37: po konflikcie - wczytanie danych z serwera (wpisane zmiany przepadaja) zamiast nadpisania.
+  const loadCurrentTreeData = async () => {
+    try {
+      const currentTree = await treesApi.getTreeOfProject(projectId, savedTree.id);
+      setTreeFormValues(toTreeFormValues(currentTree));
+      setHasEditConflict(false);
+      onTreeSaved(currentTree);
+    } catch {
+      setFormErrorMessage('Nie udało się pobrać aktualnych danych drzewa.');
+    }
+  };
   discardChangesRef.current = discardChanges;
 
   return (
     <form onSubmit={submitTreeChanges} className="form tree-field-form" noValidate aria-labelledby="tree-data-heading">
       <h3 id="tree-data-heading">Dane drzewa</h3>
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
+      {hasEditConflict && (
+        <div className="stack" role="alert">
+          <Alert variant="error">
+            Dane tego drzewa zmieniono w międzyczasie (np. na innym urządzeniu). Twoje zmiany nie zostały zapisane.
+          </Alert>
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => void loadCurrentTreeData()}>
+              Wczytaj aktualne dane (moje zmiany przepadną)
+            </button>
+            <button type="button" className="btn btn-danger-outline" onClick={() => void saveTreeChanges(true)}>
+              Zapisz mimo to (nadpisz tamte zmiany)
+            </button>
+          </div>
+        </div>
+      )}
 
       <TreeFieldFormSection title="Identyfikacja">
         <LabeledInputField label="Numer drzewa *" maxLength={100} autoComplete="off"

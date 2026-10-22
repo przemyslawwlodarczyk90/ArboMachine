@@ -37,7 +37,9 @@ export function OfflineStatusBar({ isCompact = false }: {
       <div className="offline-status-bar offline-status-error" role="alert">
         <span>
           Nie udało się zsynchronizować zmiany: <strong>{describePendingChange(failedChange)}</strong>
-          {failedChange.failure?.message ? ` - ${failedChange.failure.message.replace(/\.+$/, '')}` : ''}.
+          {failedChange.failure?.httpStatus === 409
+            ? ' - dane drzewa zmieniono w międzyczasie na innym urządzeniu. „Spróbuj ponownie” nadpisze tamte zmiany, „Pomiń tę zmianę” je zostawi'
+            : failedChange.failure?.message ? ` - ${failedChange.failure.message.replace(/\.+$/, '')}` : ''}.
           {' '}Na urządzeniu czeka: {changesLabel(pendingChangeCount)} (razem z tą).
         </span>
         <span className="offline-status-actions">

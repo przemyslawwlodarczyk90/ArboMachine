@@ -335,7 +335,11 @@ async function resolveId(store: OfflineStore, entity: IdMappingEntity, id: numbe
 export async function syncPendingChanges(store: OfflineStore, ownerEmail: string, send: PendingChangeSender): Promise<SyncOutcome> {
   let syncedCount = 0;
   const changes = (await store.listChanges()).filter((change) => change.ownerEmail === ownerEmail);
-  for (const change of changes) {
+  for (const listedChange of changes) {
+    // Etap 37: zmiana danych drzewa mogla dostac nowa oczekiwana wersje po wczesniejszej zmianie w tej synchronizacji.
+    const change = listedChange.kind === 'UPDATE_TREE'
+      ? (await store.listChanges()).find((stored) => stored.id === listedChange.id) ?? listedChange
+      : listedChange;
     const treeId = await resolveId(store, 'tree', change.treeId);
     const workId = await resolveId(store, 'work', change.workId);
     const monitoringRecordId = await resolveId(store, 'monitoring', change.monitoringRecordId);
@@ -357,9 +361,28 @@ export async function syncPendingChanges(store: OfflineStore, ownerEmail: string
     }
     await applyServerResponse(store, change, response);
     await store.removeChange(change.id!);
+    await refreshQueuedDataVersions(store, change, response);
     syncedCount++;
   }
   return { status: 'completed', syncedCount };
+}
+
+/**
+ * Etap 37: po zapisie drzewa serwer zwraca nowa wersje danych - kolejne zmiany danych TEGO drzewa w kolejce (zrobione
+ * na tym urzadzeniu po pierwszej) dostaja ja jako oczekiwana, zeby wlasna wczesniejsza zmiana nie wygladala na konflikt.
+ * Pierwsza zmiana w kolejce zostaje z wersja, ktora widzial formularz - wtedy zmiana z innego urzadzenia daje 409.
+ */
+async function refreshQueuedDataVersions(store: OfflineStore, sentChange: PendingChange, response: unknown) {
+  if (typeof response !== 'object' || response === null) return;
+  const { id: serverTreeId, dataVersion } = response as { id?: unknown; dataVersion?: unknown };
+  if (typeof dataVersion !== 'number' || typeof serverTreeId !== 'number') return;
+  if (!['CREATE_TREE', 'UPDATE_TREE', 'SET_TREE_LOCATION', 'CLEAR_TREE_LOCATION'].includes(sentChange.kind)) return;
+  for (const queued of await store.listChanges()) {
+    const isSameTree = queued.treeId === sentChange.treeId || queued.treeId === serverTreeId;
+    const body = queued.body as Record<string, unknown> | undefined;
+    if (queued.kind !== 'UPDATE_TREE' || !isSameTree || !body || !('expectedDataVersion' in body)) continue;
+    await store.updateChange({ ...queued, body: { ...body, expectedDataVersion: dataVersion } });
+  }
 }
 
 async function applyServerResponse(store: OfflineStore, change: PendingChange, response: unknown) {
