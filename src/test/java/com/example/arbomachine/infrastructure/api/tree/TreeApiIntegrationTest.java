@@ -672,6 +672,49 @@ class TreeApiIntegrationTest {
         assertThat(storedTree.getLocation()).isNotNull();
     }
 
+    // --- etap 37: konflikt edycji (wersja danych drzewa) ---
+
+    private long dataVersionOf(ResultActions resultActions) throws Exception {
+        return objectMapper.readTree(resultActions.andReturn().getResponse().getContentAsString()).get("dataVersion").asLong();
+    }
+
+    @Test
+    void dataVersionGrowsOnFormChangeButNotOnLocationOrUnchangedSave() throws Exception {
+        long treeId = createFullyFilledTreeWithLocationAs(userAccountA, projectIdA1);
+        long afterCreate = dataVersionOf(mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}", projectIdA1, treeId)
+                .header("Authorization", bearerTokenOf(userAccountA))));
+        assertThat(afterCreate).as("lokalizacja nie zmienia wersji danych").isZero();
+
+        long afterEdit = dataVersionOf(patchTreeAs(userAccountA, projectIdA1, treeId,
+                FULL_TREE_JSON.replace("}", ",\"expectedDataVersion\":0}").replace("Przy lawce", "Przy fontannie"))
+                .andExpect(status().isOk()));
+        assertThat(afterEdit).isEqualTo(1);
+        long afterSameSave = dataVersionOf(patchTreeAs(userAccountA, projectIdA1, treeId,
+                FULL_TREE_JSON.replace("Przy lawce", "Przy fontannie")).andExpect(status().isOk()));
+        assertThat(afterSameSave).as("zapis bez zmian").isEqualTo(1);
+    }
+
+    @Test
+    void staleDataVersionIsRejectedWith409AndKeepsOtherDevicesChanges() throws Exception {
+        long treeId = createFullyFilledTreeWithLocationAs(userAccountA, projectIdA1);
+        // Urzadzenie 1 zapisuje zmiane (wersja 0 -> 1).
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                FULL_TREE_JSON.replace("}", ",\"expectedDataVersion\":0}").replace("Posusz w koronie", "Posusz i ubytek"))
+                .andExpect(status().isOk());
+        // Urzadzenie 2 widzialo wersje 0 i zmienia inne pole - konflikt, bez nadpisania.
+        patchTreeAs(userAccountA, projectIdA1, treeId,
+                FULL_TREE_JSON.replace("}", ",\"expectedDataVersion\":0}").replace("Przy lawce", "Przy fontannie"))
+                .andExpect(status().isConflict());
+        Tree storedTree = treeRepository.findById(treeId).orElseThrow();
+        assertThat(storedTree.getConditionNotes()).isEqualTo("Posusz i ubytek");
+        assertThat(storedTree.getNotes()).isEqualTo("Przy lawce");
+
+        // "Zapisz mimo to" (bez wersji) nadpisuje swiadomie - jak przed etapem 37.
+        patchTreeAs(userAccountA, projectIdA1, treeId, FULL_TREE_JSON.replace("Przy lawce", "Przy fontannie"))
+                .andExpect(status().isOk());
+        assertThat(treeRepository.findById(treeId).orElseThrow().getNotes()).isEqualTo("Przy fontannie");
+    }
+
     // --- brak zalogowania ---
 
     @Test

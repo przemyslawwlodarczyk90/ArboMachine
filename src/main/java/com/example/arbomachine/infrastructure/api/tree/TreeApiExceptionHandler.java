@@ -1,6 +1,7 @@
 package com.example.arbomachine.infrastructure.api.tree;
 
 import com.example.arbomachine.domain.project.exception.ProjectNotFoundException;
+import com.example.arbomachine.domain.tree.exception.TreeDataVersionConflictException;
 import com.example.arbomachine.domain.tree.exception.TreeNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,12 @@ public class TreeApiExceptionHandler {
     @ExceptionHandler(ProjectNotFoundException.class)
     public ResponseEntity<String> handleProjectNotFound(ProjectNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    }
+
+    /** Etap 37: dane drzewa zmieniono w miedzyczasie - 409 z aktualna wersja (frontend proponuje "Zapisz mimo to"). */
+    @ExceptionHandler(TreeDataVersionConflictException.class)
+    public ResponseEntity<String> handleDataVersionConflict(TreeDataVersionConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
     }
 
     @ExceptionHandler(TreeNotFoundException.class)

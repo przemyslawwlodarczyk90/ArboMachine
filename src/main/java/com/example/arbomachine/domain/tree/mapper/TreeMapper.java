@@ -26,7 +26,8 @@ public class TreeMapper {
                 toTreeLocationResponseOrNull(tree.getLocation()),
                 tree.getMapSymbolCode(),
                 tree.getCreatedAt(),
-                tree.getUpdatedAt()
+                tree.getUpdatedAt(),
+                tree.getDataVersion()
         );
     }
 

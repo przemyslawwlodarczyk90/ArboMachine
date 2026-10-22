@@ -3,6 +3,7 @@ package com.example.arbomachine.domain.tree.service.treefacade;
 import com.example.arbomachine.domain.tree.dto.TreeResponse;
 import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
 import com.example.arbomachine.domain.tree.entity.Tree;
+import com.example.arbomachine.domain.tree.exception.TreeDataVersionConflictException;
 import com.example.arbomachine.domain.tree.entity.TreeEditableAttributes;
 import com.example.arbomachine.domain.tree.mapper.TreeMapper;
 import com.example.arbomachine.infrastructure.repository.TreeRepository;
@@ -37,6 +38,11 @@ public class UpdateTreeHandler {
         TreeEditableAttributes newAttributes = TreeEditableAttributesNormalizer.normalizedAttributesOf(updateTreeRequest);
         if (newAttributes.equals(treeInOwnedProject.editableAttributes())) {
             return treeMapper.toTreeResponse(treeInOwnedProject);
+        }
+        // Etap 37: formularz widzial starsza wersje danych - ktos zmienil je w miedzyczasie; nie nadpisujemy po cichu.
+        if (updateTreeRequest.expectedDataVersion() != null
+                && updateTreeRequest.expectedDataVersion() != treeInOwnedProject.getDataVersion()) {
+            throw new TreeDataVersionConflictException(treeInOwnedProject.getDataVersion());
         }
 
         // Precyzja do mikrosekund = precyzja kolumny timestamp w PostgreSQL (jak przy tworzeniu).

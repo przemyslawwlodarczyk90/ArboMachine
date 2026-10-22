@@ -22,5 +22,7 @@ public record TreeResponse(
         TreeLocationResponse location,
         String mapSymbolCode,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        /** etap 37: wersja danych drzewa - formularz odsyla ja przy zapisie (expectedDataVersion) */
+        long dataVersion
 ) {}

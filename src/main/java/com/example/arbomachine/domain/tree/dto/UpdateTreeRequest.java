@@ -16,6 +16,8 @@ import java.math.BigDecimal;
  * je wszystkie. Numer inwentaryzacyjny jest wymagany jak przy tworzeniu; pusty lub pominiety gatunek/notatka
  * oznacza ich wyczyszczenie. Bez projectId/ownerId/treeId - identyfikatory pochodza z URL i tokenu,
  * a przeniesienie drzewa do innego projektu nie jest tu mozliwe.
+ * Etap 37: expectedDataVersion (opcjonalne) - wersja danych, ktora widzial formularz; inna niz aktualna -> 409.
+ * Pominieta = zapis bez sprawdzania (jak przed etapem 37; tak tez dziala "Zapisz mimo to").
  */
 public record UpdateTreeRequest(
         @NotBlank(message = "Inventory number is mandatory")
@@ -49,5 +51,15 @@ public record UpdateTreeRequest(
         String conditionNotes,
 
         /** Zagrozenia stwarzane przez drzewo (V1: wolny tekst, bez oceny ryzyka). */
-        String hazardNotes
-) implements TreeEditableFieldsRequest {}
+        String hazardNotes,
+
+        Long expectedDataVersion
+) implements TreeEditableFieldsRequest {
+
+    /** Zapis bez sprawdzania wersji (wywolania sprzed etapu 37). */
+    public UpdateTreeRequest(String inventoryNumber, String speciesLatin, String speciesPolish, BigDecimal trunkCircumferenceCm,
+                             BigDecimal heightM, BigDecimal crownDiameterM, String notes, String conditionNotes, String hazardNotes) {
+        this(inventoryNumber, speciesLatin, speciesPolish, trunkCircumferenceCm, heightM, crownDiameterM, notes, conditionNotes,
+                hazardNotes, null);
+    }
+}

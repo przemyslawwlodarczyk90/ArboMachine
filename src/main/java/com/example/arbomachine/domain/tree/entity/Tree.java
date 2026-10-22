@@ -130,6 +130,14 @@ public class Tree {
     private Instant updatedAt;
 
     /**
+     * Etap 37: wersja danych drzewa (pol formularza) - rosnie przy kazdej zmianie tych pol, NIE przy lokalizacji ani
+     * symbolu. Zapis formularza z nieaktualna wersja (inne urzadzenie zmienilo dane w miedzyczasie) -> 409 zamiast
+     * cichego nadpisania. Wlasny licznik zamiast @Version: przesuniecie punktu w terenie nie unieważnia formularza.
+     */
+    @Column(name = "data_version", nullable = false, columnDefinition = "bigint default 0 not null")
+    private long dataVersion;
+
+    /**
      * Etap 36: identyfikator utworzenia z urzadzenia (kolejka offline) - ponowienie po zerwanej odpowiedzi zwraca ten
      * rekord zamiast duplikatu. null = utworzony bez identyfikatora (online przed etapem 36, import).
      */
@@ -160,6 +168,7 @@ public class Tree {
     public void replaceEditableAttributes(TreeEditableAttributes newAttributes, Instant updateTime) {
         applyEditableAttributes(newAttributes);
         this.updatedAt = updateTime;
+        this.dataVersion++;
     }
 
     /** Ustawia albo zastepuje lokalizacje drzewa i przesuwa updatedAt. */
