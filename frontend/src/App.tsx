@@ -5,7 +5,6 @@ import { AuthCardPageLayout } from './components/AuthCardPageLayout';
 import { RolePanelLayout } from './components/RolePanelLayout';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminUserAccountsPage } from './pages/admin/AdminUserAccountsPage';
-import { PlannedModulePage } from './pages/arborist/PlannedModulePage';
 import { EmailConfirmationPage } from './pages/EmailConfirmationPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { MyProfilePage } from './pages/MyProfilePage';
@@ -48,7 +47,8 @@ export default function App() {
               {/* Dawny pulpit: strona startowa arborysty to teraz lista projektow. */}
               <Route index element={<Navigate to="/projects" replace />} />
               <Route path="profile" element={<MyProfilePage />} />
-              <Route path=":moduleSlug" element={<PlannedModulePage />} />
+              {/* Etap 32: dawne zakladki modulow "w budowie" (np. /arborist/harmonogram) i inne stare adresy -> projekty. */}
+              <Route path="*" element={<Navigate to="/projects" replace />} />
             </Route>
           </Route>
 

@@ -4,24 +4,21 @@ import type { UserRole } from '../api/apiDataTypes';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { PANEL_HOME_PATH_BY_ROLE, USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
 import { ArboMachineLogo } from './ArboMachineLogo';
-import { PLANNED_MODULES } from '../pages/arborist/plannedModules';
 
 interface PanelNavigationLink {
   path: string;
   label: string;
   /** podswietlaj tylko przy dokladnym dopasowaniu sciezki (dla strony glownej panelu) */
   matchExactPathOnly?: boolean;
-  /** modul w budowie - znacznik przy zakladce */
-  isUnderConstruction?: boolean;
 }
 
 /**
- * Arborysta: glowna zakladka to "Projekty" (strona startowa panelu), obok moduly w budowie (dawny pulpit) i profil.
+ * Arborysta: glowna zakladka to "Projekty" (strona startowa panelu) i profil. Etap 32: zakladki modulow "w budowie"
+ * usuniete - klient ich nie zamawial.
  */
 const NAVIGATION_LINKS_BY_ROLE: Record<UserRole, PanelNavigationLink[]> = {
   ARBORIST: [
     { path: '/projects', label: 'Projekty' },
-    ...PLANNED_MODULES.map((module) => ({ path: `/arborist/${module.slug}`, label: module.title, isUnderConstruction: true })),
     { path: '/arborist/profile', label: 'Mój profil' },
   ],
   OFFICIAL: [
@@ -56,10 +53,8 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
         <span className={`role-pill role-${roleCssSuffix}`}>{USER_ROLE_DISPLAY_NAMES[panelRole]}</span>
         <nav className="nav" aria-label="Menu główne">
           {NAVIGATION_LINKS_BY_ROLE[panelRole].map((navigationLink) => (
-            <NavLink key={navigationLink.path} to={navigationLink.path} end={navigationLink.matchExactPathOnly}
-                     className={navigationLink.isUnderConstruction ? 'nav-under-construction' : undefined}>
+            <NavLink key={navigationLink.path} to={navigationLink.path} end={navigationLink.matchExactPathOnly}>
               {navigationLink.label}
-              {navigationLink.isUnderConstruction && <span className="nav-badge">w budowie</span>}
             </NavLink>
           ))}
         </nav>
