@@ -5,6 +5,17 @@ import { ModalDialog } from '../../../components/ModalDialog';
 import type { TreePhoto } from './treePhotoDataTypes';
 import { errorOfSelectedPhotoFile, formatFileSizeForDisplay } from './treePhotoFileRules';
 import { offlineService } from '../../../offline/offlineService';
+import { canCompressPhoto, readCompressPhotosPreference, saveCompressPhotosPreference } from './photoCompression';
+import { compressPhotoInBrowser } from './photoCompressionInBrowser';
+
+/** localStorage albo null (tryb prywatny / zablokowany magazyn). */
+function browserStorageOrNull() {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Etap 33: wysylka przez offlineService - bez polaczenia (albo dla drzewa utworzonego offline) zdjecie zapisuje sie
@@ -12,6 +23,7 @@ import { offlineService } from '../../../offline/offlineService';
  * Okno dodawania zdjecia: wybor pliku z urzadzenia (na tablecie/telefonie przegladarka moze od razu zaproponowac
  * aparat - bez natywnej integracji), podglad, wyslanie. Po sukcesie oddaje zdjecie z odpowiedzi backendu
  * (onTreePhotoAdded); przy bledzie okno zostaje otwarte z wybranym plikiem.
+ * Etap 40: opcjonalne zmniejszenie zdjecia przed wyslaniem (wybor zapamietany na urzadzeniu, domyslnie wylaczony).
  */
 export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, onTreePhotoQueued, closeDialog, initialFile = null }: {
   projectId: number;
@@ -27,6 +39,11 @@ export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, onTree
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(() => (initialFile ? errorOfSelectedPhotoFile(initialFile) : null));
   const [isUploading, setIsUploading] = useState(false);
+  const [compressesPhoto, setCompressesPhoto] = useState(() => readCompressPhotosPreference(browserStorageOrNull()));
+  const changeCompressesPhoto = (checked: boolean) => {
+    setCompressesPhoto(checked);
+    saveCompressPhotosPreference(browserStorageOrNull(), checked);
+  };
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isUploadInProgress = useRef(false);
 
@@ -57,7 +74,8 @@ export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, onTree
     setIsUploading(true);
     setErrorMessage(null);
     try {
-      const uploadResult = await offlineService.uploadTreePhoto<TreePhoto>(projectId, treeId, selectedFile);
+      const fileToUpload = compressesPhoto ? (await compressPhotoInBrowser(selectedFile)).file : selectedFile;
+      const uploadResult = await offlineService.uploadTreePhoto<TreePhoto>(projectId, treeId, fileToUpload);
       if (uploadResult.kind === 'uploaded') onTreePhotoAdded(uploadResult.photo);
       else onTreePhotoQueued();
     } catch (uploadError) {
@@ -85,6 +103,16 @@ export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, onTree
             </span>
           </div>
         )}
+        <label className="checkbox-row small">
+          <input type="checkbox" checked={compressesPhoto} disabled={isUploading}
+                 onChange={(changeEvent) => changeCompressesPhoto(changeEvent.target.checked)} />
+          <span>Zmniejsz zdjęcie przed wysłaniem (dłuższy bok do 2560 px)</span>
+        </label>
+        <span className="field-hint">
+          Mniej miejsca na urządzeniu bez zasięgu i szybsza wysyłka. Zmniejszone zdjęcie traci dane z aparatu (EXIF, np.
+          datę i położenie). Dotyczy JPEG i WebP powyżej 1 MB - PNG i małe pliki idą bez zmian.
+          {compressesPhoto && selectedFile && !canCompressPhoto(selectedFile) && ' To zdjęcie zostanie wysłane bez zmian.'}
+        </span>
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isUploading}>Anuluj</button>
           <button type="submit" className="btn btn-primary" disabled={!selectedFile || isUploading}>
