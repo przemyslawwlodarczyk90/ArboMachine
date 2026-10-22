@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Tree } from './treeDataTypes';
+import type { Tree, TreeEditableFieldsRequest } from './treeDataTypes';
 import {
   areTreeFormValuesEquivalent, emptyTreeFormValues, toTreeEditableFieldsRequest, toTreeFormValues, validateTreeFormValues,
 } from './treeFormValues.ts';
@@ -70,7 +70,7 @@ test('zmiana jednego pola: zadanie zapisu ma pozostale pola z poprzednimi wartos
   for (const fieldName of Object.keys(emptyTreeFormValues) as (keyof typeof emptyTreeFormValues)[]) {
     const changedValue = fieldName === 'trunkCircumferenceCm' ? '400' : fieldName === 'heightM' || fieldName === 'crownDiameterM' ? '20' : 'zmiana';
     const after = toTreeEditableFieldsRequest({ ...toTreeFormValues(fullyFilledTree), [fieldName]: changedValue });
-    for (const otherField of Object.keys(before) as (keyof typeof before)[]) {
+    for (const otherField of Object.keys(before) as (keyof TreeEditableFieldsRequest)[]) {
       if (otherField !== fieldName) assert.deepEqual(after[otherField], before[otherField], `${fieldName} -> ${otherField}`);
     }
   }
