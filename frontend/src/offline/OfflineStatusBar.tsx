@@ -3,6 +3,7 @@ import { describePendingChange } from './offlineQueue';
 import { offlineService } from './offlineService';
 import { useOfflineState } from './useOfflineState';
 
+const photosLabel = (count: number) => (count === 1 ? '1 zdjęcie' : count >= 2 && count <= 4 ? `${count} zdjęcia` : `${count} zdjęć`);
 const changesLabel = (count: number) => (count === 1 ? '1 zmiana' : count >= 2 && count <= 4 ? `${count} zmiany` : `${count} zmian`);
 
 /**
@@ -26,7 +27,10 @@ export function OfflineStatusBar({ isCompact = false }: {
     return () => window.clearTimeout(timeout);
   }, [offlineState.syncGeneration, shownSuccessGeneration]);
 
-  const { isOnline, pendingChangeCount, syncStatus, failedChange } = offlineState;
+  const { isOnline, pendingChangeCount, syncStatus, failedChange, pendingPhotoCount, failedPhotoCount } = offlineState;
+  // Etap 33: zdjecia na urzadzeniu w tym samym komunikacie co zmiany.
+  const waitingLabel = [pendingChangeCount > 0 ? changesLabel(pendingChangeCount) : null,
+    pendingPhotoCount > 0 ? photosLabel(pendingPhotoCount) : null].filter(Boolean).join(' i ');
 
   if (syncStatus === 'failed' && failedChange) {
     return (
@@ -52,12 +56,12 @@ export function OfflineStatusBar({ isCompact = false }: {
     return (
       <details className="offline-status-bar offline-status-offline offline-status-compact" role="status">
         <summary>
-          <strong>Offline</strong> - zmiany zapisują się na urządzeniu
-          {pendingChangeCount > 0 ? ` (czeka: ${changesLabel(pendingChangeCount)})` : ''}
+          <strong>Offline</strong> - zmiany i zdjęcia zapisują się na urządzeniu
+          {waitingLabel ? ` (czeka: ${waitingLabel})` : ''}
         </summary>
         <span>
-          Zmiany drzew, lokalizacji, oznaczeń i prac zostaną wysłane po połączeniu. Zdjęcia, symbole i dokumenty wymagają
-          połączenia. Podkład mapy bez zasięgu się nie wczytuje.
+          Zmiany drzew, lokalizacji, oznaczeń i prac oraz zdjęcia zostaną wysłane po połączeniu. Symbole, adnotacje
+          i dokumenty wymagają połączenia. Podkład mapy bez zasięgu się nie wczytuje.
         </span>
       </details>
     );
@@ -67,9 +71,9 @@ export function OfflineStatusBar({ isCompact = false }: {
     return (
       <div className="offline-status-bar offline-status-offline" role="status">
         <span>
-          <strong>Brak połączenia - pracujesz offline.</strong> Zmiany drzew, lokalizacji i prac zapisują się na tym urządzeniu
-          {pendingChangeCount > 0 ? ` (czeka: ${changesLabel(pendingChangeCount)})` : ''} i zostaną wysłane po połączeniu.
-          Zdjęcia, symbole i dokumenty wymagają połączenia.
+          <strong>Brak połączenia - pracujesz offline.</strong> Zmiany drzew, lokalizacji i prac oraz zdjęcia zapisują się na tym
+          urządzeniu{waitingLabel ? ` (czeka: ${waitingLabel})` : ''} i zostaną wysłane po połączeniu.
+          Symbole, adnotacje i dokumenty wymagają połączenia.
         </span>
       </div>
     );
@@ -79,10 +83,13 @@ export function OfflineStatusBar({ isCompact = false }: {
     return <div className="offline-status-bar offline-status-pending" role="status">Synchronizowanie zmian…</div>;
   }
 
-  if (pendingChangeCount > 0) {
+  if (pendingChangeCount > 0 || pendingPhotoCount > 0) {
     return (
       <div className="offline-status-bar offline-status-pending" role="status">
-        <span>Na tym urządzeniu czeka na wysłanie: {changesLabel(pendingChangeCount)}.</span>
+        <span>
+          Na tym urządzeniu czeka na wysłanie: {waitingLabel}.
+          {failedPhotoCount > 0 && ` Serwer nie przyjął zdjęć: ${failedPhotoCount} - szczegóły przy zdjęciach drzewa.`}
+        </span>
         <button type="button" className="btn btn-small btn-primary" onClick={() => void offlineService.syncNow()}>
           Synchronizuj teraz
         </button>

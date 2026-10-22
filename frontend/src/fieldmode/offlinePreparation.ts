@@ -76,6 +76,26 @@ export function describePreparationSummary(treeCount: number, layerCount: number
   return failedCount > 0 ? `${summary} Nie udało się pobrać części danych (${failedCount}) - spróbuj ponownie przed wyjazdem.` : summary;
 }
 
+/**
+ * Etap 33: przy mniej niz 300 MB wolnego miejsca ostrzegamy przed wyjazdem (zdjecie z tabletu to zwykle 3-8 MB, wiec
+ * ok. 40-100 zdjec). Wartosc V1 do potwierdzenia, ile zdjec arborysta robi w ciagu dnia.
+ */
+export const LOW_STORAGE_WARNING_BYTES = 300 * 1024 * 1024;
+
+const megabytes = (bytes: number) => `${Math.round(bytes / (1024 * 1024)).toLocaleString('pl-PL')} MB`;
+
+/** Opis miejsca na urzadzeniu z navigator.storage.estimate(); null = przegladarka nie podaje szacunku. */
+export function describeStorageEstimate(estimate: { usage?: number; quota?: number } | null): { text: string; isLow: boolean } | null {
+  if (!estimate || estimate.quota === undefined || estimate.usage === undefined) return null;
+  const freeBytes = Math.max(0, estimate.quota - estimate.usage);
+  const isLow = freeBytes < LOW_STORAGE_WARNING_BYTES;
+  return {
+    text: `Miejsce dla aplikacji na tym urządzeniu: wolne ok. ${megabytes(freeBytes)} (zajęte ${megabytes(estimate.usage)}).`
+      + (isLow ? ' To mało na zdjęcia z całego dnia - zwolnij miejsce albo wyślij zdjęcia przed wyjazdem.' : ''),
+    isLow,
+  };
+}
+
 const preparedAtKey = (projectId: number) => `arbomachine.field.offlinePreparedAt.${projectId}`;
 
 export function readLastPreparationTime(storage: KeyValueStorage | null, projectId: number): string | null {

@@ -564,10 +564,13 @@ th.right, td.right { text-align: right; }
 .offline-status-success { background: var(--brand-soft); color: var(--brand); }
 .offline-status-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .offline-pending-badge { background: #fff4e5; color: #6b3d00; }
+/* Etap 33: zdjecie odrzucone przez serwer - czeka na decyzje (Ponow / Usun). */
+.offline-error-badge { background: #fdecea; color: #7a1f16; justify-self: start; overflow-wrap: anywhere; }
+.tree-photo-tile-pending .offline-pending-badge { justify-self: start; }
 .tree-offline-note { margin: 0.75rem 0 0; padding-top: 1rem; border-top: 1px solid var(--border); }
 @media (prefers-color-scheme: dark) {
   .offline-status-offline, .offline-pending-badge { background: #3d2a0c; color: #ffd8a1; border-color: #7a5520; }
-  .offline-status-error { background: #3d1612; color: #ffc4bc; border-color: #7a2e25; }
+  .offline-status-error, .offline-error-badge { background: #3d1612; color: #ffc4bc; border-color: #7a2e25; }
 }
 /* GNSS urzadzenia (etap 25) */
 .gnss-measuring { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }

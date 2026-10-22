@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { KeyValueStorage } from '../map/basemapPreference.ts';
 import {
-  describePreparationSummary, MAX_CONCURRENT_REQUESTS, planDetailTasks, polishCount, PROJECT_LEVEL_TASKS, readLastPreparationTime,
+  describePreparationSummary, describeStorageEstimate, MAX_CONCURRENT_REQUESTS, planDetailTasks, polishCount, PROJECT_LEVEL_TASKS, readLastPreparationTime,
   runTasksWithConcurrency, saveLastPreparationTime,
 } from './offlinePreparation.ts';
 
@@ -59,6 +59,17 @@ test('podsumowanie po polsku z odmiana liczebnika', () => {
   assert.equal(polishCount(12, 'drzewo', 'drzewa', 'drzew'), '12 drzew');
   assert.equal(polishCount(0, 'warstwa', 'warstwy', 'warstw'), '0 warstw');
   assert.match(describePreparationSummary(1, 1, 2), /Nie udało się pobrać części danych \(2\)/);
+});
+
+test('miejsce na urzadzeniu: opis wolnego miejsca, ostrzezenie ponizej 300 MB, brak szacunku = null', () => {
+  const plenty = describeStorageEstimate({ usage: 50 * 1024 * 1024, quota: 2048 * 1024 * 1024 });
+  assert.equal(plenty?.isLow, false);
+  assert.match(plenty!.text, /wolne ok\. 1\s?998 MB \(zajęte 50 MB\)/);
+  const low = describeStorageEstimate({ usage: 900 * 1024 * 1024, quota: 1000 * 1024 * 1024 });
+  assert.equal(low?.isLow, true);
+  assert.match(low!.text, /zwolnij miejsce/);
+  assert.equal(describeStorageEstimate(null), null);
+  assert.equal(describeStorageEstimate({ usage: 1 }), null);
 });
 
 test('data ostatniego przygotowania zapamietana per projekt; uszkodzony wpis i wyjatek = brak daty', () => {

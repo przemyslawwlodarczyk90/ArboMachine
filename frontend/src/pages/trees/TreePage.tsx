@@ -143,13 +143,12 @@ export function TreePage() {
       <TreeValuationSection key={`valuation-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       <TreeMonitoringSection key={`monitoring-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
       {isCreatedOffline ? (
-        <p className="muted tree-offline-note">Symbol na mapie i zdjęcia można dodać po synchronizacji drzewa z serwerem.</p>
+        <p className="muted tree-offline-note">Symbol na mapie można dodać po synchronizacji drzewa z serwerem.</p>
       ) : (
-        <>
-          <TreeMapSymbolSection key={`symbol-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
-          <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
-        </>
+        <TreeMapSymbolSection key={`symbol-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree} />
       )}
+      {/* Etap 33: zdjecia takze dla drzewa utworzonego offline - czekaja na urzadzeniu, az drzewo trafi na serwer. */}
+      <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
       <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
 
       {isNewTreeDialogOpen && (

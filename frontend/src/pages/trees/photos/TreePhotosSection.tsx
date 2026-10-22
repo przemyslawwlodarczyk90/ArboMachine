@@ -11,6 +11,10 @@ import type { TreePhoto } from './treePhotoDataTypes';
 import { formatFileSizeForDisplay } from './treePhotoFileRules';
 import { treePhotosApi } from './treePhotosApi';
 import { TreePhotoTile } from './TreePhotoTile';
+import { PendingTreePhotoTile } from './PendingTreePhotoTile';
+import { offlineService } from '../../../offline/offlineService';
+import { useOfflineState } from '../../../offline/useOfflineState';
+import type { PendingPhotoUpload } from '../../../offline/offlineTypes';
 
 type TreePhotoListState =
   | { status: 'loading' }
@@ -34,6 +38,16 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
   const [isAddPhotoDialogOpen, setIsAddPhotoDialogOpen] = useState(false);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  // Etap 33: zdjecia zapisane na urzadzeniu (czekaja na wyslanie) - lista z magazynu offline, odswiezana przy kazdej
+  // zmianie kolejki; po synchronizacji lista z serwera jest pobierana ponownie.
+  const { syncGeneration, photoQueueGeneration, isOnline } = useOfflineState();
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhotoUpload[]>([]);
+  const [wasJustQueued, setWasJustQueued] = useState(false);
+  useEffect(() => {
+    let isResultStillWanted = true;
+    void offlineService.pendingPhotosOfTree(treeId).then((photos) => { if (isResultStillWanted) setPendingPhotos(photos); });
+    return () => { isResultStillWanted = false; };
+  }, [treeId, photoQueueGeneration]);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   // Klik w ukryty input w tym samym dotknieciu - przegladarka otwiera aparat tylko w odpowiedzi na gest uzytkownika.
   const openPickedFile = (changeEvent: ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +55,7 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
     changeEvent.target.value = '';
     if (!pickedFile) return;
     setCapturedFile(pickedFile);
+    setWasJustQueued(false);
     setIsAddPhotoDialogOpen(true);
   };
   const [previewedPhoto, setPreviewedPhoto] = useState<{ treePhoto: TreePhoto; objectUrl: string } | null>(null);
@@ -62,7 +77,7 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
         });
       });
     return () => { isResponseStillWanted = false; };
-  }, [projectId, treeId]);
+  }, [projectId, treeId, syncGeneration]);
 
   const appendAddedPhotoAndCloseDialog = (addedTreePhoto: TreePhoto) => {
     setTreePhotoListState((currentState) => ({
@@ -112,8 +127,22 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
         <Alert variant="error">Nie udało się wczytać zdjęć drzewa. {treePhotoListState.errorMessage}</Alert>
       )}
 
-      {treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length === 0 && (
+      {wasJustQueued && (
+        <p className="small" role="status">
+          Zdjęcie zapisane na tym urządzeniu - zostanie wysłane po połączeniu z internetem.
+        </p>
+      )}
+      {pendingPhotos.length > 0 && (
+        <ul className="tree-photo-grid" aria-label="Zdjęcia czekające na wysłanie">
+          {pendingPhotos.map((pendingPhoto) => <PendingTreePhotoTile key={pendingPhoto.clientUploadId} pendingPhoto={pendingPhoto} />)}
+        </ul>
+      )}
+
+      {treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length === 0 && pendingPhotos.length === 0 && (
         <p className="muted">To drzewo nie ma jeszcze zdjęć.</p>
+      )}
+      {!isOnline && treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length > 0 && (
+        <p className="muted small">Bez połączenia podgląd zdjęć wysłanych wcześniej może być niedostępny.</p>
       )}
 
       {treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length > 0 && (
@@ -129,6 +158,7 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
 
       {isAddPhotoDialogOpen && (
         <AddTreePhotoDialog projectId={projectId} treeId={treeId} onTreePhotoAdded={appendAddedPhotoAndCloseDialog}
+                            onTreePhotoQueued={() => { setIsAddPhotoDialogOpen(false); setCapturedFile(null); setWasJustQueued(true); }}
                             initialFile={capturedFile}
                             closeDialog={() => { setIsAddPhotoDialogOpen(false); setCapturedFile(null); }} />
       )}

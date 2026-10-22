@@ -1,4 +1,4 @@
-import type { IdMappingEntity, OfflineStore, PendingChange } from './offlineTypes.ts';
+import type { IdMappingEntity, OfflineStore, PendingChange, PendingPhotoUpload } from './offlineTypes.ts';
 
 /**
  * Magazyn offline w pamieci - w testach i jako zapas, gdy przegladarka nie udostepnia IndexedDB (np. tryb prywatny
@@ -8,6 +8,8 @@ export function createMemoryOfflineStore(): OfflineStore {
   const responses = new Map<string, unknown>();
   const changes = new Map<number, PendingChange>();
   const idMappings = new Map<string, number>();
+  // Zdjecia bez structuredClone - Blob jest niezmienny, a kopia w Node nie jest potrzebna.
+  const photoUploads = new Map<string, PendingPhotoUpload>();
   let nextChangeId = 1;
   const copy = <T>(value: T): T => (value === undefined ? value : structuredClone(value));
 
@@ -25,5 +27,9 @@ export function createMemoryOfflineStore(): OfflineStore {
     removeChange: async (changeId) => { changes.delete(changeId); },
     readIdMapping: async (entity: IdMappingEntity, localId) => idMappings.get(`${entity}:${localId}`),
     writeIdMapping: async (entity: IdMappingEntity, localId, serverId) => { idMappings.set(`${entity}:${localId}`, serverId); },
+    listPhotoUploads: async () => [...photoUploads.values()]
+      .sort((first, second) => first.capturedAt.localeCompare(second.capturedAt)).map((photo) => ({ ...photo })),
+    putPhotoUpload: async (photo) => { photoUploads.set(photo.clientUploadId, { ...photo }); },
+    removePhotoUpload: async (clientUploadId) => { photoUploads.delete(clientUploadId); },
   };
 }

@@ -155,19 +155,11 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
             <TreeFieldForm key={tree.id} projectId={projectId} savedTree={tree} onTreeSaved={replaceTree} />
             <TreeMarkingsSection key={`markings-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration}
                                  onMarkingsSaved={(codes) => onMarkingsSaved(tree.id, codes)} />
-            {isCreatedOffline ? (
-              <p className="muted tree-offline-note">Zdjęcia można dodać po synchronizacji drzewa z serwerem.</p>
-            ) : (
-              <>
-                {!isOnline && (
-                  <Alert variant="info">
-                    Zdjęcia wymagają połączenia. Możesz zrobić je aparatem i dodać później, ale zapisz numer drzewa, bo
-                    zdjęcie nie przypisze się samo.
-                  </Alert>
-                )}
-                <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} offersCameraCapture />
-              </>
+            {/* Etap 33: zdjecia offline - zapis na urzadzeniu, wysylka po polaczeniu (takze dla drzewa utworzonego offline). */}
+            {!isOnline && (
+              <p className="muted small">Bez połączenia zdjęcia zapisują się na tym urządzeniu i zostaną wysłane po połączeniu.</p>
             )}
+            <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} offersCameraCapture />
             <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration}
                               onWorksChanged={(works) => onWorksChanged(tree.id, works)} />
             <FieldTreeLocationPanel key={`location-${tree.id}`} projectId={projectId} tree={tree} onTreeChanged={replaceTree}

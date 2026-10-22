@@ -55,6 +55,26 @@ export interface PendingChangeRequest {
 
 export type IdMappingEntity = 'tree' | 'work' | 'monitoring';
 
+/**
+ * Etap 33: zdjecie zrobione bez polaczenia (albo gdy wyslanie sie nie udalo) - plik jako Blob w IndexedDB do czasu
+ * potwierdzenia serwera. treeId < 0 = drzewo utworzone offline (wysylka dopiero po jego utworzeniu na serwerze).
+ * clientUploadId = UUID wysylany z plikiem - ponowienie po zerwanej odpowiedzi nie tworzy duplikatu na serwerze.
+ */
+export interface PendingPhotoUpload {
+  clientUploadId: string;
+  ownerEmail: string;
+  projectId: number;
+  treeId: number;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  /** czas dodania zdjecia na urzadzeniu (ISO) */
+  capturedAt: string;
+  blob: Blob;
+  /** blad, ktorego ponowienie nie naprawi (np. zly format) - zdjecie czeka na decyzje uzytkownika */
+  failure?: PendingChangeFailure | null;
+}
+
 /** Magazyn danych offline: kopie odpowiedzi GET, kolejka zmian, mapowanie tymczasowych id na id z serwera. */
 export interface OfflineStore {
   readCachedResponse(path: string): Promise<unknown | undefined>;
@@ -66,4 +86,8 @@ export interface OfflineStore {
   removeChange(changeId: number): Promise<void>;
   readIdMapping(entity: IdMappingEntity, localId: number): Promise<number | undefined>;
   writeIdMapping(entity: IdMappingEntity, localId: number, serverId: number): Promise<void>;
+  /** etap 33: zdjecia czekajace na wyslanie, w kolejnosci dodania */
+  listPhotoUploads(): Promise<PendingPhotoUpload[]>;
+  putPhotoUpload(photo: PendingPhotoUpload): Promise<void>;
+  removePhotoUpload(clientUploadId: string): Promise<void>;
 }

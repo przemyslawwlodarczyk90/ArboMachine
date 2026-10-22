@@ -4,17 +4,21 @@ import { Alert } from '../../../components/Alert';
 import { ModalDialog } from '../../../components/ModalDialog';
 import type { TreePhoto } from './treePhotoDataTypes';
 import { errorOfSelectedPhotoFile, formatFileSizeForDisplay } from './treePhotoFileRules';
-import { treePhotosApi } from './treePhotosApi';
+import { offlineService } from '../../../offline/offlineService';
 
 /**
+ * Etap 33: wysylka przez offlineService - bez polaczenia (albo dla drzewa utworzonego offline) zdjecie zapisuje sie
+ * na urzadzeniu i trafia na serwer po polaczeniu (onTreePhotoQueued).
  * Okno dodawania zdjecia: wybor pliku z urzadzenia (na tablecie/telefonie przegladarka moze od razu zaproponowac
  * aparat - bez natywnej integracji), podglad, wyslanie. Po sukcesie oddaje zdjecie z odpowiedzi backendu
  * (onTreePhotoAdded); przy bledzie okno zostaje otwarte z wybranym plikiem.
  */
-export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, closeDialog, initialFile = null }: {
+export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, onTreePhotoQueued, closeDialog, initialFile = null }: {
   projectId: number;
   treeId: number;
   onTreePhotoAdded: (addedTreePhoto: TreePhoto) => void;
+  /** etap 33: zdjecie zapisane na urzadzeniu (bez polaczenia) - wysle sie po polaczeniu */
+  onTreePhotoQueued: () => void;
   closeDialog: () => void;
   /** etap 32 (tryb terenowy): zdjecie juz zrobione aparatem albo wybrane z galerii - okno je pokazuje i wysyla */
   initialFile?: File | null;
@@ -53,7 +57,9 @@ export function AddTreePhotoDialog({ projectId, treeId, onTreePhotoAdded, closeD
     setIsUploading(true);
     setErrorMessage(null);
     try {
-      onTreePhotoAdded(await treePhotosApi.uploadTreePhoto(projectId, treeId, selectedFile));
+      const uploadResult = await offlineService.uploadTreePhoto<TreePhoto>(projectId, treeId, selectedFile);
+      if (uploadResult.kind === 'uploaded') onTreePhotoAdded(uploadResult.photo);
+      else onTreePhotoQueued();
     } catch (uploadError) {
       setErrorMessage(uploadError instanceof ApiRequestError ? uploadError.message : 'Nieoczekiwany błąd.');
       isUploadInProgress.current = false;

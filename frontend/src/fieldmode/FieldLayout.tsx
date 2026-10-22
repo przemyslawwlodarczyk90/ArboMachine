@@ -30,7 +30,7 @@ const changesLabel = (count: number) => (count === 1 ? '1 zmiana' : count >= 2 &
  */
 export function FieldLayout() {
   const [topBarContent, setTopBarContent] = useState<FieldTopBarContent>(EMPTY_TOP_BAR);
-  const { isOnline, pendingChangeCount } = useOfflineState();
+  const { isOnline, pendingChangeCount, pendingPhotoCount } = useOfflineState();
   const context = useMemo<FieldLayoutContext>(() => ({ setTopBarContent }), []);
 
   return (
@@ -48,6 +48,7 @@ export function FieldLayout() {
           <span className="field-connection-dot" aria-hidden="true" />
           <span className="field-connection-text">{isOnline ? 'online' : 'offline'}</span>
           {pendingChangeCount > 0 && <span className="field-connection-pending"> · {changesLabel(pendingChangeCount)}</span>}
+          {pendingPhotoCount > 0 && <span className="field-connection-pending"> · zdjęcia: {pendingPhotoCount}</span>}
         </span>
         <WorkModeSwitchButton targetMode="OFFICE" className="btn btn-secondary field-topbar-office" />
       </header>

@@ -1,10 +1,12 @@
-import type { IdMappingEntity, OfflineStore, PendingChange } from './offlineTypes';
+import type { IdMappingEntity, OfflineStore, PendingChange, PendingPhotoUpload } from './offlineTypes';
 
 const DATABASE_NAME = 'arbomachine-offline';
-const DATABASE_VERSION = 1;
+/** 2 = etap 33: magazyn zdjec czekajacych na wyslanie. */
+const DATABASE_VERSION = 2;
 const RESPONSES = 'responses';
 const CHANGES = 'pendingChanges';
 const ID_MAPPINGS = 'idMappings';
+const PHOTO_UPLOADS = 'photoUploads';
 
 const requestResult = <T>(request: IDBRequest<T>) => new Promise<T>((resolve, reject) => {
   request.onsuccess = () => resolve(request.result);
@@ -19,6 +21,7 @@ function openDatabase(): Promise<IDBDatabase> {
       if (!database.objectStoreNames.contains(RESPONSES)) database.createObjectStore(RESPONSES);
       if (!database.objectStoreNames.contains(CHANGES)) database.createObjectStore(CHANGES, { keyPath: 'id', autoIncrement: true });
       if (!database.objectStoreNames.contains(ID_MAPPINGS)) database.createObjectStore(ID_MAPPINGS);
+      if (!database.objectStoreNames.contains(PHOTO_UPLOADS)) database.createObjectStore(PHOTO_UPLOADS, { keyPath: 'clientUploadId' });
     };
     openRequest.onsuccess = () => resolve(openRequest.result);
     openRequest.onerror = () => reject(openRequest.error);
@@ -27,7 +30,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
 /**
  * Magazyn offline w IndexedDB przegladarki (etap 26): kopie odpowiedzi GET (klucz = sciezka API), kolejka zmian
- * (autoIncrement = kolejnosc FIFO) i mapowanie tymczasowych id. Dane zostaja na urzadzeniu po zamknieciu karty;
+ * (autoIncrement = kolejnosc FIFO), mapowanie tymczasowych id i (etap 33) zdjecia jako Blob do czasu wyslania. Dane zostaja na urzadzeniu po zamknieciu karty;
  * kopie odczytow sa czyszczone przy wylogowaniu (dane klientow na wspoldzielonym tablecie).
  */
 export async function createIndexedDbOfflineStore(): Promise<OfflineStore> {
@@ -51,5 +54,9 @@ export async function createIndexedDbOfflineStore(): Promise<OfflineStore> {
     writeIdMapping: async (entity: IdMappingEntity, localId, serverId) => {
       await run(ID_MAPPINGS, 'readwrite', (store) => store.put(serverId, `${entity}:${localId}`));
     },
+    listPhotoUploads: async () => (await run<PendingPhotoUpload[]>(PHOTO_UPLOADS, 'readonly', (store) => store.getAll()))
+      .sort((first, second) => first.capturedAt.localeCompare(second.capturedAt)),
+    putPhotoUpload: async (photo) => { await run(PHOTO_UPLOADS, 'readwrite', (store) => store.put(photo)); },
+    removePhotoUpload: async (clientUploadId) => { await run(PHOTO_UPLOADS, 'readwrite', (store) => store.delete(clientUploadId)); },
   };
 }

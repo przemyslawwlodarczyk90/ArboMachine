@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatTimestampForDisplay } from '../formatting/formatTimestampForDisplay';
 import { mapSymbolsApi } from '../map/mapSymbolsApi';
 import { useOfflineState } from '../offline/useOfflineState';
@@ -12,7 +12,7 @@ import { treeValuationsApi } from '../pages/trees/valuation/treeValuationsApi';
 import { treeWorksApi } from '../pages/trees/works/treeWorksApi';
 import { browserStorageOrNull } from './fieldModePreference';
 import {
-  describePreparationSummary, LARGE_PROJECT_TREE_COUNT, MAX_CONCURRENT_REQUESTS, planDetailTasks, PROJECT_LEVEL_TASKS,
+  describePreparationSummary, describeStorageEstimate, LARGE_PROJECT_TREE_COUNT, MAX_CONCURRENT_REQUESTS, planDetailTasks, PROJECT_LEVEL_TASKS,
   readLastPreparationTime, runTasksWithConcurrency, saveLastPreparationTime, type OfflinePreparationTask,
 } from './offlinePreparation';
 
@@ -32,6 +32,17 @@ export function FieldOfflinePreparation({ projectId, trees }: { projectId: numbe
   const [preparationState, setPreparationState] = useState<PreparationState>({ status: 'idle' });
   const [lastPreparedAt, setLastPreparedAt] = useState(() => readLastPreparationTime(browserStorageOrNull(), projectId));
   const isCancelledRef = useRef(false);
+  const [storageDescription, setStorageDescription] = useState<{ text: string; isLow: boolean } | null>(null);
+  const [isStoragePersistent, setIsStoragePersistent] = useState<boolean | null>(null);
+
+  // Etap 33: zdjecia offline zajmuja miejsce - pokazujemy wolne miejsce i sprawdzamy, czy przegladarka nie usunie
+  // danych aplikacji przy braku miejsca (trwale przechowywanie).
+  useEffect(() => {
+    const storageManager = typeof navigator !== 'undefined' ? navigator.storage : undefined;
+    if (!storageManager?.estimate) return;
+    storageManager.estimate().then((estimate) => setStorageDescription(describeStorageEstimate(estimate))).catch(() => {});
+    storageManager.persisted?.().then(setIsStoragePersistent).catch(() => {});
+  }, [preparationState.status]);
 
   const runTask = async (task: OfflinePreparationTask): Promise<unknown> => {
     switch (task.kind) {
@@ -80,6 +91,8 @@ export function FieldOfflinePreparation({ projectId, trees }: { projectId: numbe
       setPreparationState({ status: 'cancelled' });
       return;
     }
+    // Prosba o trwale przechowywanie (zdjecia i zmiany offline nie znikna przy braku miejsca); przegladarka moze odmowic.
+    await navigator.storage?.persist?.().then(setIsStoragePersistent).catch(() => {});
     const preparedAt = new Date().toISOString();
     saveLastPreparationTime(browserStorageOrNull(), projectId, preparedAt);
     setLastPreparedAt(preparedAt);
@@ -92,9 +105,16 @@ export function FieldOfflinePreparation({ projectId, trees }: { projectId: numbe
       <h3>Praca bez zasięgu</h3>
       <p className="muted small">
         Pobiera na to urządzenie dane projektu, karty, oznaczenia i prace wszystkich drzew oraz warstwy projektu - żeby
-        były dostępne bez internetu. Podkład mapy i zdjęcia nie są pobierane.
+        były dostępne bez internetu. Podkład mapy i wcześniej wysłane zdjęcia nie są pobierane; nowe zdjęcia zrobione
+        bez zasięgu zapisują się na urządzeniu.
         {lastPreparedAt ? ` Ostatnio przygotowano: ${formatTimestampForDisplay(lastPreparedAt)}.` : ' Projekt nie był jeszcze przygotowany na tym urządzeniu.'}
       </p>
+      {storageDescription && (
+        <p className={`small${storageDescription.isLow ? '' : ' muted'}`} role={storageDescription.isLow ? 'alert' : undefined}>
+          {storageDescription.text}
+          {isStoragePersistent === false && ' Przeglądarka może usunąć dane aplikacji przy braku miejsca - wyślij zdjęcia, gdy tylko będzie zasięg.'}
+        </p>
+      )}
       {trees.length > LARGE_PROJECT_TREE_COUNT && preparationState.status !== 'running' && (
         <p className="small">Projekt ma {trees.length} drzew - pobieranie może potrwać kilka minut. Najlepiej zrobić to przez Wi-Fi.</p>
       )}
