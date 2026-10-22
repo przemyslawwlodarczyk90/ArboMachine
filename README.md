@@ -41,7 +41,7 @@ komunikaty błędów API są po angielsku (kontrakt), frontend tłumaczy je w `u
 | 📤 Eksport / QGIS | CSV, XLSX (arkusze: Drzewa, Prace, Monitoring, Grupy drzew, Projekt), GeoJSON, **GeoPackage** (trees + stands), **Shapefile ZIP** | [instrukcja QGIS](docs/integrations/qgis.md) |
 | 🔔 Powiadomienia | lista powiadomień + **Web Push**: ocena „Zły” przy kontroli, przypomnienie rano o pracach na jutro, test | [etap 30](docs/discovery/etap-30-integracje-i-finalizacja.md) |
 | 📅 Kalendarz | eksport prac z terminami do **.ics** (Google / Outlook / Apple) | etap 30 |
-| 📴 Offline | odczyty z pamięci urządzenia, kolejka zmian (drzewa, lokalizacja, prace, waloryzacja, kontrole) i synchronizacja | [etap 26](docs/discovery/etap-26-offline.md) |
+| 📴 Offline | odczyty z pamięci urządzenia, kolejka zmian (drzewa, lokalizacja, prace, waloryzacja, kontrole, oznaczenia) i synchronizacja; **tryb terenowy** (mapa na cały ekran + panel drzewa, przygotowanie projektu bez zasięgu); **zdjęcia bez zasięgu** wysyłane po połączeniu bez duplikatów | [etap 26](docs/discovery/etap-26-offline.md), 32, 33 |
 
 Własność danych egzekwuje backend (`… → Tree → Project → owner`): cudze dane zawsze dają 404, także przy imporcie,
 eksporcie, grupach drzew i powiadomieniach.
@@ -50,7 +50,7 @@ eksporcie, grupach drzew i powiadomieniach.
 
 Ocena stanu wg metody arborystycznej (VTA, klasy ryzyka), metoda waloryzacji i wycena pieniężna, słowniki gatunków i
 rodzajów prac, harmonogram / kosztorysy / wykonawcy, DOCX, DWG / QGZ / import formatu projektu aplikacji terenowej,
-WMS / Geoportal / ortofotomapy (także offline), PostGIS, RTK i odbiorniki zewnętrzne, zdjęcia i grupy drzew offline,
+WMS / Geoportal / ortofotomapy (także offline), PostGIS, RTK i odbiorniki zewnętrzne, grupy drzew offline,
 powiadomienia e-mail / SMS, usuwanie drzew i projektów, praca zespołowa nad projektem (organizacje, urząd ↔ wykonawca).
 Pełny rejestr: [`docs/DO_DOPRECYZOWANIA.md`](docs/DO_DOPRECYZOWANIA.md) → „Rejestr braków”.
 
