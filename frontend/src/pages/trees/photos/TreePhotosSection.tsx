@@ -142,7 +142,10 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
         <p className="muted">To drzewo nie ma jeszcze zdjęć.</p>
       )}
       {!isOnline && treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length > 0 && (
-        <p className="muted small">Bez połączenia podgląd zdjęć wysłanych wcześniej może być niedostępny.</p>
+        <p className="muted small">
+          Bez połączenia widać zdjęcia oglądane już na tym urządzeniu albo pobrane przy „Przygotuj projekt do pracy bez
+          zasięgu” (opcja „także wcześniej wysłane zdjęcia”).
+        </p>
       )}
 
       {treePhotoListState.status === 'loaded' && treePhotoListState.treePhotos.length > 0 && (

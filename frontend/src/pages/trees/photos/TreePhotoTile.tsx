@@ -1,4 +1,5 @@
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { useOfflineState } from '../../../offline/useOfflineState';
 import type { TreePhoto } from './treePhotoDataTypes';
 import { useTreePhotoObjectUrl } from './useTreePhotoObjectUrl';
 
@@ -19,6 +20,7 @@ export function TreePhotoTile({ projectId, treeId, treePhoto, openPreview, openA
   // Wersja (data adnotacji) w zaleznosciach: po zapisie adnotacji miniatura pobiera sie ponownie.
   const objectUrlState = useTreePhotoObjectUrl(projectId, treeId, treePhoto.id, 'documentation',
     treePhoto.annotationUpdatedAt ?? null);
+  const { isOnline } = useOfflineState();
 
   return (
     <li className="tree-photo-tile">
@@ -32,7 +34,7 @@ export function TreePhotoTile({ projectId, treeId, treePhoto, openPreview, openA
         <div className="tree-photo-thumbnail tree-photo-thumbnail-placeholder">
           {objectUrlState.status === 'loading'
             ? <LoadingSpinner />
-            : <span className="muted small">Nie udało się wczytać zdjęcia.</span>}
+            : <span className="muted small">{isOnline ? 'Nie udało się wczytać zdjęcia.' : 'Podgląd niedostępny bez zasięgu.'}</span>}
         </div>
       )}
       {treePhoto.hasAnnotation && <span className="badge tree-photo-annotated-badge">Adnotowane</span>}
