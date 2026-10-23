@@ -969,3 +969,20 @@ Prototyp do sprawdzenia na tablecie klienta, nie ostateczny projekt UX.
 | Podkłady offline, Bluetooth/NMEA, dyktowanie „kolejno do pól”, łączenie `mapSymbolCode` z oznaczeniami | Poza zakresem etapu 32 — bez zmian, OPEN jak w sekcjach 34, 44. |
 | Manifest | Ikona tylko SVG (`favicon.svg`); część Androidów wymaga ikon PNG 192/512 do instalacji. Spring serwuje `.webmanifest` bez dedykowanego typu MIME. DO SPRAWDZENIA na tablecie. |
 | Weryfikacja | NIESPRAWDZONE na prawdziwym tablecie: dotyk, aparat (`capture`), GPS / odbiornik, Safari na iPadzie, obrót ekranu, praca offline z uśpieniem urządzenia. Scenariusz offline przeszedł tylko w emulacji headless Chrome przez http://localhost (bezpieczny kontekst) — nie przez HTTPS na serwerze. |
+
+## 46. Dane autora opracowania — etap 42
+
+**Źródło:** 02 poz. 8.3 (folder „!!! KONSPEKTY NOWE”) — strona tytułowa dokumentu PDF miała „Autor opracowania: Dane do
+uzupełnienia”, brakowało wykonawcy, kwalifikacji i opisu metod.
+
+| Temat | Stan |
+|---|---|
+| Gdzie są dane | V1 IMPLEMENTED: moduł `domain/documentauthor`, encja `DocumentAuthorProfile` 1:1 z kontem (migracja V6), `GET/PUT /api/users/me/document-author-profile`; „Mój profil” → „Dane do dokumentów” (tylko arborysta). Pusty zapis usuwa dane; usunięcie konta usuwa dane. |
+| Dokument PDF | V1 IMPLEMENTED: strona tytułowa — autor + kwalifikacje, wykonawca + dane wykonawcy; sekcja 1 — „Metody i techniki pracy” (wiersz tylko gdy opis jest wpisany). Brak danych → „Dane do uzupełnienia”. |
+| Dane w profilu czy w projekcie | OPEN (założenie V1): jeden autor i wykonawca na konto, wspólny dla wszystkich projektów. Kilku autorów, podwykonawca albo inny wykonawca w jednym projekcie — nieobsługiwane. |
+| Struktura pól | OPEN (założenie V1): wolny tekst (imię i nazwisko, kwalifikacje, firma, „adres, NIP, kontakt” w jednym polu). Bez osobnych pól NIP/REGON, logo firmy, podpisu, pieczątki. |
+| Opis metod | OPEN (założenie V1): jeden stały tekst na konto, bez szablonów per rodzaj opracowania (8.4) i bez edycji w konkretnym projekcie. |
+| Cel opracowania, podstawa prawna, numer umowy | OPEN: nie ma pól — czekają na odpowiedź klienta (8.3). |
+| Limity | Założenie techniczne: autor i firma 255 znaków, kwalifikacje i dane wykonawcy 2000, opis metod 10 000. |
+| Praca offline | Założenie V1: formularz tylko online (dane biurowe, rzadko zmieniane); odczyt z kopii urządzenia jak każdy GET. |
+| Weryfikacja | Testy API i treści PDF na H2 (`DocumentAuthorProfileApiIntegrationTest`, 9), migracja w `FlywayMigrationsIntegrationTest` (H2 w trybie PostgreSQL). NIESPRAWDZONE na lokalnym PostgreSQL (Docker Desktop wyłączony 23.10.2026) — tabela powstanie przez `ddl-auto=update`. |
