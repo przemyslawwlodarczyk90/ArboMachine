@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { projectDocumentsApi, projectReportFileName } from './projectDocumentsApi';
@@ -78,8 +79,9 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
         )}
       </div>
       <p className="muted small">
-        Wersja MVP — układ dokumentu będzie rozwijany na podstawie konsultacji z arborystami. Dane zleceniodawcy
-        i autora są w dokumencie oznaczone jako „Dane do uzupełnienia”.
+        Wersja MVP — układ dokumentu będzie rozwijany na podstawie konsultacji z arborystami. Autora opracowania,
+        wykonawcę i opis metod pracy uzupełnisz w <Link to="/arborist/profile">Moim profilu</Link> („Dane do dokumentów”),
+        dane zleceniodawcy — w edycji projektu. Brakujące dane są w dokumencie oznaczone jako „Dane do uzupełnienia”.
       </p>
     </section>
   );

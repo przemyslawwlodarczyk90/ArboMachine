@@ -9,6 +9,7 @@ import { Alert } from '../components/Alert';
 import { UserProfileForm } from '../components/UserProfileForm';
 import { NotificationList } from '../notifications/NotificationList';
 import { PushNotificationsPanel } from '../notifications/PushNotificationsPanel';
+import { DocumentAuthorProfileSection } from './documentauthor/DocumentAuthorProfileSection';
 
 /** "My profile" - ta sama strona w kazdym panelu; dziala wylacznie na WLASNYM koncie zalogowanego uzytkownika. */
 export function MyProfilePage() {
@@ -53,6 +54,8 @@ export function MyProfilePage() {
         <h2>Dane osobowe</h2>
         <UserProfileForm editedAccount={currentUserAccount} saveProfile={saveOwnProfile} />
       </section>
+
+      {currentUserAccount.role === 'ARBORIST' && <DocumentAuthorProfileSection />}
 
       <section className="card stack-tight">
         <h2>Powiadomienia</h2>
