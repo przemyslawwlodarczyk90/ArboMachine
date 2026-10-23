@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -185,6 +186,18 @@ class ProjectDocumentApiIntegrationTest {
         assertThat(text).contains("ArboMachine", "Dokument projektu", "Park Źródlany – Łódź", "Inwentaryzacja żółtych lip",
                 "ul. Świętokrzyska", "Dane do uzupełnienia", "Mapa projektu dostępna jest w aplikacji ArboMachine.");
         assertThat(text).doesNotContain("null");
+    }
+
+    @Test
+    void contractNumberAndDocumentPurposeAreInDocumentAndPurposeHasPlaceholderWhenMissing() throws Exception {
+        assertThat(textOf(generateDocumentOfUserA())).contains("Cel opracowania").doesNotContain("Numer umowy");
+
+        performAs(userAccountA, patch("/api/projects/{p}", projectIdA)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"contractNumber\":\"UM/12/2026\",\"documentPurpose\":\"Inwentaryzacja przed przebudową alei\"}"))
+                .andExpect(status().isOk());
+        String text = textOf(generateDocumentOfUserA());
+        assertThat(text).contains("Numer umowy", "UM/12/2026", "Cel opracowania", "Inwentaryzacja przed przebudową alei");
     }
 
     @Test

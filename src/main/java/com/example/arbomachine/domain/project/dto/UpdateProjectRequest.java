@@ -26,11 +26,19 @@ public record UpdateProjectRequest(
 
         /** Data zlecenia RRRR-MM-DD: null = bez zmian, pusty tekst = usuniecie (tekst, bo pustej daty JSON nie wyrazi). */
         @Pattern(regexp = "|\\d{4}-\\d{2}-\\d{2}", message = "Order date must have format YYYY-MM-DD")
-        String orderDate
+        String orderDate,
+
+        /** Numer umowy / zlecenia: null = bez zmian, pusty tekst = usuniecie (etap 45). */
+        @Size(max = Project.MAXIMUM_CONTRACT_NUMBER_LENGTH, message = "Contract number must have at most 100 characters")
+        String contractNumber,
+
+        /** Cel opracowania: null = bez zmian, pusty tekst = usuniecie (etap 45). */
+        @Size(max = Project.MAXIMUM_DOCUMENT_PURPOSE_LENGTH, message = "Document purpose must have at most 2000 characters")
+        String documentPurpose
 ) {
 
     /** Dotychczasowe wywolania (nazwa i opis). */
     public UpdateProjectRequest(String name, String description) {
-        this(name, description, null, null, null);
+        this(name, description, null, null, null, null, null);
     }
 }

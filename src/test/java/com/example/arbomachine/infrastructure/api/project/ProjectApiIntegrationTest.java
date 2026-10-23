@@ -304,6 +304,37 @@ class ProjectApiIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // --- etap 45: numer umowy i cel opracowania ---
+
+    @Test
+    void contractNumberAndDocumentPurposeAreTrimmedChangedAndCleared() throws Exception {
+        String responseJson = postProjectAs(userAccountA,
+                "{\"name\":\"Park\",\"contractNumber\":\"  UM/12/2026 \",\"documentPurpose\":\" Inwentaryzacja przed przebudową \"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.contractNumber").value("UM/12/2026"))
+                .andExpect(jsonPath("$.documentPurpose").value("Inwentaryzacja przed przebudową"))
+                .andReturn().getResponse().getContentAsString();
+        long projectId = objectMapper.readTree(responseJson).get("id").asLong();
+
+        mockMvc.perform(patch("/api/projects/{id}", projectId).header("Authorization", bearerTokenOf(userAccountA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"contractNumber\":\"UM/13/2026\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contractNumber").value("UM/13/2026"))
+                .andExpect(jsonPath("$.documentPurpose").value("Inwentaryzacja przed przebudową"));
+
+        mockMvc.perform(patch("/api/projects/{id}", projectId).header("Authorization", bearerTokenOf(userAccountA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"contractNumber\":\"\",\"documentPurpose\":\"  \"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contractNumber").doesNotExist())
+                .andExpect(jsonPath("$.documentPurpose").doesNotExist());
+    }
+
+    @Test
+    void tooLongContractNumberIsRejected() throws Exception {
+        postProjectAs(userAccountA, "{\"name\":\"Park\",\"contractNumber\":\"" + "1".repeat(101) + "\"}")
+                .andExpect(status().isBadRequest());
+    }
+
     // --- brak zalogowania ---
 
     @Test

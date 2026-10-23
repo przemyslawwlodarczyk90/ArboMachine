@@ -24,11 +24,19 @@ public record CreateProjectRequest(
         String siteAddress,
 
         /** Data zlecenia RRRR-MM-DD (opcjonalna). */
-        java.time.LocalDate orderDate
+        java.time.LocalDate orderDate,
+
+        /** Numer umowy / zlecenia (etap 45, opcjonalny). */
+        @Size(max = Project.MAXIMUM_CONTRACT_NUMBER_LENGTH, message = "Contract number must have at most 100 characters")
+        String contractNumber,
+
+        /** Cel opracowania (etap 45, opcjonalny) - do dokumentu PDF. */
+        @Size(max = Project.MAXIMUM_DOCUMENT_PURPOSE_LENGTH, message = "Document purpose must have at most 2000 characters")
+        String documentPurpose
 ) {
 
     /** Dotychczasowe wywolania (nazwa i opis). */
     public CreateProjectRequest(String name, String description) {
-        this(name, description, null, null, null);
+        this(name, description, null, null, null, null, null);
     }
 }

@@ -27,6 +27,8 @@ public class Project {
     public static final int MAXIMUM_NAME_LENGTH = 255;
     public static final int MAXIMUM_CLIENT_NAME_LENGTH = 255;
     public static final int MAXIMUM_SITE_ADDRESS_LENGTH = 500;
+    public static final int MAXIMUM_CONTRACT_NUMBER_LENGTH = 100;
+    public static final int MAXIMUM_DOCUMENT_PURPOSE_LENGTH = 2000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +60,13 @@ public class Project {
 
     @Column(name = "order_date")
     private java.time.LocalDate orderDate;
+
+    /** Etap 45 (02 poz. 8.3): numer umowy / zlecenia i cel opracowania - opcjonalne, wolny tekst V1, trafiaja do PDF. */
+    @Column(name = "contract_number", length = MAXIMUM_CONTRACT_NUMBER_LENGTH)
+    private String contractNumber;
+
+    @Column(name = "document_purpose", columnDefinition = "text")
+    private String documentPurpose;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

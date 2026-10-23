@@ -142,6 +142,8 @@ public class TreeXlsxExporter {
                 {"Zleceniodawca", data.clientName() == null ? "" : data.clientName()},
                 {"Adres obiektu", data.siteAddress() == null ? "" : data.siteAddress()},
                 {"Data zlecenia", data.orderDate() == null ? "" : data.orderDate().toString()},
+                {"Numer umowy", data.contractNumber() == null ? "" : data.contractNumber()},
+                {"Cel opracowania", data.documentPurpose() == null ? "" : data.documentPurpose()},
                 {"Opis", data.projectDescription() == null ? "" : data.projectDescription()},
                 {"Data eksportu", EXPORT_TIME.format(data.exportedAt())},
                 {"Układ współrzędnych", "WGS 84 (EPSG:4326)"},

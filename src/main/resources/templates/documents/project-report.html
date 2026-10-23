@@ -70,6 +70,7 @@
       <td th:if="${format.hasText(document.clientName())}" th:text="${document.clientName()}">Gmina</td>
       <td th:unless="${format.hasText(document.clientName())}" class="placeholder">Dane do uzupełnienia</td></tr>
     <tr th:if="${document.orderDate() != null}"><th>Data zlecenia</th><td th:text="${format.localDate(document.orderDate())}">01.10.2026</td></tr>
+    <tr th:if="${format.hasText(document.contractNumber())}"><th>Numer umowy</th><td th:text="${document.contractNumber()}">1/2026</td></tr>
     <tr><th>Autor opracowania</th>
       <td th:if="${document.author() != null and format.hasText(document.author().authorFullName())}">
         <span th:text="${document.author().authorFullName()}">Jan Kowalski</span>
@@ -101,6 +102,9 @@
     <td th:if="${format.hasText(document.projectDescription())}" class="multiline" th:text="${document.projectDescription()}">Opis</td>
     <td th:unless="${format.hasText(document.projectDescription())}" class="muted">Nie podano</td>
   </tr>
+  <tr><th>Cel opracowania</th>
+    <td th:if="${format.hasText(document.documentPurpose())}" class="multiline" th:text="${document.documentPurpose()}">Cel</td>
+    <td th:unless="${format.hasText(document.documentPurpose())}" class="placeholder">Dane do uzupełnienia</td></tr>
   <tr><th>Obiekt / lokalizacja</th>
     <td th:if="${format.hasText(document.siteAddress())}" class="multiline" th:text="${document.siteAddress()}">Adres</td>
     <td th:unless="${format.hasText(document.siteAddress())}" class="placeholder">Dane do uzupełnienia</td></tr>

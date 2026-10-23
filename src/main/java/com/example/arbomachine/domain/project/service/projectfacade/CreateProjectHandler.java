@@ -38,6 +38,8 @@ public class CreateProjectHandler {
         newProject.setClientName(ProjectOrderFields.trimmedOrNull(createProjectRequest.clientName()));
         newProject.setSiteAddress(ProjectOrderFields.trimmedOrNull(createProjectRequest.siteAddress()));
         newProject.setOrderDate(createProjectRequest.orderDate());
+        newProject.setContractNumber(ProjectOrderFields.trimmedOrNull(createProjectRequest.contractNumber()));
+        newProject.setDocumentPurpose(ProjectOrderFields.trimmedOrNull(createProjectRequest.documentPurpose()));
         return projectMapper.toProjectResponse(projectRepository.save(newProject));
     }
 }

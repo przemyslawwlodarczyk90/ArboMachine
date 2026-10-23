@@ -47,6 +47,12 @@ public class UpdateProjectHandler {
             ownedProject.setOrderDate(updateProjectRequest.orderDate().isBlank() ? null
                     : java.time.LocalDate.parse(updateProjectRequest.orderDate()));
         }
+        if (updateProjectRequest.contractNumber() != null) {
+            ownedProject.setContractNumber(ProjectOrderFields.trimmedOrNull(updateProjectRequest.contractNumber()));
+        }
+        if (updateProjectRequest.documentPurpose() != null) {
+            ownedProject.setDocumentPurpose(ProjectOrderFields.trimmedOrNull(updateProjectRequest.documentPurpose()));
+        }
         ownedProject.setUpdatedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return projectMapper.toProjectResponse(projectRepository.save(ownedProject));
     }

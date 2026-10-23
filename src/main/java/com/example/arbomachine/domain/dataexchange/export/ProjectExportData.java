@@ -14,7 +14,10 @@ public record ProjectExportData(
         String clientName,
         String siteAddress,
         java.time.LocalDate orderDate,
-        List<TreeStandExportData> stands
+        List<TreeStandExportData> stands,
+        /** etap 45: numer umowy i cel opracowania (null = nie podano) */
+        String contractNumber,
+        String documentPurpose
 ) {
 
     public long treesWithoutLocationCount() {
