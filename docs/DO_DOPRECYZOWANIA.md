@@ -963,7 +963,7 @@ Prototyp do sprawdzenia na tablecie klienta, nie ostateczny projekt UX.
 | Panel dolny / boczny | Założenie V1: granica 900 px. Bez przeciągania i animacji — możliwe usprawnienie po spotkaniu. |
 | Zakres „Przygotuj projekt” | Założenie V1: bez podkładu mapy i bez zdjęć; tylko dane używane przez tryb terenowy. Bez przygotowania offline widać tylko to, co było otwarte online. |
 | Zdjęcia offline | BRAK — NASTĘPNY PRIORYTET (etap „Zdjęcia offline”, kolejka plików w IndexedDB). Dziś bez połączenia panel pokazuje komunikat „Zdjęcia wymagają połączenia… zapisz numer drzewa”; przy kilkudziesięciu drzewach ręczne przypisywanie zdjęć jest uciążliwe i łatwo o pomyłkę. Tryb terenowy uznajemy za gotowy do testu bez zasięgu dopiero po tym etapie. |
-| Etykiety „RTK” w biurze | OPEN: widok biurowy nadal nazywa dokładność do 10 cm „geodezyjna (RTK)”, choć przeglądarka nie zna typu rozwiązania — do ujednolicenia z trybem terenowym. |
+| Etykiety „RTK” w biurze | ROZWIĄZANE w etapie 43: widok biurowy pisze „Dokładność zgłoszona przez urządzenie: … (centymetrowa)”, bez „RTK”. |
 | Czas pomiaru | OPEN (sekcja 34): pokazywany tylko przed zapisem, backend go nie zapisuje (bez zmian modelu w tym etapie). |
 | Pozycja na żywo a pomiar | Ustalenie z testów: przy aktywnym `watchPosition` Chrome potrafi nie oddać nowego odczytu do `getCurrentPosition(maximumAge: 0)`, gdy pozycja się nie zmienia (timeout). V1: śledzenie na żywo wstrzymane na czas pomiaru. DO SPRAWDZENIA na tablecie z odbiornikiem. |
 | Podkłady offline, Bluetooth/NMEA, dyktowanie „kolejno do pól”, łączenie `mapSymbolCode` z oznaczeniami | Poza zakresem etapu 32 — bez zmian, OPEN jak w sekcjach 34, 44. |
