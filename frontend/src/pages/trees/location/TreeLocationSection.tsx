@@ -136,7 +136,8 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
           <p className="muted small">
             Na Androidzie: połącz odbiornik w jego aplikacji i włącz w niej udostępnianie pozycji jako lokalizacji
             telefonu („pozorowana lokalizacja” w opcjach programisty). Wtedy „Użyj GPS urządzenia” pobierze pozycję
-            z odbiornika - wybierz „Uśrednij” i sprawdź, czy dokładność jest oznaczona jako geodezyjna (RTK).
+            z odbiornika - wybierz „Uśrednij” i sprawdź, czy dokładność jest oznaczona jako centymetrowa. Aplikacja nie
+            wie, czy odbiornik ma rozwiązanie FIX - dokładność podaje urządzenie.
           </p>
           <ToBeClarifiedNote>
             Model odbiornika arborysty, korekty RTK (ASG-EUPOS / NTRIP), praca na iPhonie/iPadzie oraz zapis typu

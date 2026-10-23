@@ -18,8 +18,12 @@ type GnssState =
 /** Jeden odczyt (szybko) albo seria usredniona (etap 31 - pod odbiornik RTK, ok. 10 odczytow). */
 export type MeasurementMode = 'SINGLE' | 'AVERAGED';
 
+/**
+ * Etap 43 (02 poz. 12.8): bez slowa "RTK" takze w widoku biurowym - przegladarka nie zna typu rozwiazania (FIX/FLOAT)
+ * ani zrodla pozycji, wiec opisujemy tylko rzad wielkosci dokladnosci zgloszonej przez urzadzenie.
+ */
 const QUALITY_LABELS = {
-  SURVEY: 'geodezyjna (RTK)',
+  SURVEY: 'centymetrowa',
   SUBMETER: 'submetrowa',
   GOOD: 'dobra',
   ACCEPTABLE: 'akceptowalna',
@@ -149,7 +153,7 @@ export function TreeGnssLocationPanel({ projectId, tree, onPendingLocationChange
                 {' · '}pomiar o {formatMeasurementTime(gnssState.reading.measuredAt)}
               </span>
             ) : (
-              <span>Dokładność: <strong>{formatAccuracy(gnssState.reading.accuracyM)}</strong> ({QUALITY_LABELS[quality!]})</span>
+              <span>Dokładność zgłoszona przez urządzenie: <strong>{formatAccuracy(gnssState.reading.accuracyM)}</strong> ({QUALITY_LABELS[quality!]})</span>
             )}
             {gnssState.reading.altitudeM !== null && (
               <span className="muted small"> · wysokość {Math.round(gnssState.reading.altitudeM)} m n.p.m.</span>
