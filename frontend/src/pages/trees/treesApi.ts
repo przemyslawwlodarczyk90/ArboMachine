@@ -37,6 +37,10 @@ export const treesApi = {
       httpMethod: 'DELETE', sendAccessToken: true,
     }),
 
+  /** Etap 44: usuwa drzewo razem z jego danymi - tylko z polaczeniem (bez kolejki offline, nie da sie cofnac). */
+  deleteTreeOfProject: (projectId: number, treeId: number) =>
+    sendApiRequest<void>(`/api/projects/${projectId}/trees/${treeId}`, { httpMethod: 'DELETE', sendAccessToken: true }),
+
   /** Usuwa lokalizacje (drzewo wraca do stanu "nie ustalono"); zwraca zaktualizowane drzewo. */
   clearTreeLocation: (projectId: number, treeId: number) =>
     offlineService.mutate<Tree>({ kind: 'CLEAR_TREE_LOCATION', projectId, treeId }),

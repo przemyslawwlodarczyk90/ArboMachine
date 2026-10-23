@@ -12,6 +12,7 @@ import { TreeLocationSection } from './location/TreeLocationSection';
 import { NewTreeDialog } from './NewTreeDialog';
 import { TreePhotosSection } from './photos/TreePhotosSection';
 import type { Tree } from './treeDataTypes';
+import { TreeDeletionSection } from './deletion/TreeDeletionSection';
 import { TreeFieldForm } from './TreeFieldForm';
 import { TreeMapSymbolSection } from './TreeMapSymbolSection';
 import { TreeMarkingsSection } from './markings/TreeMarkingsSection';
@@ -30,7 +31,7 @@ type TreeLoadingState =
 /**
  * Karta drzewa (/projects/:projectId/trees/:treeId) - ekran pracy przy jednym drzewie. Strona tylko laduje drzewo
  * i sklada sekcje: Dane drzewa (TreeFieldForm - formularz terenowy), Lokalizacja, Waloryzacja, Monitoring stanu,
- * Symbol drzewa na mapie, Zdjecia, Zalecenia i prace.
+ * Symbol drzewa na mapie, Zdjecia, Zalecenia i prace, Usun drzewo (etap 44).
  * Kazda sekcja ma wlasny stan i wlasne operacje zapisu; drzewo z odpowiedzi backendu jest jednym zrodlem prawdy
  * dla formularza i lokalizacji. Wlasnosci nie sprawdzamy w React.
  */
@@ -150,6 +151,8 @@ export function TreePage() {
       {/* Etap 33: zdjecia takze dla drzewa utworzonego offline - czekaja na urzadzeniu, az drzewo trafi na serwer. */}
       <TreePhotosSection key={`photos-${tree.id}`} projectId={projectId} treeId={tree.id} />
       <TreeWorksSection key={`works-${tree.id}`} projectId={projectId} treeId={tree.id} syncGeneration={syncGeneration} />
+      <TreeDeletionSection key={`deletion-${tree.id}`} projectId={projectId} treeId={tree.id} inventoryNumber={tree.inventoryNumber}
+                           isCreatedOffline={isCreatedOffline} hasPendingChanges={hasPendingChanges} />
 
       {isNewTreeDialogOpen && (
         <NewTreeDialog projectId={projectId} closeDialog={() => setIsNewTreeDialogOpen(false)} />
