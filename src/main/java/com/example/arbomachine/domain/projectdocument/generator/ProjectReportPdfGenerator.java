@@ -3,6 +3,7 @@ package com.example.arbomachine.domain.projectdocument.generator;
 import com.example.arbomachine.domain.projectdocument.data.DocumentImageContent;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentPhotoData;
+import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentWorkData;
 import com.openhtmltopdf.extend.FSStream;
 import com.openhtmltopdf.extend.FSStreamFactory;
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,6 +32,8 @@ import java.util.Objects;
  * (polskie znaki niezaleznie od systemu). Zdjecia sa ladowane leniwie przez wlasny protokol "report-image://N",
  * zmniejszane (ReportImageScaler) i osadzane jako JPEG; zdjecie, ktorego nie da sie odczytac, jest pomijane
  * (podpis zostaje) zamiast przerywac generowanie calego dokumentu.
+ * Etap 41: schemat polozenia drzew (ProjectTreeMapRenderer) pod adresem "report-image://tree-map" - gotowy PNG,
+ * bez ponownego skalowania; projekt bez drzew z lokalizacja nie ma schematu (zmienna treeMap = null).
  */
 @Component
 public class ProjectReportPdfGenerator implements DocumentGenerator {
@@ -37,6 +41,7 @@ public class ProjectReportPdfGenerator implements DocumentGenerator {
 
     static final String TEMPLATE_NAME = "documents/project-report";
     static final String IMAGE_PROTOCOL = "report-image";
+    static final String TREE_MAP_IMAGE_NAME = "tree-map";
     private static final String FONT_FAMILY = "DejaVu Sans";
     private static final String FONTS_DIRECTORY = "/fonts/documents/";
 
@@ -52,6 +57,10 @@ public class ProjectReportPdfGenerator implements DocumentGenerator {
         templateVariables.setVariable("document", data);
         templateVariables.setVariable("format", new ProjectReportFormatter());
         templateVariables.setVariable("imageProtocol", IMAGE_PROTOCOL);
+        ProjectTreeMapRenderer.RenderedTreeMap renderedTreeMap = renderTreeMap(data);
+        templateVariables.setVariable("treeMap", renderedTreeMap == null ? null
+                : new TreeMapSection(IMAGE_PROTOCOL + "://" + TREE_MAP_IMAGE_NAME, renderedTreeMap.skippedLabelCount(),
+                data.treeCount() - data.treeWithLocationCount()));
         String html = templateEngine.process(TEMPLATE_NAME, templateVariables);
 
         Map<String, DocumentImageContent> imageContentByNumber = new HashMap<>();
@@ -65,7 +74,9 @@ public class ProjectReportPdfGenerator implements DocumentGenerator {
             useFont(builder, "DejaVuSans.ttf", 400, FontStyle.NORMAL);
             useFont(builder, "DejaVuSans-Bold.ttf", 700, FontStyle.NORMAL);
             useFont(builder, "DejaVuSans-Oblique.ttf", 400, FontStyle.ITALIC);
-            builder.useProtocolsStreamImplementation(new ReportImageStreamFactory(imageContentByNumber), IMAGE_PROTOCOL);
+            ReportImageStreamFactory imageStreamFactory = new ReportImageStreamFactory(imageContentByNumber);
+            if (renderedTreeMap != null) imageStreamFactory.scaledImageByNumber().put(TREE_MAP_IMAGE_NAME, renderedTreeMap.pngBytes());
+            builder.useProtocolsStreamImplementation(imageStreamFactory, IMAGE_PROTOCOL);
             builder.withW3cDocument(new W3CDom().fromJsoup(Jsoup.parse(html)), "about:blank");
             builder.toStream(pdfBytes);
             builder.run();
@@ -74,6 +85,28 @@ public class ProjectReportPdfGenerator implements DocumentGenerator {
         }
         return new GeneratedDocument(pdfBytes.toByteArray(), "application/pdf", fileNameOf(data));
     }
+
+    /**
+     * Schemat drzew z lokalizacja (kolejnosc i numery jak w zestawieniu); drzewo z zaleceniem lub praca do wykonania
+     * innym kolorem. Brak drzew z lokalizacja = null (w dokumencie tylko informacja).
+     */
+    private static ProjectTreeMapRenderer.RenderedTreeMap renderTreeMap(ProjectDocumentData data) {
+        List<ProjectTreeMapRenderer.MapTree> mapTrees = data.trees().stream().filter(tree -> tree.location() != null)
+                .map(tree -> new ProjectTreeMapRenderer.MapTree(tree.inventoryNumber(),
+                        tree.location().latitude().doubleValue(), tree.location().longitude().doubleValue(),
+                        tree.works().stream().anyMatch(ProjectDocumentWorkData::isOpen)))
+                .toList();
+        if (mapTrees.isEmpty()) return null;
+        try {
+            return ProjectTreeMapRenderer.render(mapTrees);
+        } catch (RuntimeException renderingError) {
+            LOGGER.warn("Tree map could not be drawn in project document", renderingError);
+            return null;
+        }
+    }
+
+    /** Sekcja "Mapa" w szablonie: adres obrazu, numery pominiete na schemacie, drzewa bez lokalizacji (poza schematem). */
+    public record TreeMapSection(String imageUrl, int skippedLabelCount, long treesWithoutLocationCount) {}
 
     /** Nazwa pliku tylko z id projektu - bez nazwy wpisanej przez uzytkownika (nie trzeba jej sanityzowac). */
     static String fileNameOf(ProjectDocumentData data) {

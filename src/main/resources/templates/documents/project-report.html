@@ -2,7 +2,7 @@
 <!--
   "Dokument projektu" - wersja MVP (etap 22). Szablon Thymeleaf renderowany do PDF (openhtmltopdf, A4).
   Zmiany ukladu i tresci po konsultacji z arborysta wprowadzamy TUTAJ (HTML/CSS), bez zmian w kodzie Java.
-  Zmienne: document (ProjectDocumentData), format (ProjectReportFormatter), imageProtocol.
+  Zmienne: document (ProjectDocumentData), format (ProjectReportFormatter), imageProtocol, treeMap (etap 41, null = brak schematu).
   Placeholdery (zleceniodawca, autor, obiekt) sa jawne - aplikacja jeszcze tych danych nie modeluje.
 -->
 <html lang="pl" xmlns:th="http://www.thymeleaf.org">
@@ -48,6 +48,11 @@
     .stands-table { table-layout: fixed; width: 100%; }
     .photo { margin: 3mm 0 0 0; page-break-inside: avoid; text-align: center; }
     .photo img { max-width: 100%; max-height: 110mm; }
+    .tree-map { text-align: center; page-break-inside: avoid; margin: 0 0 2mm 0; }
+    .tree-map img { width: 100%; }
+    .legend-dot { display: inline-block; width: 3mm; height: 3mm; border-radius: 1.5mm; }
+    .legend-tree { background: #2e7d32; }
+    .legend-open-work { background: #e65100; }
     .photo-caption { font-size: 8pt; color: #374151; margin-top: 1mm; }
   </style>
 </head>
@@ -104,9 +109,27 @@
   <tr><td>Grupy drzew</td><td class="num" th:text="${document.stands().size()}">0</td></tr>
 </table>
 
-<!-- 4. Mapa (V1: bez obrazu mapy) -->
+<!-- 4. Mapa (etap 41, V1): schemat polozenia drzew bez podkladu mapy; legenda tutaj (tekst w PDF, polskie znaki) -->
 <h2>3. Mapa</h2>
-<p class="muted">Mapa projektu dostępna jest w aplikacji ArboMachine. Współrzędne drzew podano w kartach drzew (WGS 84).</p>
+<th:block th:if="${treeMap != null}">
+  <div class="tree-map">
+    <img th:src="${treeMap.imageUrl()}" alt="Schemat położenia drzew"/>
+  </div>
+  <p class="small">
+    <span class="legend-dot legend-tree">&#160;</span> drzewo &#160;&#160;
+    <span class="legend-dot legend-open-work">&#160;</span> drzewo z zaleceniem lub pracą do wykonania &#160;&#160;
+    liczby — numery drzew z zestawienia
+  </p>
+  <p class="muted small">Schemat położenia drzew bez podkładu mapy (północ u góry, podziałka w lewym dolnym rogu).
+    Współrzędne drzew podano w kartach drzew (WGS 84 i układ krajowy).</p>
+  <p class="muted small" th:if="${treeMap.skippedLabelCount() > 0}"
+     th:text="${'Drzewa rosnące bardzo blisko siebie: ' + treeMap.skippedLabelCount() + ' numerów nie zmieściło się na schemacie (punkty są narysowane).'}">
+    Numery pominięte</p>
+  <p class="muted small" th:if="${treeMap.treesWithoutLocationCount() > 0}"
+     th:text="${'Drzewa bez lokalizacji (poza schematem): ' + treeMap.treesWithoutLocationCount() + '.'}">Drzewa bez lokalizacji</p>
+</th:block>
+<p th:if="${treeMap == null}" class="muted">Mapa projektu dostępna jest w aplikacji ArboMachine. Żadne drzewo nie ma
+  jeszcze zapisanej lokalizacji, więc dokument nie zawiera schematu położenia drzew.</p>
 
 <!-- 5. Tabela drzew -->
 <h2>4. Zestawienie drzew</h2>
