@@ -985,4 +985,22 @@ uzupełnienia”, brakowało wykonawcy, kwalifikacji i opisu metod.
 | Cel opracowania, podstawa prawna, numer umowy | OPEN: nie ma pól — czekają na odpowiedź klienta (8.3). |
 | Limity | Założenie techniczne: autor i firma 255 znaków, kwalifikacje i dane wykonawcy 2000, opis metod 10 000. |
 | Praca offline | Założenie V1: formularz tylko online (dane biurowe, rzadko zmieniane); odczyt z kopii urządzenia jak każdy GET. |
-| Weryfikacja | Testy API i treści PDF na H2 (`DocumentAuthorProfileApiIntegrationTest`, 9), migracja w `FlywayMigrationsIntegrationTest` (H2 w trybie PostgreSQL). NIESPRAWDZONE na lokalnym PostgreSQL (Docker Desktop wyłączony 23.10.2026) — tabela powstanie przez `ddl-auto=update`. |
+| Weryfikacja | Testy API i treści PDF na H2 (`DocumentAuthorProfileApiIntegrationTest`, 9), migracja w `FlywayMigrationsIntegrationTest` (H2 w trybie PostgreSQL), E2E `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (aplikacja na H2). NIESPRAWDZONE na lokalnym PostgreSQL (Docker Desktop wyłączony 23.10.2026) — tabela powstanie przez `ddl-auto=update`. |
+
+## 47. Usuwanie drzewa — etap 44
+
+**Źródło:** 02 poz. 2.10 (folder „!!! KONSPEKTY NOWE”) i rejestr długu („brak Tree DELETE”) — omyłkowo dodanego drzewa
+nie dało się usunąć.
+
+| Temat | Stan |
+|---|---|
+| Backend | V1 IMPLEMENTED: `DELETE /api/projects/{projectId}/trees/{treeId}` → 204; cudze/usunięte drzewo → 404. Punkt rozszerzenia `TreeDataCleaner` (moduł drzew nie zna modułów zależnych): zdjęcia i adnotacje (pliki po commicie), prace, waloryzacja, kontrole stanu, oznaczenia, przynależność do grup drzew — w jednej transakcji. |
+| Ekran | V1 IMPLEMENTED: sekcja „Usuń drzewo” na dole karty drzewa (widok biurowy), potwierdzenie w dwóch krokach z numerem drzewa, powrót do listy. |
+| Bez kosza i cofania | Założenie V1: usunięcie trwałe. OPEN: czy potrzebny kosz / przywracanie albo historia zmian. |
+| Drzewo wycięte | OPEN: usuwać z projektu czy zostawić z oznaczeniem „wycięte” (dla inwentaryzacji powtórnej i historii)? Dziś tylko usuwanie. |
+| Offline | Założenie V1: tylko z połączeniem; drzewo utworzone offline albo z niewysłanymi zmianami — przycisk zablokowany z powodem. Brak operacji usuwania w kolejce offline. Kopia listy drzew na urządzeniu odświeża się przy następnym pobraniu online (przygotowany projekt offline może jeszcze pokazywać usunięte drzewo do odświeżenia). |
+| Tryb terenowy | Założenie V1: brak przycisku w panelu drzewa (tylko karta biurowa, link „Pełna karta”). |
+| Grupa drzew | Założenie V1: grupa zostaje, także pusta (obszar nie zależy od drzew). |
+| Powiadomienia | Założenie V1: istniejące powiadomienia z odnośnikiem do usuniętego drzewa zostają; odnośnik prowadzi do „To drzewo nie istnieje”. |
+| Pliki zdjęć | Pliku, którego nie da się usunąć po commicie, nie ponawiamy (osierocony plik w logu) — jak przy usuwaniu pojedynczego zdjęcia. |
+| Weryfikacja | `TreeDeletionApiIntegrationTest` (2, H2, pliki w katalogu tymczasowym), E2E 11/11 (aplikacja na H2: blokada offline, anulowanie, usunięcie, lista, adres usuniętego drzewa). NIESPRAWDZONE na lokalnym PostgreSQL. |
