@@ -1,6 +1,9 @@
 package com.example.arbomachine.domain.projectdocument.assembler;
 
+import com.example.arbomachine.domain.documentauthor.entity.DocumentAuthorProfile;
+import com.example.arbomachine.domain.documentauthor.service.documentauthorprofilefacade.FindDocumentAuthorDetailsOfUserAccountHandler;
 import com.example.arbomachine.domain.project.entity.Project;
+import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentAuthorData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentLocationData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentMonitoringData;
@@ -38,7 +41,7 @@ import java.util.stream.Collectors;
 /**
  * Sklada ProjectDocumentData z danych WLASNEGO projektu (wlasnosc sprawdza wczesniej handler). Stala liczba zapytan
  * niezaleznie od liczby drzew: drzewa, waloryzacje, prace projektu, zdjecia projektu, adnotacje tych zdjec, kontrole stanu,
- * oznaczenia drzew (etap 31) - laczone w pamieci
+ * oznaczenia drzew (etap 31), dane autora z profilu wlasciciela (etap 42) - laczone w pamieci
  * (brak N+1). Plikow zdjec NIE czyta - daje tylko leniwy dostep do tresci (wersja z adnotacja, jesli istnieje,
  * jak .../documentation-content). Kolejnosc: drzewa, prace i zdjecia w kolejnosci dodania.
  */
@@ -58,6 +61,7 @@ public class ProjectDocumentDataAssembler {
     private final TreeStandRepository treeStandRepository;
     private final TreeMarkingRepository treeMarkingRepository;
     private final TreeMarkingCatalog treeMarkingCatalog;
+    private final FindDocumentAuthorDetailsOfUserAccountHandler findDocumentAuthorDetailsOfUserAccountHandler;
 
     public ProjectDocumentDataAssembler(TreeRepository treeRepository, TreeWorkRepository treeWorkRepository,
                                         TreePhotoRepository treePhotoRepository,
@@ -66,7 +70,8 @@ public class ProjectDocumentDataAssembler {
                                         TreeValuationRepository treeValuationRepository,
                                         TreeMonitoringRecordRepository treeMonitoringRecordRepository,
                                         TreeStandRepository treeStandRepository, TreeMarkingRepository treeMarkingRepository,
-                                        TreeMarkingCatalog treeMarkingCatalog) {
+                                        TreeMarkingCatalog treeMarkingCatalog,
+                                        FindDocumentAuthorDetailsOfUserAccountHandler findDocumentAuthorDetailsOfUserAccountHandler) {
         this.treeRepository = treeRepository;
         this.treeWorkRepository = treeWorkRepository;
         this.treePhotoRepository = treePhotoRepository;
@@ -77,6 +82,7 @@ public class ProjectDocumentDataAssembler {
         this.treeStandRepository = treeStandRepository;
         this.treeMarkingRepository = treeMarkingRepository;
         this.treeMarkingCatalog = treeMarkingCatalog;
+        this.findDocumentAuthorDetailsOfUserAccountHandler = findDocumentAuthorDetailsOfUserAccountHandler;
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +141,14 @@ public class ProjectDocumentDataAssembler {
                                 stand.getTrees().stream().sorted(java.util.Comparator.comparing(Tree::getId)).map(Tree::getInventoryNumber).toList(),
                                 stand.getNotes()))
                         .sorted(java.util.Comparator.comparing(ProjectDocumentStandData::name, NaturalTextOrder.INSTANCE))
-                        .toList());
+                        .toList(),
+                findDocumentAuthorDetailsOfUserAccountHandler.handle(ownedProject.getOwner().getId())
+                        .map(ProjectDocumentDataAssembler::authorDataOf).orElse(null));
+    }
+
+    private static ProjectDocumentAuthorData authorDataOf(DocumentAuthorProfile.Details details) {
+        return new ProjectDocumentAuthorData(details.authorFullName(), details.qualifications(), details.companyName(),
+                details.companyDetails(), details.methodsDescription());
     }
 
     private static ProjectDocumentValuationData valuationDataOf(TreeValuation valuation) {

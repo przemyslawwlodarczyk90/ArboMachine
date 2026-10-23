@@ -53,6 +53,7 @@
     .legend-dot { display: inline-block; width: 3mm; height: 3mm; border-radius: 1.5mm; }
     .legend-tree { background: #2e7d32; }
     .legend-open-work { background: #e65100; }
+    .author-qualifications { font-size: 8.5pt; color: #374151; margin-top: 1mm; }
     .photo-caption { font-size: 8pt; color: #374151; margin-top: 1mm; }
   </style>
 </head>
@@ -69,7 +70,20 @@
       <td th:if="${format.hasText(document.clientName())}" th:text="${document.clientName()}">Gmina</td>
       <td th:unless="${format.hasText(document.clientName())}" class="placeholder">Dane do uzupełnienia</td></tr>
     <tr th:if="${document.orderDate() != null}"><th>Data zlecenia</th><td th:text="${format.localDate(document.orderDate())}">01.10.2026</td></tr>
-    <tr><th>Autor opracowania</th><td class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr><th>Autor opracowania</th>
+      <td th:if="${document.author() != null and format.hasText(document.author().authorFullName())}">
+        <span th:text="${document.author().authorFullName()}">Jan Kowalski</span>
+        <div th:if="${format.hasText(document.author().qualifications())}" class="multiline author-qualifications"
+             th:text="${document.author().qualifications()}">Kwalifikacje</div>
+      </td>
+      <td th:unless="${document.author() != null and format.hasText(document.author().authorFullName())}" class="placeholder">Dane do uzupełnienia</td></tr>
+    <tr><th>Wykonawca</th>
+      <td th:if="${document.author() != null and format.hasText(document.author().companyName())}">
+        <span th:text="${document.author().companyName()}">Firma</span>
+        <div th:if="${format.hasText(document.author().companyDetails())}" class="multiline author-qualifications"
+             th:text="${document.author().companyDetails()}">Adres</div>
+      </td>
+      <td th:unless="${document.author() != null and format.hasText(document.author().companyName())}" class="placeholder">Dane do uzupełnienia</td></tr>
     <tr><th>Data wygenerowania</th><td th:text="${format.dateTime(document.generatedAt())}">01.10.2026, 12:00</td></tr>
   </table>
   <div class="notice">
@@ -90,6 +104,9 @@
   <tr><th>Obiekt / lokalizacja</th>
     <td th:if="${format.hasText(document.siteAddress())}" class="multiline" th:text="${document.siteAddress()}">Adres</td>
     <td th:unless="${format.hasText(document.siteAddress())}" class="placeholder">Dane do uzupełnienia</td></tr>
+  <tr th:if="${document.author() != null and format.hasText(document.author().methodsDescription())}">
+    <th>Metody i techniki pracy</th>
+    <td class="multiline" th:text="${document.author().methodsDescription()}">Opis metod</td></tr>
   <tr><th>Projekt utworzono</th><td th:text="${format.date(document.projectCreatedAt())}">01.10.2026</td></tr>
   <tr><th>Ostatnia zmiana projektu</th><td th:text="${format.date(document.projectUpdatedAt())}">01.10.2026</td></tr>
 </table>
