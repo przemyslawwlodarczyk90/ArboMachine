@@ -26,6 +26,7 @@ import { TreePage } from './pages/trees/TreePage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SignInPage } from './pages/SignInPage';
+import { UnsavedChangesLeaveGuard } from './fieldmode/UnsavedChangesLeaveGuard';
 
 /** Mapa tras aplikacji: strony publiczne, linki z maili i trzy panele - kazdy dostepny tylko dla swojej roli. */
 export default function App() {
@@ -107,6 +108,8 @@ export default function App() {
             </AuthCardPageLayout>
           } />
         </Routes>
+        {/* Etap 46: niezapisane zmiany przy kliknieciu w link i zamknieciu karty przegladarki. */}
+        <UnsavedChangesLeaveGuard />
       </AuthenticationProvider>
     </BrowserRouter>
   );
