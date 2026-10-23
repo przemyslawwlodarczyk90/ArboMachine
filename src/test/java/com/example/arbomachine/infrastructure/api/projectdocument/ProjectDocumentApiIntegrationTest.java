@@ -220,7 +220,23 @@ class ProjectDocumentApiIntegrationTest {
                 "Cięcia redukcyjne", "Redukcja korony od strony jezdni", "Fot. 1", "IMG_0001.png", "Fot. 2", "IMG_0002.jpg");
         assertThat(text.replaceAll("\\s+", " ")).contains("Liczba drzew 1", "Drzewa z lokalizacją 1", "Zdjęcia 2",
                 "Zalecenia i prace 1");
-        assertThat(imageCountOf(pdfBytes)).isEqualTo(2);
+        assertThat(text).contains("Schemat położenia drzew", "drzewo z zaleceniem lub pracą do wykonania")
+                .doesNotContain("Drzewa bez lokalizacji");
+        assertThat(imageCountOf(pdfBytes)).as("2 zdjecia + schemat drzew (etap 41)").isEqualTo(3);
+    }
+
+    @Test
+    void treeMapIsDrawnOnlyFromTreesWithLocationAndCountsTheRest() throws Exception {
+        long locatedTreeId = createTree("{\"inventoryNumber\":\"1\"}");
+        performAs(userAccountA, put("/api/projects/{p}/trees/{t}/location", projectIdA, locatedTreeId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"latitude\":50.0614,\"longitude\":19.9366}"))
+                .andExpect(status().isOk());
+        createTree("{\"inventoryNumber\":\"2\"}");
+
+        byte[] pdfBytes = generateDocumentOfUserA();
+        String text = textOf(pdfBytes).replaceAll("\\s+", " ");
+        assertThat(text).contains("Schemat położenia drzew", "Drzewa bez lokalizacji (poza schematem): 1.");
+        assertThat(imageCountOf(pdfBytes)).isEqualTo(1);
     }
 
     @Test
