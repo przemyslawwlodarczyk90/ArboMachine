@@ -81,7 +81,7 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
       <p className="muted small">
         Wersja MVP — układ dokumentu będzie rozwijany na podstawie konsultacji z arborystami. Autora opracowania,
         wykonawcę i opis metod pracy uzupełnisz w <Link to="/arborist/profile">Moim profilu</Link> („Dane do dokumentów”),
-        dane zleceniodawcy — w edycji projektu. Brakujące dane są w dokumencie oznaczone jako „Dane do uzupełnienia”.
+        dane zlecenia, numer umowy i cel opracowania — w edycji projektu. Brakujące dane są w dokumencie oznaczone jako „Dane do uzupełnienia”.
       </p>
     </section>
   );

@@ -5,7 +5,7 @@ import { LabeledInputField } from '../../components/LabeledInputField';
 import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
 import { ModalDialog } from '../../components/ModalDialog';
 import type { Project } from './projectDataTypes';
-import { ProjectOrderFields, type ProjectOrderFieldValues } from './ProjectOrderFields';
+import { ProjectOrderFields, toProjectOrderFieldValues, type ProjectOrderFieldValues } from './ProjectOrderFields';
 import { projectsApi } from './projectsApi';
 
 /**
@@ -19,9 +19,7 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
 }) {
   const [projectName, setProjectName] = useState(savedProject.name);
   const [projectDescription, setProjectDescription] = useState(savedProject.description ?? '');
-  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>({
-    clientName: savedProject.clientName ?? '', siteAddress: savedProject.siteAddress ?? '', orderDate: savedProject.orderDate ?? '',
-  });
+  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>(toProjectOrderFieldValues(savedProject));
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +30,9 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
     || projectDescription.trim() !== (savedProject.description ?? '').trim()
     || orderFields.clientName.trim() !== (savedProject.clientName ?? '')
     || orderFields.siteAddress.trim() !== (savedProject.siteAddress ?? '')
-    || orderFields.orderDate !== (savedProject.orderDate ?? '');
+    || orderFields.orderDate !== (savedProject.orderDate ?? '')
+    || orderFields.contractNumber.trim() !== (savedProject.contractNumber ?? '')
+    || orderFields.documentPurpose.trim() !== (savedProject.documentPurpose ?? '');
 
   const submitProjectChanges = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -55,6 +55,8 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
         clientName: orderFields.clientName.trim(),
         siteAddress: orderFields.siteAddress.trim(),
         orderDate: orderFields.orderDate,
+        contractNumber: orderFields.contractNumber.trim(),
+        documentPurpose: orderFields.documentPurpose.trim(),
       });
       onProjectSaved(savedProjectFromBackend);
     } catch (savingError) {

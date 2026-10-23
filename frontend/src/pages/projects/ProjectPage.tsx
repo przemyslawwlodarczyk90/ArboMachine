@@ -114,10 +114,11 @@ export function ProjectPage() {
           <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edytuj projekt</button>
         </div>
         {project.description && <p className="muted project-description">{project.description}</p>}
-        {(project.clientName || project.siteAddress || project.orderDate) && (
+        {(project.clientName || project.siteAddress || project.orderDate || project.contractNumber) && (
           <p className="muted small project-order">
             {[project.clientName && `Zleceniodawca: ${project.clientName}`, project.siteAddress && `Obiekt: ${project.siteAddress}`,
-              project.orderDate && `Data zlecenia: ${project.orderDate.split('-').reverse().join('.')}`].filter(Boolean).join(' · ')}
+              project.orderDate && `Data zlecenia: ${project.orderDate.split('-').reverse().join('.')}`,
+              project.contractNumber && `Umowa: ${project.contractNumber}`].filter(Boolean).join(' · ')}
           </p>
         )}
       </header>

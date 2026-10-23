@@ -5,7 +5,7 @@ import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
 import { LabeledTextAreaField } from '../../components/LabeledTextAreaField';
 import { ModalDialog } from '../../components/ModalDialog';
-import { ProjectOrderFields, type ProjectOrderFieldValues } from './ProjectOrderFields';
+import { ProjectOrderFields, toProjectOrderFieldValues, type ProjectOrderFieldValues } from './ProjectOrderFields';
 import { projectsApi } from './projectsApi';
 
 /**
@@ -23,7 +23,7 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
   // wiec dwa klikniecia w tym samym momencie widzialyby jeszcze isCreatingProject === false.
   const isSubmissionInProgress = useRef(false);
 
-  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>({ clientName: '', siteAddress: '', orderDate: '' });
+  const [orderFields, setOrderFields] = useState<ProjectOrderFieldValues>(toProjectOrderFieldValues());
 
   const submitNewProject = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -45,6 +45,8 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
         clientName: orderFields.clientName.trim() || undefined,
         siteAddress: orderFields.siteAddress.trim() || undefined,
         orderDate: orderFields.orderDate || undefined,
+        contractNumber: orderFields.contractNumber.trim() || undefined,
+        documentPurpose: orderFields.documentPurpose.trim() || undefined,
       });
       navigate(`/projects/${createdProject.id}`);
     } catch (creationError) {

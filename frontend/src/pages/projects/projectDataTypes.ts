@@ -10,6 +10,9 @@ export interface Project {
   siteAddress?: string | null;
   /** 'YYYY-MM-DD' */
   orderDate?: string | null;
+  /** etap 45: numer umowy / zlecenia i cel opracowania (do dokumentu PDF) */
+  contractNumber?: string | null;
+  documentPurpose?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +24,8 @@ export interface CreateProjectRequest {
   clientName?: string;
   siteAddress?: string;
   orderDate?: string;
+  contractNumber?: string;
+  documentPurpose?: string;
 }
 
 /**
@@ -34,4 +39,7 @@ export interface UpdateProjectRequest {
   clientName?: string;
   siteAddress?: string;
   orderDate?: string;
+  /** etap 45: pusty tekst = usuniecie */
+  contractNumber?: string;
+  documentPurpose?: string;
 }

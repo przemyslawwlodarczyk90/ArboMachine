@@ -89,7 +89,7 @@ export function DocumentAuthorProfileSection() {
       </p>
       <ToBeClarifiedNote>
         Czy dane wykonawcy są zawsze te same, czy zależą od projektu (kilku autorów, podwykonawcy), oraz jakie jeszcze
-        stałe teksty ma dokument (cel opracowania, podstawa prawna).
+        stałe teksty ma dokument (np. podstawa prawna, zastrzeżenia).
       </ToBeClarifiedNote>
 
       {loadingState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
