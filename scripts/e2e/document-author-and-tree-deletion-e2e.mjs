@@ -1,6 +1,7 @@
-// Scenariusz E2E etapow 42, 44 i 45 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44, 45 i 46 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
-// drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
+// Etap 46: okno "Niezapisane zmiany" po kliknieciu w link z karty drzewa. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -196,6 +197,25 @@ async function main() {
     const savedProject = await api(`/api/projects/${project.id}`);
     check('Numer umowy i cel opracowania zapisane na serwerze',
       savedProject.contractNumber === 'UM/45/2026' && savedProject.documentPurpose === 'Inwentaryzacja przed przebudową alei');
+
+    // --- Etap 46: niezapisane zmiany przy kliknieciu w link ---
+    await navigate(`/projects/${project.id}/trees/${treeToKeep.id}`);
+    await waitFor('formularz drzewa', 'return !!document.querySelector(".tree-field-form")');
+    await typeIntoLabeled('Nazwa polska', 'lipa drobnolistna');
+    await waitFor('znacznik niezapisanych zmian', 'return document.body.innerText.includes("Masz niezapisane zmiany.")');
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno niezapisanych zmian', 'return document.querySelector(".modal h2")?.textContent === "Niezapisane zmiany"');
+    check('Link z niezapisanymi zmianami -> okno "Niezapisane zmiany"', true);
+    await clickButton('Zostań');
+    check('"Zostań" zostawia karte drzewa i wpisany tekst',
+      !(await evaluate('return !!document.querySelector(".modal")')) && (await evaluate('return location.pathname')) === `/projects/${project.id}/trees/${treeToKeep.id}`
+      && await evaluate('return [...document.querySelectorAll("input")].some((input) => input.value === "lipa drobnolistna")'));
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno niezapisanych zmian', 'return !!document.querySelector(".modal")');
+    await clickButton('Zapisz');
+    await waitFor('lista drzew po zapisie', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('"Zapisz" zapisuje drzewo i przechodzi do listy',
+      (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}`)).speciesPolish === 'lipa drobnolistna');
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
