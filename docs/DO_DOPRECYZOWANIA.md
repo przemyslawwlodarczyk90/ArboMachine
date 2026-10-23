@@ -1004,3 +1004,15 @@ nie dało się usunąć.
 | Powiadomienia | Założenie V1: istniejące powiadomienia z odnośnikiem do usuniętego drzewa zostają; odnośnik prowadzi do „To drzewo nie istnieje”. |
 | Pliki zdjęć | Pliku, którego nie da się usunąć po commicie, nie ponawiamy (osierocony plik w logu) — jak przy usuwaniu pojedynczego zdjęcia. |
 | Weryfikacja | `TreeDeletionApiIntegrationTest` (2, H2, pliki w katalogu tymczasowym), E2E 11/11 (aplikacja na H2: blokada offline, anulowanie, usunięcie, lista, adres usuniętego drzewa). NIESPRAWDZONE na lokalnym PostgreSQL. |
+
+## 48. Numer umowy i cel opracowania — etap 45
+
+**Źródło:** 02 poz. 8.3 (reszta po etapie 42) i „Dane zlecenia projektu — etap 29” (OPEN: numer umowy).
+
+| Temat | Stan |
+|---|---|
+| Pola | V1 IMPLEMENTED: `Project.contractNumber` (do 100 znaków) i `Project.documentPurpose` (do 2000), opcjonalne, POST/PATCH jak dane zlecenia (pusty tekst czyści); migracja V7. Okna „Nowy projekt” / „Edytuj projekt”, numer umowy w nagłówku projektu. |
+| Dokument i eksport | V1 IMPLEMENTED: PDF — „Numer umowy” na stronie tytułowej (tylko gdy podany), „Cel opracowania” w sekcji 1 (brak → „Dane do uzupełnienia”); XLSX — arkusz „Projekt”. CSV/GeoJSON/GIS bez zmian. |
+| Cel jako słownik | OPEN (założenie V1): wolny tekst. Czy cele się powtarzają (inwentaryzacja, wniosek o wycinkę, program prac) i mają wybierać szablon dokumentu (8.4)? |
+| Podstawa prawna, termin oddania, działki | OPEN: brak pól — czekają na klienta. |
+| Weryfikacja | Testy API (`ProjectApiIntegrationTest`), treść PDF (`ProjectDocumentApiIntegrationTest`), Flyway V7, E2E w `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (aplikacja na H2). NIESPRAWDZONE na lokalnym PostgreSQL. |
