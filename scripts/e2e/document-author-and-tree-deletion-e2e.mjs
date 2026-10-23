@@ -1,6 +1,6 @@
-// Scenariusz E2E etapow 42 i 44 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44 i 45 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
-// drzewa (dwa kroki, blokada bez polaczenia). Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -183,6 +183,19 @@ async function main() {
     await navigate(`/projects/${project.id}/documentation`);
     await waitFor('karta dokumentu', 'return !!document.querySelector(".project-report-card")');
     check('Karta dokumentu wskazuje "Dane do dokumentow" w profilu', (await bodyText()).includes('„Dane do dokumentów”'));
+
+    // --- Etap 45: numer umowy i cel opracowania w projekcie ---
+    await navigate(`/projects/${project.id}`);
+    await clickButton('Edytuj projekt');
+    await waitFor('okno edycji projektu', 'return !!document.querySelector(".modal")');
+    await typeIntoLabeled('Numer umowy', 'UM/45/2026');
+    await typeIntoLabeled('Cel opracowania', 'Inwentaryzacja przed przebudową alei');
+    await clickButton('Zapisz');
+    await waitFor('zamkniecie okna', 'return !document.querySelector(".modal")');
+    check('Naglowek projektu pokazuje numer umowy', (await bodyText()).includes('Umowa: UM/45/2026'));
+    const savedProject = await api(`/api/projects/${project.id}`);
+    check('Numer umowy i cel opracowania zapisane na serwerze',
+      savedProject.contractNumber === 'UM/45/2026' && savedProject.documentPurpose === 'Inwentaryzacja przed przebudową alei');
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
