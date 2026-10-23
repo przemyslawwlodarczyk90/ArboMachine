@@ -8,6 +8,7 @@ import com.example.arbomachine.domain.tree.dto.UpdateTreeRequest;
 import com.example.arbomachine.domain.tree.service.treefacade.ClearTreeLocationHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.ClearTreeMapSymbolHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.CreateTreeHandler;
+import com.example.arbomachine.domain.tree.service.treefacade.DeleteTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreeHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.GetTreesOfProjectHandler;
 import com.example.arbomachine.domain.tree.service.treefacade.SetTreeLocationHandler;
@@ -31,6 +32,7 @@ public class TreeFacade {
     private final ClearTreeLocationHandler clearTreeLocationHandler;
     private final SetTreeMapSymbolHandler setTreeMapSymbolHandler;
     private final ClearTreeMapSymbolHandler clearTreeMapSymbolHandler;
+    private final DeleteTreeHandler deleteTreeHandler;
 
     public TreeFacade(CreateTreeHandler createTreeHandler,
                       GetTreesOfProjectHandler getTreesOfProjectHandler,
@@ -39,7 +41,8 @@ public class TreeFacade {
                       SetTreeLocationHandler setTreeLocationHandler,
                       ClearTreeLocationHandler clearTreeLocationHandler,
                       SetTreeMapSymbolHandler setTreeMapSymbolHandler,
-                      ClearTreeMapSymbolHandler clearTreeMapSymbolHandler) {
+                      ClearTreeMapSymbolHandler clearTreeMapSymbolHandler,
+                      DeleteTreeHandler deleteTreeHandler) {
         this.createTreeHandler = createTreeHandler;
         this.getTreesOfProjectHandler = getTreesOfProjectHandler;
         this.getTreeHandler = getTreeHandler;
@@ -48,6 +51,7 @@ public class TreeFacade {
         this.clearTreeLocationHandler = clearTreeLocationHandler;
         this.setTreeMapSymbolHandler = setTreeMapSymbolHandler;
         this.clearTreeMapSymbolHandler = clearTreeMapSymbolHandler;
+        this.deleteTreeHandler = deleteTreeHandler;
     }
 
     public TreeResponse createTreeInProjectOfCurrentUser(String currentUserEmail, Long projectId,
@@ -90,5 +94,10 @@ public class TreeFacade {
 
     public TreeResponse clearMapSymbolOfTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {
         return clearTreeMapSymbolHandler.handle(currentUserEmail, projectId, treeId);
+    }
+
+    /** Etap 44: usuniecie drzewa razem z jego zdjeciami, pracami, waloryzacja, kontrolami i oznaczeniami. */
+    public void deleteTreeOfProjectOfCurrentUser(String currentUserEmail, Long projectId, Long treeId) {
+        deleteTreeHandler.handle(currentUserEmail, projectId, treeId);
     }
 }

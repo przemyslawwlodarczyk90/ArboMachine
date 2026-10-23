@@ -92,4 +92,9 @@ public class TreeStand {
         if (trees.size() != before) this.updatedAt = updateTime;
         return trees.size() - before;
     }
+
+    /** Etap 44: usuwane drzewo znika z grupy; updatedAt tylko, gdy drzewo bylo w grupie. */
+    public void removeTree(Tree treeToRemove, Instant updateTime) {
+        if (trees.remove(treeToRemove)) this.updatedAt = updateTime;
+    }
 }

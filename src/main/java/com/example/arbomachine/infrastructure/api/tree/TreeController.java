@@ -111,4 +111,13 @@ public class TreeController {
         return ResponseEntity.ok(treeFacade.clearMapSymbolOfTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(),
                 projectId, treeId));
     }
+
+    @Operation(summary = "Usuniecie drzewa (etap 44) razem ze zdjeciami, pracami, waloryzacja, kontrolami i oznaczeniami; 204")
+    @DeleteMapping("/{treeId}")
+    public ResponseEntity<Void> deleteTree(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                           @PathVariable Long projectId,
+                                           @PathVariable Long treeId) {
+        treeFacade.deleteTreeOfProjectOfCurrentUser(authenticatedUser.getUsername(), projectId, treeId);
+        return ResponseEntity.noContent().build();
+    }
 }
