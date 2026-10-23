@@ -1016,3 +1016,16 @@ nie dało się usunąć.
 | Cel jako słownik | OPEN (założenie V1): wolny tekst. Czy cele się powtarzają (inwentaryzacja, wniosek o wycinkę, program prac) i mają wybierać szablon dokumentu (8.4)? |
 | Podstawa prawna, termin oddania, działki | OPEN: brak pól — czekają na klienta. |
 | Weryfikacja | Testy API (`ProjectApiIntegrationTest`), treść PDF (`ProjectDocumentApiIntegrationTest`), Flyway V7, E2E w `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (aplikacja na H2). NIESPRAWDZONE na lokalnym PostgreSQL. |
+
+## 49. Niezapisane zmiany przy opuszczaniu ekranu — etap 46
+
+**Źródło:** rejestr długu („brak ochrony przed opuszczeniem strony z niezapisanymi zmianami”). Rejestr niezapisanych
+zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa w terenie.
+
+| Temat | Stan |
+|---|---|
+| Linki w aplikacji | V1 IMPLEMENTED: kliknięcie w link (menu, „Wróć do listy drzew”, zakładki projektu, „←” w trybie terenowym) przy niezapisanych zmianach formularza drzewa / panelu drzewa → okno „Zapisz / Odrzuć zmiany / Zostań” (`UnsavedChangesLeaveGuard`). Ctrl/Shift+klik, nowa karta, linki zewnętrzne i pobieranie — bez pytania. |
+| Zamknięcie / odświeżenie karty | V1 IMPLEMENTED: systemowe pytanie przeglądarki (`beforeunload`) — treści nie da się zmienić. |
+| Przycisk „Wstecz” przeglądarki / gest wstecz na tablecie | OPEN (dług): niepilnowany — `BrowserRouter` nie ma blokady nawigacji; wymagałoby przejścia na router z danymi (`createBrowserRouter` + `useBlocker`). Dane z formularza giną bez pytania. |
+| Inne formularze | Założenie V1: pilnowane są tylko źródła zgłoszone do rejestru (dane drzewa w karcie i w panelu terenowym). Waloryzacja, prace, kontrole, okna projektu — bez ochrony. |
+| Weryfikacja | Testy logiki (`unsavedChangesLeaveTarget.test.ts`), E2E w `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (okno, „Zostań”, „Zapisz”) na H2. E2E trybu terenowego (`field-mode-e2e.mjs`) NIE uruchomione po zmianie — wymaga PostgreSQL z projektem demonstracyjnym. |
