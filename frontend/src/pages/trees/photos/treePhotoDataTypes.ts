@@ -15,6 +15,16 @@ export interface TreePhoto {
   hasAnnotation: boolean;
   annotationUpdatedAt?: string | null;
   createdAt: string;
+  /** etap 52: podpis w dokumencie PDF; brak = nazwa pliku */
+  caption?: string | null;
+  /** etap 52: czy zdjecie trafia do dokumentu PDF (brak pola = tak) */
+  includedInDocument?: boolean;
+}
+
+/** Etap 52: body PUT .../photos/{photoId}/document-settings - komplet ustawien. */
+export interface TreePhotoDocumentSettingsRequest {
+  caption?: string;
+  includedInDocument: boolean;
 }
 
 /** ProjectPhotoResponse - zdjecie na liscie materialow do dokumentacji projektu. */

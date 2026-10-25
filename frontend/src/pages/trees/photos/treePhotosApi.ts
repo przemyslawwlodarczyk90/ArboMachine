@@ -1,6 +1,6 @@
 import { sendApiRequest, sendApiRequestForBlob } from '../../../api/httpClient';
 import type { AnnotationDocument, PhotoAnnotation } from './annotations/annotationDataTypes';
-import type { ProjectPhoto, TreePhoto } from './treePhotoDataTypes';
+import type { ProjectPhoto, TreePhoto, TreePhotoDocumentSettingsRequest } from './treePhotoDataTypes';
 
 const treePhotosPath = (projectId: number, treeId: number) => `/api/projects/${projectId}/trees/${treeId}/photos`;
 
@@ -49,6 +49,13 @@ export const treePhotosApi = {
   deleteTreePhotoAnnotation: (projectId: number, treeId: number, photoId: number) =>
     sendApiRequest<void>(`${treePhotosPath(projectId, treeId)}/${photoId}/annotation`, {
       httpMethod: 'DELETE', sendAccessToken: true,
+    }),
+
+  /** Etap 52: podpis i wybor do dokumentu PDF - tylko online. */
+  updateTreePhotoDocumentSettings: (projectId: number, treeId: number, photoId: number,
+                                    request: TreePhotoDocumentSettingsRequest) =>
+    sendApiRequest<TreePhoto>(`${treePhotosPath(projectId, treeId)}/${photoId}/document-settings`, {
+      httpMethod: 'PUT', requestBody: request, sendAccessToken: true,
     }),
 
   deleteTreePhoto: (projectId: number, treeId: number, photoId: number) =>

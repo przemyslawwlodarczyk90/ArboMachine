@@ -628,6 +628,10 @@ th.right, td.right { text-align: right; }
 .tree-photo-tile-footer { flex-wrap: wrap; }
 .tree-photo-tile-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .tree-photo-annotated-badge { margin-left: 0; justify-self: start; }
+/* Etap 52: podpis zdjecia w dokumencie i zdjecie wylaczone z PDF */
+.tree-photo-excluded-badge { margin-left: 0; justify-self: start; background: #f3f4f6; color: #4b5563; }
+.tree-photo-caption { color: #374151; overflow-wrap: anywhere; }
+.tree-photo-document-settings { gap: 8px; }
 
 /* ---------- Edytor adnotacji zdjecia (pelny ekran, tablet-first) ---------- */
 .modal.modal-fullscreen { max-width: none; width: 100%; height: calc(100vh - 32px); max-height: calc(100vh - 32px); }

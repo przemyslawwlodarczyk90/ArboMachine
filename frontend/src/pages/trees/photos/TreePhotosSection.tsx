@@ -96,6 +96,13 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
         treePhoto.id === treePhotoId ? { ...treePhoto, ...annotationState } : treePhoto) }
       : currentState);
 
+  // Etap 52: podpis / wybor do dokumentu - zdjecie z odpowiedzi backendu zastepuje to na liscie.
+  const replaceChangedPhoto = (changedTreePhoto: TreePhoto) =>
+    setTreePhotoListState((currentState) => currentState.status === 'loaded'
+      ? { status: 'loaded', treePhotos: currentState.treePhotos.map((treePhoto) =>
+        treePhoto.id === changedTreePhoto.id ? changedTreePhoto : treePhoto) }
+      : currentState);
+
   // Zdjecie znika z listy dopiero po potwierdzeniu backendu - kafelek odmontowuje sie i zwalnia swoj adres blob.
   const removeDeletedPhoto = (deletedTreePhotoId: number) => {
     setTreePhotoListState((currentState) => currentState.status === 'loaded'
@@ -154,7 +161,7 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
             <TreePhotoTile key={treePhoto.id} projectId={projectId} treeId={treeId} treePhoto={treePhoto}
                            openPreview={(photo, objectUrl) => setPreviewedPhoto({ treePhoto: photo, objectUrl })}
                            openAnnotationEditor={setAnnotatedPhoto}
-                           requestRemoval={setPhotoAwaitingDeletion} />
+                           requestRemoval={setPhotoAwaitingDeletion} onTreePhotoChanged={replaceChangedPhoto} />
           ))}
         </ul>
       )}
