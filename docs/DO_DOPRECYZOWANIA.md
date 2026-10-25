@@ -1089,6 +1089,7 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Przypomnienia | OPEN: brak powiadomień o zbliżającym się terminie kontroli i brak listy „kontrole do wykonania” w projekcie (prace mają powiadomienia o terminach — czy kontrole też?). |
 | Termin dla drzewa | Założenie V1: termin należy do wpisu kontroli; „aktualny” termin drzewa = termin z ostatniej kontroli (nie jest nigdzie osobno pokazywany). |
 | CSV / GeoJSON / GPKG | Założenie V1: termin tylko w arkuszu „Monitoring” XLSX; kolumny „ostatnia kontrola” w CSV/GIS bez zmian. |
+| Zakres zamówienia | DO DECYZJI WŁAŚCICIELA: plan etapów mówi, że monitoring jest modułem spoza zamówienia (tylko utrzymanie). Etap 51 to mała rozbudowa monitoringu — dalsza rozbudowa (przypomnienia, lista kontroli) wstrzymana do decyzji. |
 | Weryfikacja | Backend 402/402 (test API: zapis, czyszczenie, walidacja, XLSX), frontend 225/225, E2E 38/38 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V8 niesprawdzona na PostgreSQL** (Docker wyłączony; test Flyway na H2). |
 
 ## 55. Podpis zdjęcia i wybór zdjęć do dokumentu — etap 52
@@ -1104,3 +1105,15 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Podpis w eksportach | Założenie V1: podpis tylko w PDF (nie w XLSX/GIS, nie w lokalnej kopii zdjęć). Lista „Materiały do dokumentacji” projektu podpisu nie pokazuje. |
 | Słownictwo | „Podpis”, „Poza dokumentem” — robocze. |
 | Weryfikacja | Backend 405/405 (API: domyślne wartości, zapis, czyszczenie, walidacja, cudze zdjęcie 404; PDF: podpis zamiast nazwy pliku, pominięte zdjęcie, licznik), frontend 228/228, E2E 39/39 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V9 niesprawdzona na PostgreSQL**; wygląd kafelka na tablecie niesprawdzony. |
+
+## 56. Podstawa prawna opracowania — etap 53
+
+**Źródło:** 02 poz. 8.3 („brak: podstawa prawna”).
+
+| Temat | Stan |
+|---|---|
+| Pole „Podstawa prawna” w projekcie | V1 IMPLEMENTED: opcjonalny wolny tekst (do 2000 znaków) w oknach „Nowy projekt” / „Edytuj projekt” (`project.legal_basis`, migracja V10). |
+| PDF | Wiersz „Podstawa prawna” w sekcji 1 tylko, gdy podana (bez „Dane do uzupełnienia” — nie każde opracowanie ma podstawę prawną; założenie V1). |
+| XLSX | Arkusz „Projekt”: wiersz „Podstawa prawna”. |
+| Słownik / podpowiedzi przepisów | OPEN: brak listy typowych podstaw (np. ustawa o ochronie przyrody, decyzja o wycince) — do ustalenia z klientem, czy potrzebna. |
+| Weryfikacja | Backend 406/406 (API: przycięcie, zmiana, czyszczenie, limit; PDF z wierszem i bez), frontend 228/228, E2E 40/40 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V10 niesprawdzona na PostgreSQL.** |
