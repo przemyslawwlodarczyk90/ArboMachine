@@ -1,4 +1,4 @@
-// Scenariusz E2E etapow 42, 44-52 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-53 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
@@ -194,12 +194,14 @@ async function main() {
     await waitFor('okno edycji projektu', 'return !!document.querySelector(".modal")');
     await typeIntoLabeled('Numer umowy', 'UM/45/2026');
     await typeIntoLabeled('Cel opracowania', 'Inwentaryzacja przed przebudową alei');
+    await typeIntoLabeled('Podstawa prawna', 'Art. 83 ustawy o ochronie przyrody');
     await clickButton('Zapisz');
     await waitFor('zamkniecie okna', 'return !document.querySelector(".modal")');
     check('Naglowek projektu pokazuje numer umowy', (await bodyText()).includes('Umowa: UM/45/2026'));
     const savedProject = await api(`/api/projects/${project.id}`);
     check('Numer umowy i cel opracowania zapisane na serwerze',
       savedProject.contractNumber === 'UM/45/2026' && savedProject.documentPurpose === 'Inwentaryzacja przed przebudową alei');
+    check('Etap 53: podstawa prawna zapisana na serwerze', savedProject.legalBasis === 'Art. 83 ustawy o ochronie przyrody');
 
     // --- Etap 46: niezapisane zmiany przy kliknieciu w link ---
     await navigate(`/projects/${project.id}/trees/${treeToKeep.id}`);
