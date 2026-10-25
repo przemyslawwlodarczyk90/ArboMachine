@@ -16,12 +16,13 @@ final class TreeMonitoringRecordMapper {
         return new TreeMonitoringRecord.Fields(
                 request.inspectionDate(),
                 request.healthStatus() == null ? null : TreeHealthStatus.valueOf(request.healthStatus()),
-                notes == null || notes.isBlank() ? null : notes.trim());
+                notes == null || notes.isBlank() ? null : notes.trim(),
+                request.nextInspectionDate());
     }
 
     static TreeMonitoringRecordResponse toResponse(TreeMonitoringRecord record) {
         return new TreeMonitoringRecordResponse(record.getId(), record.getTree().getId(), record.getInspectionDate(),
                 record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes(),
-                record.getCreatedAt(), record.getUpdatedAt());
+                record.getNextInspectionDate(), record.getCreatedAt(), record.getUpdatedAt());
     }
 }

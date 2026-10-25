@@ -170,6 +170,32 @@ class TreeMonitoringApiIntegrationTest {
     }
 
     @Test
+    void nextInspectionDateIsSavedExportedAndCannotPrecedeInspection() throws Exception {
+        String path = monitoringPath(projectIdA, treeIdA1);
+        performAs(userAccountA, post(path).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"inspectionDate\":\"2026-09-20\",\"nextInspectionDate\":\"2026-09-19\"}"))
+                .andExpect(status().isBadRequest());
+        long recordId = createRecord(treeIdA1, "{\"inspectionDate\":\"2026-09-20\",\"healthStatus\":\"FAIR\",\"nextInspectionDate\":\"2027-09-20\"}");
+        performAs(userAccountA, get(path + "/" + recordId)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.nextInspectionDate").value("2027-09-20"));
+        performAs(userAccountA, put(path + "/" + recordId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"inspectionDate\":\"2026-09-20\",\"healthStatus\":\"FAIR\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nextInspectionDate").doesNotExist());
+        performAs(userAccountA, put(path + "/" + recordId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"inspectionDate\":\"2026-09-20\",\"nextInspectionDate\":\"2026-09-20\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nextInspectionDate").value("2026-09-20"));
+
+        byte[] xlsx = performAs(userAccountA, get("/api/projects/{p}/exports/trees.xlsx", projectIdA)).andReturn().getResponse().getContentAsByteArray();
+        try (ReadableWorkbook workbook = new ReadableWorkbook(new ByteArrayInputStream(xlsx))) {
+            List<Row> rows = workbook.findSheet("Monitoring").orElseThrow().read();
+            assertThat(rows.get(0).getCellText(7)).isEqualTo("Termin następnej kontroli");
+            assertThat(rows.get(1).getCellText(7)).isEqualTo("2026-09-20");
+        }
+    }
+
+    @Test
     void invalidRecordsAreRejected() throws Exception {
         String path = monitoringPath(projectIdA, treeIdA1);
         performAs(userAccountA, post(path).contentType(MediaType.APPLICATION_JSON).content("{\"healthStatus\":\"GOOD\"}"))

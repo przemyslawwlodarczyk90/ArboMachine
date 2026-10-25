@@ -49,6 +49,13 @@ public class TreeMonitoringRecord {
     @Column(columnDefinition = "text")
     private String notes;
 
+    /**
+     * Etap 51: termin nastepnej kontroli wyznaczony przez arboryste przy tej kontroli (opcjonalny). Aplikacja go nie
+     * wylicza i nie wysyla przypomnien (DO_DOPRECYZOWANIA §54).
+     */
+    @Column(name = "next_inspection_date")
+    private LocalDate nextInspectionDate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -68,7 +75,7 @@ public class TreeMonitoringRecord {
     }
 
     /** Komplet pol wpisu ustawianych formularzem (znormalizowany; data nigdy null). */
-    public record Fields(LocalDate inspectionDate, TreeHealthStatus healthStatus, String notes) {
+    public record Fields(LocalDate inspectionDate, TreeHealthStatus healthStatus, String notes, LocalDate nextInspectionDate) {
         public Fields {
             Objects.requireNonNull(inspectionDate, "inspectionDate");
         }
@@ -84,7 +91,7 @@ public class TreeMonitoringRecord {
     }
 
     public Fields fields() {
-        return new Fields(inspectionDate, healthStatus, notes);
+        return new Fields(inspectionDate, healthStatus, notes, nextInspectionDate);
     }
 
     /** Edycja bez zmian nie przesuwa updatedAt. */
@@ -102,5 +109,6 @@ public class TreeMonitoringRecord {
         this.inspectionDate = fields.inspectionDate();
         this.healthStatus = fields.healthStatus();
         this.notes = fields.notes();
+        this.nextInspectionDate = fields.nextInspectionDate();
     }
 }
