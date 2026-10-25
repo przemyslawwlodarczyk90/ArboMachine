@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import type { MapSymbol } from '../../../map/mapSymbolDataTypes';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import { MapSymbolPicker } from '../../../map/MapSymbolPicker';
 import type { TreeWork } from './treeWorkDataTypes';
 import { treeWorksApi } from './treeWorksApi';
@@ -24,8 +25,9 @@ export function TreeWorkMapSymbolEditor({ projectId, treeId, treeWork, symbols, 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isSubmissionInProgress = useRef(false);
 
-  const saveSymbol = async (symbolCode: string | null) => {
-    if (isSubmissionInProgress.current) return;
+  /** true = symbol zapisany; false = blad zapisu albo zapis w toku. */
+  const saveSymbol = async (symbolCode: string | null): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     setErrorMessage(null);
@@ -33,12 +35,19 @@ export function TreeWorkMapSymbolEditor({ projectId, treeId, treeWork, symbols, 
       onTreeWorkChanged(symbolCode
         ? await treeWorksApi.setTreeWorkMapSymbol(projectId, treeId, treeWork.id, symbolCode)
         : await treeWorksApi.clearTreeWorkMapSymbol(projectId, treeId, treeWork.id));
+      return true;
     } catch (savingError) {
       setErrorMessage(`Nie udało się zapisać symbolu. ${savingError instanceof ApiRequestError ? savingError.message : 'Nieoczekiwany błąd.'}`);
       isSubmissionInProgress.current = false;
       setIsSaving(false);
+      return false;
     }
   };
+
+  // Etap 48: wybrany, niezapisany symbol - link, "Wstecz", inne drzewo albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan".
+  const hasUnsavedChanges = selectedSymbolCode !== null && selectedSymbolCode !== savedSymbolCode;
+  useUnsavedChangesSource(`tree-work-symbol-${treeWork.id}`, hasUnsavedChanges, 'symbol pracy',
+    () => saveSymbol(selectedSymbolCode), closeEditor);
 
   return (
     <div className="tree-work-symbol-editor stack">

@@ -3,6 +3,7 @@ import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { formatTimestampForDisplay } from '../../../formatting/formatTimestampForDisplay';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import { VoiceEnabledTextAreaField } from '../../../speech/VoiceEnabledTextAreaField';
 import { treeValuationsApi } from './treeValuationsApi';
 import { ValuationBadge } from './ValuationBadge';
@@ -66,8 +67,10 @@ export function TreeValuationSection({ projectId, treeId, syncGeneration = 0 }: 
     setFormErrorMessage(null);
   };
 
-  const runSubmission = async (submission: () => Promise<TreeValuation>, message: (valuation: TreeValuation) => string) => {
-    if (isSubmissionInProgress.current) return;
+  /** true = zapisano (takze na urzadzeniu offline); false = blad zapisu albo zapis w toku. */
+  const runSubmission = async (submission: () => Promise<TreeValuation>,
+                               message: (valuation: TreeValuation) => string): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     setFormErrorMessage(null);
@@ -77,6 +80,7 @@ export function TreeValuationSection({ projectId, treeId, syncGeneration = 0 }: 
       setSuccessMessage(message(valuation));
       setIsRemovalConfirmationVisible(false);
       stopEditing();
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setFieldErrors(savingError.errorMessageByFieldName as Partial<Record<TreeValuationTextField, string>>);
@@ -84,6 +88,7 @@ export function TreeValuationSection({ projectId, treeId, syncGeneration = 0 }: 
       } else {
         setFormErrorMessage('Nie udało się zapisać waloryzacji. Nieoczekiwany błąd.');
       }
+      return false;
     } finally {
       isSubmissionInProgress.current = false;
       setIsSaving(false);
@@ -94,20 +99,28 @@ export function TreeValuationSection({ projectId, treeId, syncGeneration = 0 }: 
 
   const submit = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (!formValues) return;
+    void saveValuation();
+  };
+
+  const saveValuation = async (): Promise<boolean> => {
+    if (!formValues) return false;
     const errors = validateValuationFormValues(formValues);
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       setFormErrorMessage('Popraw zaznaczone pola.');
-      return;
+      return false;
     }
     if (isValuationEmpty(formValues)) {
       setFormErrorMessage('Wybierz ocenę ogólną albo wpisz przynajmniej jedną wartość. Aby usunąć waloryzację, użyj „Usuń waloryzację”.');
-      return;
+      return false;
     }
-    void runSubmission(() => treeValuationsApi.saveTreeValuation(projectId, treeId, toValuationRequest(formValues)),
+    return runSubmission(() => treeValuationsApi.saveTreeValuation(projectId, treeId, toValuationRequest(formValues)),
       (valuation) => (valuation.offlinePending ? `Waloryzację ${offlineMessage}` : 'Waloryzacja została zapisana.'));
   };
+
+  // Etap 48: niezapisana waloryzacja - link, "Wstecz" albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan".
+  useUnsavedChangesSource(`tree-valuation-${treeId}`,
+    formValues !== null && hasUnsavedValuationChanges(formValues, savedValuation), 'waloryzacja', saveValuation, stopEditing);
 
   const removeValuation = () => void runSubmission(
     async () => (await treeValuationsApi.deleteTreeValuation(projectId, treeId)) ?? { treeId, hasValuation: false },

@@ -128,7 +128,8 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0, onWork
       {quickActionErrorMessage && <Alert variant="error">{quickActionErrorMessage}</Alert>}
 
       {isAddingWork && (
-        <TreeWorkForm initialFormValues={emptyTreeWorkFormValues} submitButtonLabel="Dodaj pracę"
+        <TreeWorkForm unsavedChangesSourceId={`tree-work-new-${treeId}`} initialFormValues={emptyTreeWorkFormValues}
+                      submitButtonLabel="Dodaj pracę"
                       saveTreeWork={(request) => treeWorksApi.createTreeWork(projectId, treeId, request)}
                       onTreeWorkSaved={appendCreatedWork} cancelEditing={() => setIsAddingWork(false)} />
       )}
@@ -142,7 +143,8 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0, onWork
           {treeWorkListState.treeWorks.map((treeWork) => (
             <li key={treeWork.id} className="tree-work-item">
               {editedTreeWorkId === treeWork.id ? (
-                <TreeWorkForm initialFormValues={toTreeWorkFormValues(treeWork)} submitButtonLabel="Zapisz"
+                <TreeWorkForm unsavedChangesSourceId={`tree-work-${treeWork.id}`} initialFormValues={toTreeWorkFormValues(treeWork)}
+                              submitButtonLabel="Zapisz"
                               saveTreeWork={(request) => treeWorksApi.updateTreeWork(projectId, treeId, treeWork.id, request)}
                               onTreeWorkSaved={replaceUpdatedWork} cancelEditing={() => setEditedTreeWorkId(null)} />
               ) : (

@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LabeledInputField } from '../../../components/LabeledInputField';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import { VoiceEnabledTextAreaField } from '../../../speech/VoiceEnabledTextAreaField';
 import type { TreeWork, TreeWorkFieldsRequest, TreeWorkPriority, TreeWorkStatus } from './treeWorkDataTypes';
 import {
@@ -15,7 +16,11 @@ import { TREE_WORK_PRIORITIES, TREE_WORK_STATUSES, todayIsoDate, workPriorityLab
  * (saveTreeWork), a po sukcesie oddaje prace z odpowiedzi backendu (onTreeWorkSaved) - to ona jest zrodlem prawdy.
  * Przy bledzie zostaje otwarty z wpisanymi danymi. Anuluj niczego nie wysyla.
  */
-export function TreeWorkForm({ initialFormValues, saveTreeWork, onTreeWorkSaved, cancelEditing, submitButtonLabel }: {
+export function TreeWorkForm({
+  unsavedChangesSourceId, initialFormValues, saveTreeWork, onTreeWorkSaved, cancelEditing, submitButtonLabel,
+}: {
+  /** etap 48: identyfikator w rejestrze niezapisanych zmian - osobny dla nowej pracy i dla kazdej edytowanej */
+  unsavedChangesSourceId: string;
   initialFormValues: TreeWorkFormValues;
   saveTreeWork: (treeWorkFieldsRequest: TreeWorkFieldsRequest) => Promise<TreeWork>;
   onTreeWorkSaved: (savedTreeWork: TreeWork) => void;
@@ -41,19 +46,25 @@ export function TreeWorkForm({ initialFormValues, saveTreeWork, onTreeWorkSaved,
       completedDate: status === 'COMPLETED' && !previousValues.completedDate ? todayIsoDate() : previousValues.completedDate,
     }));
 
-  const submitTreeWork = async (submitEvent: FormEvent) => {
+  const submitTreeWork = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (isSubmissionInProgress.current) return;
+    void saveFormValues();
+  };
+
+  /** true = praca zapisana (takze na urzadzeniu offline); false = blad walidacji / zapisu albo zapis w toku. */
+  const saveFormValues = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     setFormErrorMessage(null);
 
     const clientSideErrors = validateTreeWorkFormValues(treeWorkFormValues);
     setErrorMessageByFieldName(clientSideErrors);
-    if (Object.keys(clientSideErrors).length) return;
+    if (Object.keys(clientSideErrors).length) return false;
 
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     try {
       onTreeWorkSaved(await saveTreeWork(toTreeWorkFieldsRequest(treeWorkFormValues)));
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
@@ -63,8 +74,12 @@ export function TreeWorkForm({ initialFormValues, saveTreeWork, onTreeWorkSaved,
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
+      return false;
     }
   };
+
+  // Etap 48: wpisana, niezapisana praca - link, "Wstecz", inne drzewo albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan".
+  useUnsavedChangesSource(unsavedChangesSourceId, hasUnsavedChanges, 'prace', saveFormValues, cancelEditing);
 
   return (
     <form onSubmit={submitTreeWork} className="form tree-work-form" noValidate>

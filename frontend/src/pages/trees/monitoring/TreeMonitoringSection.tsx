@@ -4,6 +4,7 @@ import { Alert } from '../../../components/Alert';
 import { LabeledInputField } from '../../../components/LabeledInputField';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { VoiceEnabledTextAreaField } from '../../../speech/VoiceEnabledTextAreaField';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import { formatWorkDate, todayIsoDate } from '../works/workManagement';
 import { HealthStatusBadge } from './HealthStatusBadge';
 import { HEALTH_STATUS_NOT_SPECIFIED_LABEL, HEALTH_STATUS_OPTIONS, type TreeMonitoringRecord } from './monitoringDataTypes';
@@ -78,14 +79,19 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
 
   const offlineSuffix = ' Zapisano na tym urządzeniu - zostanie wysłane po połączeniu z internetem.';
 
-  const submit = async (submitEvent: FormEvent) => {
+  const submit = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (!editedRecord || isSubmissionInProgress.current) return;
+    void saveEditedRecord();
+  };
+
+  /** true = kontrola zapisana (takze na urzadzeniu offline); false = blad walidacji / zapisu albo zapis w toku. */
+  const saveEditedRecord = async (): Promise<boolean> => {
+    if (!editedRecord || isSubmissionInProgress.current) return false;
     const errors = validateMonitoringFormValues(editedRecord.values);
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       setFormErrorMessage('Popraw zaznaczone pola.');
-      return;
+      return false;
     }
     isSubmissionInProgress.current = true;
     setIsSaving(true);
@@ -99,6 +105,7 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
       setSuccessMessage((editedRecord.recordId === null ? 'Kontrola została zapisana.' : 'Zmiany kontroli zostały zapisane.')
         + (saved.offlinePending ? offlineSuffix : ''));
       setEditedRecord(null);
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setFieldErrors(savingError.errorMessageByFieldName as Partial<Record<keyof MonitoringFormValues, string>>);
@@ -106,11 +113,18 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
       } else {
         setFormErrorMessage('Nie udało się zapisać kontroli. Nieoczekiwany błąd.');
       }
+      return false;
     } finally {
       isSubmissionInProgress.current = false;
       setIsSaving(false);
     }
   };
+
+  // Etap 48: wpisana, niezapisana kontrola - link, "Wstecz", inne drzewo albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan".
+  const hasUnsavedChanges = editedRecord !== null
+    && !areMonitoringFormValuesEquivalent(editedRecord.values, editedRecord.initialValues);
+  useUnsavedChangesSource(`tree-monitoring-${treeId}`, hasUnsavedChanges, 'kontrola stanu',
+    saveEditedRecord, () => setEditedRecord(null));
 
   const deleteRecord = async (record: TreeMonitoringRecord) => {
     if (isSubmissionInProgress.current) return;
