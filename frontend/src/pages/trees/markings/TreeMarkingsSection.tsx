@@ -3,6 +3,7 @@ import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { ToBeClarifiedNote } from '../../../components/ToBeClarifiedNote';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import { TreeMarkingBadge } from './TreeMarkingBadge';
 import type { TreeMarkingDefinition } from './treeMarkingDataTypes';
 import { treeMarkingsApi } from './treeMarkingsApi';
@@ -66,8 +67,9 @@ export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0, onM
   const toggleCode = (code: string) => setSelectedCodes((codes) =>
     (codes.includes(code) ? codes.filter((selected) => selected !== code) : [...codes, code]));
 
-  const saveMarkings = async () => {
-    if (isSubmissionInProgress.current) return;
+  /** true = oznaczenia zapisane (takze na urzadzeniu offline); false = blad zapisu albo zapis w toku. */
+  const saveMarkings = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     setErrorMessage(null);
@@ -76,13 +78,18 @@ export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0, onM
       setSavedState({ status: 'loaded', codes: saved.codes, offlinePending: !!saved.offlinePending });
       setSelectedCodes(saved.codes);
       onMarkingsSaved?.(saved.codes);
+      return true;
     } catch (savingError) {
       setErrorMessage(`Nie udało się zapisać oznaczeń. ${savingError instanceof ApiRequestError ? savingError.message : 'Nieoczekiwany błąd.'}`);
+      return false;
     } finally {
       isSubmissionInProgress.current = false;
       setIsSaving(false);
     }
   };
+
+  // Etap 49: zaznaczone, niezapisane oznaczenia - link, "Wstecz", inne drzewo albo zmiana trybu pyta o decyzje.
+  useUnsavedChangesSource(`tree-markings-${treeId}`, hasChanges, 'oznaczenia', saveMarkings, () => setSelectedCodes(savedCodes));
 
   return (
     <section className="tree-card-section" aria-labelledby="tree-markings-heading">

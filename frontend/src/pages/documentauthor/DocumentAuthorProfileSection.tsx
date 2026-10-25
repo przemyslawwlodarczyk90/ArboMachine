@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
@@ -49,15 +50,20 @@ export function DocumentAuthorProfileSection() {
 
   const savedProfile = loadingState.status === 'loaded' ? loadingState.profile : null;
 
-  const submit = async (submitEvent: FormEvent) => {
+  const submit = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (isSubmissionInProgress.current) return;
+    void saveProfile();
+  };
+
+  /** true = dane zapisane; false = blad walidacji / zapisu albo zapis w toku. */
+  const saveProfile = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     const errors = validateDocumentAuthorProfileFormValues(formValues);
     setFieldErrors(errors);
     setSuccessMessage(null);
     if (Object.keys(errors).length) {
       setFormErrorMessage('Popraw zaznaczone pola.');
-      return;
+      return false;
     }
     isSubmissionInProgress.current = true;
     setIsSaving(true);
@@ -67,6 +73,7 @@ export function DocumentAuthorProfileSection() {
       setLoadingState({ status: 'loaded', profile });
       setFormValues(toDocumentAuthorProfileFormValues(profile));
       setSuccessMessage(profile.hasProfile ? 'Dane do dokumentów zostały zapisane.' : 'Dane do dokumentów zostały usunięte.');
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setFieldErrors(savingError.errorMessageByFieldName as Partial<Record<DocumentAuthorProfileField, string>>);
@@ -74,11 +81,17 @@ export function DocumentAuthorProfileSection() {
       } else {
         setFormErrorMessage('Nie udało się zapisać danych. Nieoczekiwany błąd.');
       }
+      return false;
     } finally {
       isSubmissionInProgress.current = false;
       setIsSaving(false);
     }
   };
+
+  // Etap 49: niezapisane dane do dokumentow - link albo "Wstecz" pyta "Zapisz / Odrzuc / Zostan".
+  useUnsavedChangesSource('document-author-profile',
+    loadingState.status === 'loaded' && hasUnsavedDocumentAuthorProfileChanges(formValues, savedProfile), 'dane do dokumentów',
+    saveProfile, () => setFormValues(toDocumentAuthorProfileFormValues(savedProfile)));
 
   return (
     <section className="card stack-tight document-author-profile-section" aria-labelledby="document-author-profile-heading">

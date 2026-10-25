@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
 import { LabeledInputField } from '../../components/LabeledInputField';
@@ -34,14 +35,19 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
     || orderFields.contractNumber.trim() !== (savedProject.contractNumber ?? '')
     || orderFields.documentPurpose.trim() !== (savedProject.documentPurpose ?? '');
 
-  const submitProjectChanges = async (submitEvent: FormEvent) => {
+  const submitProjectChanges = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (isSubmissionInProgress.current) return;
+    void saveProjectChanges();
+  };
+
+  /** true = projekt zapisany; false = blad walidacji / zapisu albo zapis w toku. */
+  const saveProjectChanges = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     setFormErrorMessage(null);
 
     if (!projectName.trim()) {
       setErrorMessageByFieldName({ name: 'Nazwa projektu jest wymagana.' });
-      return;
+      return false;
     }
     setErrorMessageByFieldName({});
 
@@ -59,6 +65,7 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
         documentPurpose: orderFields.documentPurpose.trim(),
       });
       onProjectSaved(savedProjectFromBackend);
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
@@ -68,8 +75,12 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
+      return false;
     }
   };
+
+  // Etap 49: okno edycji projektu z niezapisanymi zmianami - "Wstecz" przegladarki pyta "Zapisz / Odrzuc / Zostan".
+  useUnsavedChangesSource(`edit-project-${savedProject.id}`, hasUnsavedChanges, 'dane projektu', saveProjectChanges, closeDialog);
 
   return (
     <ModalDialog title="Edytuj projekt" closeDialog={closeDialog} isClosingBlocked={isSaving}>

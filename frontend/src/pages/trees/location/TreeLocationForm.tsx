@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
 import { LabeledInputField } from '../../../components/LabeledInputField';
+import { useUnsavedChangesSource } from '../../../fieldmode/useUnsavedChangesSource';
 import type { Tree } from '../treeDataTypes';
 import { treesApi } from '../treesApi';
 import {
@@ -22,8 +23,8 @@ export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelE
   onTreeLocationSaved: (savedTree: Tree) => void;
   cancelEditing: () => void;
 }) {
-  const [locationFormValues, setLocationFormValues] = useState<TreeLocationFormValues>(
-    () => toTreeLocationFormValues(tree.location));
+  const [initialFormValues] = useState<TreeLocationFormValues>(() => toTreeLocationFormValues(tree.location));
+  const [locationFormValues, setLocationFormValues] = useState<TreeLocationFormValues>(initialFormValues);
   const [errorMessageByFieldName, setErrorMessageByFieldName] = useState<Record<string, string>>({});
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,20 +39,26 @@ export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelE
   };
   const isWgs84 = locationFormValues.coordinateSystem === 'WGS84';
 
-  const submitLocation = async (submitEvent: FormEvent) => {
+  const submitLocation = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
-    if (isSubmissionInProgress.current) return;
+    void saveLocation();
+  };
+
+  /** true = lokalizacja zapisana; false = blad walidacji / zapisu albo zapis w toku. */
+  const saveLocation = async (): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     setFormErrorMessage(null);
 
     const clientSideErrors = validateTreeLocationFormValues(locationFormValues);
     setErrorMessageByFieldName(clientSideErrors);
-    if (Object.keys(clientSideErrors).length) return;
+    if (Object.keys(clientSideErrors).length) return false;
 
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     try {
       const savedTree = await treesApi.setTreeLocation(projectId, tree.id, toTreeLocationRequest(locationFormValues));
       onTreeLocationSaved(savedTree);
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
@@ -61,8 +68,13 @@ export function TreeLocationForm({ projectId, tree, onTreeLocationSaved, cancelE
       }
       isSubmissionInProgress.current = false;
       setIsSaving(false);
+      return false;
     }
   };
+
+  // Etap 49: wpisane, niezapisane wspolrzedne - link, "Wstecz" albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan".
+  const hasUnsavedChanges = JSON.stringify(locationFormValues) !== JSON.stringify(initialFormValues);
+  useUnsavedChangesSource(`tree-location-${tree.id}`, hasUnsavedChanges, 'lokalizacja', saveLocation, cancelEditing);
 
   return (
     <form onSubmit={submitLocation} className="form" noValidate>
