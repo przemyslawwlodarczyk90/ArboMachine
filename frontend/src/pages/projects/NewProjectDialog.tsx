@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
 import { useNavigate } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
@@ -61,6 +62,12 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
       setIsCreatingProject(false);
     }
   };
+
+  // Etap 50: wpisane dane nowego projektu - "Wstecz" pyta "Odrzuc zmiany / Zostan" (bez "Zapisz": utworzenie
+  // projektu przechodzi do jego strony).
+  const hasUnsavedChanges = [projectName, projectDescription, ...Object.values(orderFields)]
+    .some((value) => value.trim() !== '');
+  useUnsavedChangesSource('new-project', hasUnsavedChanges, 'nowy projekt', null, closeDialog);
 
   return (
     <ModalDialog title="Nowy projekt" closeDialog={closeDialog} isClosingBlocked={isCreatingProject}>

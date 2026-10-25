@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
 import { useNavigate } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
@@ -68,6 +69,11 @@ export function NewTreeDialog({ projectId, closeDialog, initialLocation = null, 
       setIsAddingTree(false);
     }
   };
+
+  // Etap 50: zmieniony numer - "Wstecz" pyta "Odrzuc zmiany / Zostan" (bez "Zapisz": dodanie drzewa przechodzi do
+  // jego karty). Punkt z GPS / mapy sam nie liczy sie jako zmiana - wskazuje sie go od nowa.
+  useUnsavedChangesSource(`new-tree-${projectId}`, inventoryNumber.trim() !== suggestedInventoryNumber.trim(), 'nowe drzewo',
+    null, closeDialog);
 
   return (
     <ModalDialog title="Dodaj drzewo" closeDialog={closeDialog} isClosingBlocked={isAddingTree}>
