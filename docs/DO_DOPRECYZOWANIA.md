@@ -1090,3 +1090,17 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Termin dla drzewa | Założenie V1: termin należy do wpisu kontroli; „aktualny” termin drzewa = termin z ostatniej kontroli (nie jest nigdzie osobno pokazywany). |
 | CSV / GeoJSON / GPKG | Założenie V1: termin tylko w arkuszu „Monitoring” XLSX; kolumny „ostatnia kontrola” w CSV/GIS bez zmian. |
 | Weryfikacja | Backend 402/402 (test API: zapis, czyszczenie, walidacja, XLSX), frontend 225/225, E2E 38/38 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V8 niesprawdzona na PostgreSQL** (Docker wyłączony; test Flyway na H2). |
+
+## 55. Podpis zdjęcia i wybór zdjęć do dokumentu — etap 52
+
+**Źródło:** 02 poz. 4.3 („czy w dokumencie zdjęcia mają mieć podpisy, wybór i kolejność?”) — V1 bez czekania.
+
+| Temat | Stan |
+|---|---|
+| Podpis pod zdjęciem w PDF | V1 IMPLEMENTED: pole „Podpis w dokumencie” (do 500 znaków) na kafelku zdjęcia; PDF: „Fot. N. Drzewo nr X — podpis”, bez podpisu — nazwa pliku (jak przed etapem 52). |
+| Wybór zdjęć do dokumentu | V1 IMPLEMENTED: „Zdjęcie w dokumencie PDF” (domyślnie zaznaczone — stare zdjęcia zostają). Odznaczone nie trafiają do PDF, nie dostają numeru „Fot. N”; licznik „Zdjęcia” w podsumowaniu PDF liczy tylko zdjęcia w dokumencie. |
+| Kolejność zdjęć | OPEN: nadal kolejność dodania; brak przesuwania i „zdjęcia głównego”. |
+| Praca bez zasięgu | Założenie V1: podpis i wybór tylko online (formularz blokuje zapis bez połączenia, nie ma kolejki offline). Do potwierdzenia, czy podpisy wpisuje się w terenie, czy w biurze. |
+| Podpis w eksportach | Założenie V1: podpis tylko w PDF (nie w XLSX/GIS, nie w lokalnej kopii zdjęć). Lista „Materiały do dokumentacji” projektu podpisu nie pokazuje. |
+| Słownictwo | „Podpis”, „Poza dokumentem” — robocze. |
+| Weryfikacja | Backend 405/405 (API: domyślne wartości, zapis, czyszczenie, walidacja, cudze zdjęcie 404; PDF: podpis zamiast nazwy pliku, pominięte zdjęcie, licznik), frontend 228/228, E2E 39/39 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V9 niesprawdzona na PostgreSQL**; wygląd kafelka na tablecie niesprawdzony. |
