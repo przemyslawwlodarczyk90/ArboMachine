@@ -48,6 +48,7 @@ export function NewProjectDialog({ closeDialog }: { closeDialog: () => void }) {
         orderDate: orderFields.orderDate || undefined,
         contractNumber: orderFields.contractNumber.trim() || undefined,
         documentPurpose: orderFields.documentPurpose.trim() || undefined,
+        legalBasis: orderFields.legalBasis.trim() || undefined,
       });
       navigate(`/projects/${createdProject.id}`);
     } catch (creationError) {

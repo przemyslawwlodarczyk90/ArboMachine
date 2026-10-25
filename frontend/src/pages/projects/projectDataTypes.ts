@@ -13,6 +13,8 @@ export interface Project {
   /** etap 45: numer umowy / zlecenia i cel opracowania (do dokumentu PDF) */
   contractNumber?: string | null;
   documentPurpose?: string | null;
+  /** etap 53: podstawa prawna opracowania (do dokumentu PDF) */
+  legalBasis?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +28,8 @@ export interface CreateProjectRequest {
   orderDate?: string;
   contractNumber?: string;
   documentPurpose?: string;
+  /** etap 53 */
+  legalBasis?: string;
 }
 
 /**
@@ -42,4 +46,6 @@ export interface UpdateProjectRequest {
   /** etap 45: pusty tekst = usuniecie */
   contractNumber?: string;
   documentPurpose?: string;
+  /** etap 53 */
+  legalBasis?: string;
 }

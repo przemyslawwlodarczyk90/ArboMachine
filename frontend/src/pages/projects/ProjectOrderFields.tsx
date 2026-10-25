@@ -9,17 +9,20 @@ export interface ProjectOrderFieldValues {
   /** etap 45 */
   contractNumber: string;
   documentPurpose: string;
+  /** etap 53 */
+  legalBasis: string;
 }
 
 export const toProjectOrderFieldValues = (project?: {
   clientName?: string | null; siteAddress?: string | null; orderDate?: string | null;
-  contractNumber?: string | null; documentPurpose?: string | null;
+  contractNumber?: string | null; documentPurpose?: string | null; legalBasis?: string | null;
 }): ProjectOrderFieldValues => ({
   clientName: project?.clientName ?? '', siteAddress: project?.siteAddress ?? '', orderDate: project?.orderDate ?? '',
   contractNumber: project?.contractNumber ?? '', documentPurpose: project?.documentPurpose ?? '',
+  legalBasis: project?.legalBasis ?? '',
 });
 
-/** Dane zlecenia projektu (etap 29, numer umowy i cel - etap 45) - wspolne pola okien "Nowy projekt" i "Edytuj projekt"; wszystkie opcjonalne. */
+/** Dane zlecenia projektu (etap 29, numer umowy i cel - etap 45, podstawa prawna - etap 53) - wspolne pola okien "Nowy projekt" i "Edytuj projekt"; wszystkie opcjonalne. */
 export function ProjectOrderFields({ values, onChange, errorMessageByFieldName, disabled }: {
   values: ProjectOrderFieldValues;
   onChange: (values: ProjectOrderFieldValues) => void;
@@ -47,6 +50,10 @@ export function ProjectOrderFields({ values, onChange, errorMessageByFieldName, 
                             hintText="Np. inwentaryzacja przed przebudową, wniosek o wycinkę - do sekcji 1 dokumentu (opcjonalnie)."
                             onChange={(changeEvent) => onChange({ ...values, documentPurpose: changeEvent.target.value })}
                             errorMessage={errorMessageByFieldName.documentPurpose} />
+      <LabeledTextAreaField label="Podstawa prawna" value={values.legalBasis} maxLength={2000} rows={2} disabled={disabled}
+                            hintText="Np. przepisy, decyzja albo wniosek, na podstawie których powstaje opracowanie - do sekcji 1 dokumentu (opcjonalnie)."
+                            onChange={(changeEvent) => onChange({ ...values, legalBasis: changeEvent.target.value })}
+                            errorMessage={errorMessageByFieldName.legalBasis} />
     </>
   );
 }

@@ -33,7 +33,8 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
     || orderFields.siteAddress.trim() !== (savedProject.siteAddress ?? '')
     || orderFields.orderDate !== (savedProject.orderDate ?? '')
     || orderFields.contractNumber.trim() !== (savedProject.contractNumber ?? '')
-    || orderFields.documentPurpose.trim() !== (savedProject.documentPurpose ?? '');
+    || orderFields.documentPurpose.trim() !== (savedProject.documentPurpose ?? '')
+    || orderFields.legalBasis.trim() !== (savedProject.legalBasis ?? '');
 
   const submitProjectChanges = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -63,6 +64,7 @@ export function EditProjectDialog({ savedProject, onProjectSaved, closeDialog }:
         orderDate: orderFields.orderDate,
         contractNumber: orderFields.contractNumber.trim(),
         documentPurpose: orderFields.documentPurpose.trim(),
+        legalBasis: orderFields.legalBasis.trim(),
       });
       onProjectSaved(savedProjectFromBackend);
       return true;
