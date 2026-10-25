@@ -13,6 +13,8 @@ export interface TreeMonitoringRecord {
   inspectionDate: string;
   healthStatus?: TreeHealthStatus | null;
   notes?: string | null;
+  /** etap 51: 'YYYY-MM-DD' - termin nastepnej kontroli wyznaczony przez arboryste; brak = bez terminu */
+  nextInspectionDate?: string | null;
   createdAt: string;
   updatedAt: string;
   /** tylko frontend (etap 26): zapisane na urzadzeniu, czeka na synchronizacje; id < 0 = wpis utworzony offline */
@@ -24,6 +26,7 @@ export interface TreeMonitoringRecordRequest {
   inspectionDate: string;
   healthStatus?: TreeHealthStatus;
   notes?: string;
+  nextInspectionDate?: string;
 }
 
 export const HEALTH_STATUS_OPTIONS: { status: TreeHealthStatus; label: string }[] = [

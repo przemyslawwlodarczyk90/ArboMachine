@@ -44,8 +44,8 @@ const workFieldsOf = (body: Record<string, unknown>) => {
   return fields;
 };
 
-/** Pola wpisu monitoringu (etap 29) - komplet, jak PUT backendu. */
-const MONITORING_EDITABLE_FIELDS = ['inspectionDate', 'healthStatus', 'notes'] as const;
+/** Pola wpisu monitoringu (etap 29, termin nastepnej kontroli - etap 51) - komplet, jak PUT backendu. */
+const MONITORING_EDITABLE_FIELDS = ['inspectionDate', 'healthStatus', 'notes', 'nextInspectionDate'] as const;
 
 const monitoringFieldsOf = (body: Record<string, unknown>) => {
   const fields: Record<string, unknown> = {};

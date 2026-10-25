@@ -165,6 +165,11 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
           <span className="muted small">Zapis oceny „Zły” wyśle powiadomienie (jeśli są włączone).</span>
         )}
       </fieldset>
+      <LabeledInputField label="Termin następnej kontroli" type="date" value={editedRecord.values.nextInspectionDate}
+                         disabled={isSaving} min={editedRecord.values.inspectionDate || undefined}
+                         hintText="Opcjonalnie - kiedy drzewo trzeba sprawdzić ponownie. Aplikacja nie wysyła przypomnień."
+                         onChange={(changeEvent) => changeValues({ nextInspectionDate: changeEvent.target.value })}
+                         errorMessage={fieldErrors.nextInspectionDate} />
       <VoiceEnabledTextAreaField label="Uwagi" rows={3} value={editedRecord.values.notes} disabled={isSaving}
                                  errorMessage={fieldErrors.notes} hintText="Co zaobserwowano przy kontroli (opcjonalnie)."
                                  onValueChange={(newValue) => changeValues({ notes: newValue })} />
@@ -212,6 +217,9 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
                     <strong>{formatWorkDate(record.inspectionDate)}</strong>
                     <HealthStatusBadge status={record.healthStatus} />
                     {record.offlinePending && <span className="badge offline-pending-badge">Czeka na synchronizację</span>}
+                    {record.nextInspectionDate && (
+                      <span className="muted small">Następna kontrola: {formatWorkDate(record.nextInspectionDate)}</span>
+                    )}
                     {record.notes && <p className="tree-work-item-description">{record.notes}</p>}
                   </div>
                   {recordAwaitingDeletion?.id === record.id ? (

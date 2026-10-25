@@ -11,27 +11,39 @@ export interface MonitoringFormValues {
   /** '' = nie okreslono */
   healthStatus: TreeHealthStatus | '';
   notes: string;
+  /** etap 51: 'YYYY-MM-DD' albo '' = bez terminu nastepnej kontroli */
+  nextInspectionDate: string;
 }
 
 /** Nowa kontrola: dzisiejsza data (kontrole zwykle wpisuje sie w dniu ogledzin), bez oceny i uwag. */
-export const emptyMonitoringFormValues = (today: string): MonitoringFormValues => ({ inspectionDate: today, healthStatus: '', notes: '' });
+export const emptyMonitoringFormValues = (today: string): MonitoringFormValues => ({
+  inspectionDate: today, healthStatus: '', notes: '', nextInspectionDate: '',
+});
 
 export const toMonitoringFormValues = (record: TreeMonitoringRecord): MonitoringFormValues => ({
   inspectionDate: record.inspectionDate,
   healthStatus: record.healthStatus ?? '',
   notes: record.notes ?? '',
+  nextInspectionDate: record.nextInspectionDate ?? '',
 });
 
 export const toMonitoringRequest = (values: MonitoringFormValues): TreeMonitoringRecordRequest => ({
   inspectionDate: values.inspectionDate,
   healthStatus: values.healthStatus || undefined,
   notes: values.notes.trim() || undefined,
+  nextInspectionDate: values.nextInspectionDate || undefined,
 });
 
 export const validateMonitoringFormValues = (values: MonitoringFormValues): Partial<Record<keyof MonitoringFormValues, string>> => {
   const errors: Partial<Record<keyof MonitoringFormValues, string>> = {};
   if (!values.inspectionDate) errors.inspectionDate = 'Podaj datę kontroli.';
   else if (!/^\d{4}-\d{2}-\d{2}$/.test(values.inspectionDate)) errors.inspectionDate = 'Podaj poprawną datę.';
+  if (values.nextInspectionDate && !/^\d{4}-\d{2}-\d{2}$/.test(values.nextInspectionDate)) {
+    errors.nextInspectionDate = 'Podaj poprawną datę.';
+  } else if (values.nextInspectionDate && values.inspectionDate && values.nextInspectionDate < values.inspectionDate) {
+    // Etap 51: daty ISO porownywalne jako tekst.
+    errors.nextInspectionDate = 'Termin następnej kontroli nie może być wcześniejszy niż data kontroli.';
+  }
   if (values.notes.trim().length > MAXIMUM_MONITORING_NOTES_LENGTH) {
     errors.notes = `Uwagi mogą mieć maksymalnie ${MAXIMUM_MONITORING_NOTES_LENGTH} znaków.`;
   }
