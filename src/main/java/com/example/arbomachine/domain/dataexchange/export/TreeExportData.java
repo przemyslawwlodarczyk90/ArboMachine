@@ -80,6 +80,7 @@ public record TreeExportData(
             case INSPECTION_DATE -> record.inspectionDate().toString();
             case HEALTH_STATUS -> record.healthStatus();
             case NOTES -> record.notes();
+            case NEXT_INSPECTION_DATE -> record.nextInspectionDate() == null ? null : record.nextInspectionDate().toString();
         };
     }
 

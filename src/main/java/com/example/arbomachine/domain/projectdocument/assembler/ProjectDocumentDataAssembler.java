@@ -105,7 +105,8 @@ public class ProjectDocumentDataAssembler {
                 .findAllOfProjectNewestFirst(ownedProject.getId()).stream()
                 .collect(Collectors.groupingBy(record -> record.getTree().getId(), Collectors.mapping(
                         record -> new ProjectDocumentMonitoringData(record.getInspectionDate(),
-                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
+                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes(),
+                                record.getNextInspectionDate()),
                         Collectors.toList())));
 
         Map<Long, List<String>> markingCodesByTreeId = treeMarkingRepository.findTreeIdsAndCodesByProjectId(ownedProject.getId()).stream()

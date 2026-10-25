@@ -289,6 +289,8 @@
     <div class="work" th:each="record : ${tree.monitoringRecords()}">
       <span class="work-name" th:text="${format.localDate(record.inspectionDate())}">01.10.2026</span>
       <span class="small" th:text="${' — ocena stanu: ' + format.healthStatus(record.healthStatus())}"> — ocena stanu: Dobry</span>
+      <span class="small" th:if="${record.nextInspectionDate() != null}"
+            th:text="${' — następna kontrola: ' + format.localDate(record.nextInspectionDate())}"> — następna kontrola: 01.10.2027</span>
       <div th:if="${format.hasText(record.notes())}" class="multiline" th:text="${record.notes()}">Uwagi z kontroli</div>
     </div>
 

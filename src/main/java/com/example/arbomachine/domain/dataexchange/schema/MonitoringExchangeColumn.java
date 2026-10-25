@@ -13,7 +13,9 @@ public enum MonitoringExchangeColumn {
     RECORD_ID("monitoringRecordId", "ID kontroli (ArboMachine)"),
     INSPECTION_DATE("inspectionDate", "Data kontroli"),
     HEALTH_STATUS("healthStatus", "Ocena stanu"),
-    NOTES("monitoringNotes", "Uwagi z kontroli");
+    NOTES("monitoringNotes", "Uwagi z kontroli"),
+    /** Etap 51 - na koncu, zeby nie przesuwac kolumn istniejacych arkuszy. */
+    NEXT_INSPECTION_DATE("nextInspectionDate", "Termin następnej kontroli");
 
     public static final List<MonitoringExchangeColumn> COLUMNS = List.of(values());
 

@@ -65,7 +65,8 @@ public class ProjectExportDataAssembler {
                 .findAllOfProjectNewestFirst(ownedProject.getId()).stream()
                 .collect(Collectors.groupingBy(record -> record.getTree().getId(), Collectors.mapping(
                         record -> new TreeMonitoringExportData(record.getId(), record.getInspectionDate(),
-                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes()),
+                                record.getHealthStatus() == null ? null : record.getHealthStatus().name(), record.getNotes(),
+                                record.getNextInspectionDate()),
                         Collectors.toList())));
         List<TreeStand> stands = treeStandRepository.findAllByProjectIdOrderByNameAscIdAsc(ownedProject.getId());
         Map<Long, List<String>> standNamesByTreeId = new java.util.HashMap<>();
