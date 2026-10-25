@@ -1117,3 +1117,16 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | XLSX | Arkusz „Projekt”: wiersz „Podstawa prawna”. |
 | Słownik / podpowiedzi przepisów | OPEN: brak listy typowych podstaw (np. ustawa o ochronie przyrody, decyzja o wycince) — do ustalenia z klientem, czy potrzebna. |
 | Weryfikacja | Backend 406/406 (API: przycięcie, zmiana, czyszczenie, limit; PDF z wierszem i bez), frontend 228/228, E2E 40/40 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V10 niesprawdzona na PostgreSQL.** |
+
+## 57. Zakres kart drzew w dokumencie PDF — etap 54
+
+**Źródło:** 02 poz. 8.4 („czy karty wszystkich drzew mają trafiać do PDF — 938 drzew = 530 stron”).
+
+| Temat | Stan |
+|---|---|
+| Wybór „Karty drzew w dokumencie” | V1 IMPLEMENTED: „Wszystkie drzewa” (domyślnie, jak dotąd) / „Tylko drzewa z pracami do wykonania” / „Bez kart drzew”. API: `?treeCards=ALL|WITH_OPEN_WORKS|NONE`. |
+| Co zostaje zawsze | Zestawienie drzew (sekcja 4), gospodarka drzewostanem (sekcja 5), mapa i podsumowanie obejmują wszystkie drzewa. |
+| Zdjęcia | Drzewo bez karty nie ma w PDF zdjęć ani numerów „Fot. N”; licznik „Zdjęcia” w podsumowaniu liczy tylko zdjęcia w dokumencie (założenie V1). |
+| Wybór zapamiętany | Założenie V1: nie — przy każdym generowaniu domyślnie „Wszystkie drzewa”. |
+| Inne kryteria | OPEN: karty wybranych drzew, drzew z grupy, drzew w złym stanie, drzew z waloryzacją; podział dokumentu na części; szablony per rodzaj opracowania (8.4) — do ustalenia z klientem. |
+| Weryfikacja | Backend 407/407 (trzy zakresy, zdjęcia, licznik, zły parametr → 400), frontend 228/228, E2E 41/41 (H2: „Bez kart drzew” z przeglądarki), `field-mode-e2e.mjs` 3× 55/55. Nie sprawdzono na prawdziwym projekcie 938 drzew (czas generowania). |
