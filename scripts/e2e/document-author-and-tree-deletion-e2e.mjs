@@ -1,8 +1,9 @@
-// Scenariusz E2E etapow 42, 44-48 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-49 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
-// dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Etap 49: oznaczenia, "Dane do dokumentow"
+// i okno edycji projektu. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -286,6 +287,60 @@ async function main() {
     await clickButton('← Wróć do listy drzew');
     await waitFor('lista drzew po anulowaniu kontroli', `return location.pathname === "/projects/${project.id}/trees"`);
     check('Po "Anuluj" w formularzu link dziala bez pytania', !(await evaluate('return !!document.querySelector(".modal")')));
+
+    // --- Etap 49: oznaczenia, dane do dokumentow, okno edycji projektu ---
+    // Okno pytania moze lezec nad innym oknem (edycja projektu) - przyciski i tekst brane z ostatniego okna.
+    const lastModalText = () => evaluate('return [...document.querySelectorAll(".modal")].pop()?.innerText ?? ""');
+    const clickInLastModal = (text) => evaluate(`
+      const modal = [...document.querySelectorAll(".modal")].pop();
+      const button = [...modal.querySelectorAll("button")].find((element) => element.textContent.trim() === ${JSON.stringify(text)} && !element.disabled);
+      if (!button) throw new Error('Brak przycisku w oknie: ' + ${JSON.stringify(text)});
+      button.click();
+      return true;`);
+
+    await navigate(treePath);
+    await waitFor('oznaczenia', 'return !!document.querySelector("section[aria-labelledby=tree-markings-heading] input[type=checkbox]")');
+    await evaluate('document.querySelector("section[aria-labelledby=tree-markings-heading] input[type=checkbox]").click(); return true;');
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno przy oznaczeniach', 'return !!document.querySelector(".modal")');
+    check('Niezapisane oznaczenia -> okno z "(oznaczenia)"', (await lastModalText()).includes('(oznaczenia)'), await lastModalText());
+    await clickInLastModal('Zapisz');
+    await waitFor('lista drzew po zapisie oznaczen', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('"Zapisz" z okna zapisuje oznaczenia',
+      (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/markings`)).codes.length === 1);
+
+    await navigate('/arborist/profile');
+    await waitFor('dane do dokumentow', 'return !!document.querySelector(".document-author-profile-section form")');
+    await typeIntoLabeled('Wykonawca (firma)', 'Zieleń E2E zmieniona');
+    await evaluate('document.querySelector(\'a[href="/projects"]\').click(); return true;');
+    await waitFor('okno przy danych do dokumentow', 'return !!document.querySelector(".modal")');
+    check('Niezapisane dane do dokumentow -> okno z "(dane do dokumentów)"',
+      (await lastModalText()).includes('(dane do dokumentów)'), await lastModalText());
+    await clickInLastModal('Odrzuć zmiany');
+    await waitFor('lista projektow po odrzuceniu', 'return location.pathname === "/projects"');
+    check('"Odrzuć zmiany" nie zapisuje danych do dokumentow',
+      !JSON.stringify(await api('/api/users/me/document-author-profile')).includes('Zieleń E2E zmieniona'));
+
+    await waitFor('link do projektu', `return !!document.querySelector('a[href="/projects/${project.id}"]')`);
+    await evaluate(`document.querySelector('a[href="/projects/${project.id}"]').click(); return true;`);
+    await waitFor('strona projektu', 'return document.body.innerText.includes("Edytuj projekt")');
+    await clickButton('Edytuj projekt');
+    await waitFor('okno edycji projektu', 'return !!document.querySelector(".modal")');
+    await typeIntoLabeled('Numer umowy', 'UM/49/2026');
+    await evaluate('history.back(); return true;');
+    await waitFor('okno po "Wstecz" nad edycja projektu', 'return document.querySelectorAll(".modal").length === 2');
+    check('"Wstecz" przy edycji projektu -> okno z "(dane projektu)"', (await lastModalText()).includes('(dane projektu)'), await lastModalText());
+    await clickInLastModal('Zostań');
+    await waitFor('zamkniecie pytania po "Zostań"', 'return document.querySelectorAll(".modal").length === 1').catch(() => {});
+    check('"Zostań" zostawia okno edycji projektu z wpisanym numerem',
+      (await evaluate('return location.pathname')) === `/projects/${project.id}`
+      && await evaluate('return document.querySelectorAll(".modal").length === 1 && [...document.querySelectorAll(".modal input")].some((input) => input.value === "UM/49/2026")'));
+    await evaluate('history.back(); return true;');
+    await waitFor('ponowne pytanie', 'return document.querySelectorAll(".modal").length === 2');
+    await clickInLastModal('Zapisz');
+    await waitFor('lista projektow po zapisie', 'return location.pathname === "/projects"');
+    check('"Zapisz" z pytania zapisuje projekt i wykonuje "Wstecz"',
+      (await api(`/api/projects/${project.id}`)).contractNumber === 'UM/49/2026');
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
