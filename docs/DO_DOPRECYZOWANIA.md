@@ -1026,6 +1026,18 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 |---|---|
 | Linki w aplikacji | V1 IMPLEMENTED: kliknięcie w link (menu, „Wróć do listy drzew”, zakładki projektu, „←” w trybie terenowym) przy niezapisanych zmianach formularza drzewa / panelu drzewa → okno „Zapisz / Odrzuć zmiany / Zostań” (`UnsavedChangesLeaveGuard`). Ctrl/Shift+klik, nowa karta, linki zewnętrzne i pobieranie — bez pytania. |
 | Zamknięcie / odświeżenie karty | V1 IMPLEMENTED: systemowe pytanie przeglądarki (`beforeunload`) — treści nie da się zmienić. |
-| Przycisk „Wstecz” przeglądarki / gest wstecz na tablecie | OPEN (dług): niepilnowany — `BrowserRouter` nie ma blokady nawigacji; wymagałoby przejścia na router z danymi (`createBrowserRouter` + `useBlocker`). Dane z formularza giną bez pytania. |
+| Przycisk „Wstecz” przeglądarki / gest wstecz na tablecie | RESOLVED w etapie 47 (§50). |
 | Inne formularze | Założenie V1: pilnowane są tylko źródła zgłoszone do rejestru (dane drzewa w karcie i w panelu terenowym). Waloryzacja, prace, kontrole, okna projektu — bez ochrony. |
-| Weryfikacja | Testy logiki (`unsavedChangesLeaveTarget.test.ts`), E2E w `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (okno, „Zostań”, „Zapisz”) na H2. E2E trybu terenowego (`field-mode-e2e.mjs`) NIE uruchomione po zmianie — wymaga PostgreSQL z projektem demonstracyjnym. |
+| Weryfikacja | Testy logiki (`unsavedChangesLeaveTarget.test.ts`), E2E w `scripts/e2e/document-author-and-tree-deletion-e2e.mjs` (okno, „Zostań”, „Zapisz”) na H2. E2E trybu terenowego (`field-mode-e2e.mjs`) uruchomione w etapie 47 na H2 (§50). |
+
+## 50. „Wstecz” przeglądarki i fałszywe pytanie po zapisie offline — etap 47
+
+**Źródło:** dług z §49 („Wstecz” niepilnowany) oraz błąd znaleziony przy sprawdzaniu trybu terenowego (sprzed etapu 46).
+
+| Temat | Stan |
+|---|---|
+| Przycisk „Wstecz” / „Dalej” przeglądarki, gest wstecz | V1 IMPLEMENTED: router z danymi (`createBrowserRouter` + `AppRoot` w `App.tsx`), `useBlocker` w `UnsavedChangesLeaveGuard` → to samo okno „Zapisz / Odrzuć zmiany / Zostań”. Blokada tylko przy zmianie ścieżki; zmiana `?drzewo=` w trybie terenowym nadal przez `runGuarded`. |
+| Fałszywe „Niezapisane zmiany” po zapisie offline | RESOLVED: formularz drzewa brał wartości tylko przy pierwszym renderze, a panel terenowy podmienia drzewo (lista → odpowiedź API / kopia z kolejki). `formValuesAfterSavedTreeChange` przejmuje nową wersję, gdy nic nie jest edytowane; licznik `localChangeCount` (`FieldTreeSheet`, `TreePage`) chroni przed spóźnionym GET. |
+| Założenie V1 | Przy „Wstecz” z niezapisanymi zmianami adres w pasku zostaje do czasu decyzji w oknie (zachowanie `useBlocker`). „Zostań” anuluje cofnięcie. |
+| Inne formularze | OPEN (bez zmian względem §49): waloryzacja, prace, kontrole, okna projektu — bez ochrony. |
+| Weryfikacja | Testy frontu 223/223. E2E na H2: `field-mode-e2e.mjs` 3× 55/55 (świeża baza, projekt demonstracyjny z `seed-demo-project.mjs`), `document-author-and-tree-deletion-e2e.mjs` 18/18 (w tym krok „Wstecz”). **Niesprawdzone na PostgreSQL** (Docker wyłączony) i na fizycznym tablecie (gest wstecz). |
