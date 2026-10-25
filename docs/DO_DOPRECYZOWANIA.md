@@ -1089,7 +1089,7 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Przypomnienia | OPEN: brak powiadomień o zbliżającym się terminie kontroli i brak listy „kontrole do wykonania” w projekcie (prace mają powiadomienia o terminach — czy kontrole też?). |
 | Termin dla drzewa | Założenie V1: termin należy do wpisu kontroli; „aktualny” termin drzewa = termin z ostatniej kontroli (nie jest nigdzie osobno pokazywany). |
 | CSV / GeoJSON / GPKG | Założenie V1: termin tylko w arkuszu „Monitoring” XLSX; kolumny „ostatnia kontrola” w CSV/GIS bez zmian. |
-| Zakres zamówienia | DO DECYZJI WŁAŚCICIELA: plan etapów mówi, że monitoring jest modułem spoza zamówienia (tylko utrzymanie). Etap 51 to mała rozbudowa monitoringu — dalsza rozbudowa (przypomnienia, lista kontroli) wstrzymana do decyzji. |
+| Zakres zamówienia | DECYZJA WŁAŚCICIELA (25.10.2026): etap 51 zostaje. Monitoring nadal „tylko utrzymanie” — dalsza rozbudowa (przypomnienia, lista kontroli) tylko na wyraźne zlecenie. |
 | Weryfikacja | Backend 402/402 (test API: zapis, czyszczenie, walidacja, XLSX), frontend 225/225, E2E 38/38 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V8 niesprawdzona na PostgreSQL** (Docker wyłączony; test Flyway na H2). |
 
 ## 55. Podpis zdjęcia i wybór zdjęć do dokumentu — etap 52
