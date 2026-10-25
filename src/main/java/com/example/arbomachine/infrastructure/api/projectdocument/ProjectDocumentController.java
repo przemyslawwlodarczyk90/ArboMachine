@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.api.projectdocument;
 
+import com.example.arbomachine.domain.projectdocument.data.TreeCardScope;
 import com.example.arbomachine.domain.projectdocument.facade.ProjectDocumentFacade;
 import com.example.arbomachine.domain.projectdocument.generator.GeneratedDocument;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,12 +31,15 @@ public class ProjectDocumentController {
         this.projectDocumentFacade = projectDocumentFacade;
     }
 
-    @Operation(summary = "\"Dokument projektu\" (PDF): dane projektu, tabela i karty drzew, prace, zdjecia")
+    @Operation(summary = "\"Dokument projektu\" (PDF): dane projektu, tabela i karty drzew, prace, zdjecia; "
+            + "treeCards (etap 54): ALL (domyslnie), WITH_OPEN_WORKS, NONE")
     @GetMapping("/api/projects/{projectId}/documents/project-report")
     public ResponseEntity<byte[]> getProjectReport(@AuthenticationPrincipal UserDetails authenticatedUser,
-                                                   @PathVariable Long projectId) {
+                                                   @PathVariable Long projectId,
+                                                   @RequestParam(
+                                                           name = "treeCards", defaultValue = "ALL") TreeCardScope treeCardScope) {
         GeneratedDocument document = projectDocumentFacade.generateProjectReportOfCurrentUser(
-                authenticatedUser.getUsername(), projectId);
+                authenticatedUser.getUsername(), projectId, treeCardScope);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(document.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()

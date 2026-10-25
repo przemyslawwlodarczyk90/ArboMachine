@@ -266,6 +266,41 @@ class ProjectDocumentApiIntegrationTest {
         assertThat(text.replaceAll("\\s+", " ")).contains("Zdjęcia 1");
     }
 
+    // --- etap 54: zakres kart drzew ---
+
+    private byte[] generateDocumentOfUserA(String treeCards) throws Exception {
+        return performAs(userAccountA, get("/api/projects/{p}/documents/project-report", projectIdA).param("treeCards", treeCards))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+    }
+
+    @Test
+    void treeCardScopeLimitsCardsAndPhotosButKeepsTreeTable() throws Exception {
+        long treeWithWork = createTree("{\"inventoryNumber\":\"K-1\"}");
+        long treeWithoutWork = createTree("{\"inventoryNumber\":\"K-2\"}");
+        performAs(userAccountA, post("/api/projects/{p}/trees/{t}/works", projectIdA, treeWithWork)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Cięcia sanitarne\"}"))
+                .andExpect(status().isCreated());
+        performAs(userAccountA, multipart("/api/projects/{p}/trees/{t}/photos", projectIdA, treeWithoutWork)
+                .file(new MockMultipartFile("file", "IMG_K2.png", "image/png", realImage("png", 400, 300))))
+                .andExpect(status().isCreated());
+
+        String allCards = textOf(generateDocumentOfUserA("ALL"));
+        assertThat(allCards).contains("Drzewo nr K-1", "Drzewo nr K-2", "IMG_K2.png");
+
+        byte[] withOpenWorksPdf = generateDocumentOfUserA("WITH_OPEN_WORKS");
+        String withOpenWorks = textOf(withOpenWorksPdf).replaceAll("\\s+", " ");
+        assertThat(withOpenWorks).contains("Drzewo nr K-1", "Karty tylko drzew z pracami do wykonania: 1 z 2", "Zdjęcia 0")
+                .doesNotContain("Drzewo nr K-2", "IMG_K2.png");
+        assertThat(imageCountOf(withOpenWorksPdf)).as("bez zdjec drzewa bez karty i bez schematu (brak lokalizacji)").isZero();
+
+        String noCards = textOf(generateDocumentOfUserA("NONE"));
+        assertThat(noCards).contains("Dokument wygenerowano bez kart drzew", "K-1", "K-2").doesNotContain("Drzewo nr K-1");
+
+        performAs(userAccountA, get("/api/projects/{p}/documents/project-report", projectIdA).param("treeCards", "SOME"))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void treeMapIsDrawnOnlyFromTreesWithLocationAndCountsTheRest() throws Exception {
         long locatedTreeId = createTree("{\"inventoryNumber\":\"1\"}");

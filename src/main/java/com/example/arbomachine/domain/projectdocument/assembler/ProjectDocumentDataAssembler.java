@@ -9,6 +9,7 @@ import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentLocati
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentMonitoringData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentStandData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentPhotoData;
+import com.example.arbomachine.domain.projectdocument.data.TreeCardScope;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentTreeData;
 import com.example.arbomachine.domain.projectdocument.data.ProjectDocumentWorkData;
 import com.example.arbomachine.domain.tree.entity.Tree;
@@ -86,7 +87,7 @@ public class ProjectDocumentDataAssembler {
     }
 
     @Transactional(readOnly = true)
-    public ProjectDocumentData assemble(Project ownedProject, Instant generatedAt) {
+    public ProjectDocumentData assemble(Project ownedProject, Instant generatedAt, TreeCardScope treeCardScope) {
         List<Tree> trees = treeRepository.findAllByProjectIdOrderByCreatedAtAscIdAsc(ownedProject.getId());
         Map<Long, List<TreeWork>> worksByTreeId = treeWorkRepository
                 .findAllByTreeProjectIdOrderByTreeIdAscCreatedAtAscIdAsc(ownedProject.getId()).stream()
@@ -116,14 +117,17 @@ public class ProjectDocumentDataAssembler {
         int[] nextPhotoNumber = {1};
         List<ProjectDocumentTreeData> treeData = new ArrayList<>(trees.size());
         for (Tree tree : trees) {
-            // Etap 52: zdjecia odznaczone przez arboryste nie trafiaja do dokumentu (i nie dostaja numeru "Fot. N").
-            List<ProjectDocumentPhotoData> treePhotoData = photosByTreeId.getOrDefault(tree.getId(), List.of()).stream()
-                    .filter(TreePhoto::isIncludedInDocument)
-                    .map(photo -> photoDataOf(photo, annotationByPhotoId.get(photo.getId()), nextPhotoNumber[0]++))
-                    .toList();
             List<ProjectDocumentWorkData> treeWorkData = worksByTreeId.getOrDefault(tree.getId(), List.of()).stream()
                     .map(work -> new ProjectDocumentWorkData(work.getName(), work.getDescription(), work.getStatus().name(),
                             work.getPriority() == null ? null : work.getPriority().name(), work.getPlannedDate(), work.getCompletedDate()))
+                    .toList();
+            // Etap 54: karta drzewa wg wybranego zakresu; drzewo bez karty nie ma w PDF zdjec (ani numerow "Fot. N").
+            boolean hasCard = treeCardScope.includesCardOf(treeWorkData);
+            // Etap 52: zdjecia odznaczone przez arboryste nie trafiaja do dokumentu (i nie dostaja numeru "Fot. N").
+            List<ProjectDocumentPhotoData> treePhotoData = !hasCard ? List.of()
+                    : photosByTreeId.getOrDefault(tree.getId(), List.of()).stream()
+                    .filter(TreePhoto::isIncludedInDocument)
+                    .map(photo -> photoDataOf(photo, annotationByPhotoId.get(photo.getId()), nextPhotoNumber[0]++))
                     .toList();
             treeData.add(new ProjectDocumentTreeData(tree.getId(), tree.getInventoryNumber(), tree.getSpeciesPolish(),
                     tree.getSpeciesLatin(), tree.getTrunkCircumferenceCm(), tree.getHeightM(), tree.getCrownDiameterM(),
@@ -134,7 +138,8 @@ public class ProjectDocumentDataAssembler {
                             tree.getLocation().getSource() == null ? null : tree.getLocation().getSource().name()),
                     valuationDataOf(valuationByTreeId.get(tree.getId())), treeWorkData, treePhotoData,
                     monitoringByTreeId.getOrDefault(tree.getId(), List.of()),
-                    treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of()))));
+                    treeMarkingCatalog.displayNamesInCatalogOrder(markingCodesByTreeId.getOrDefault(tree.getId(), List.of())),
+                    hasCard));
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
@@ -147,7 +152,8 @@ public class ProjectDocumentDataAssembler {
                         .sorted(java.util.Comparator.comparing(ProjectDocumentStandData::name, NaturalTextOrder.INSTANCE))
                         .toList(),
                 findDocumentAuthorDetailsOfUserAccountHandler.handle(ownedProject.getOwner().getId())
-                        .map(ProjectDocumentDataAssembler::authorDataOf).orElse(null));
+                        .map(ProjectDocumentDataAssembler::authorDataOf).orElse(null),
+                treeCardScope);
     }
 
     private static ProjectDocumentAuthorData authorDataOf(DocumentAuthorProfile.Details details) {

@@ -22,7 +22,9 @@ public record ProjectDocumentTreeData(
         /** etap 29: kontrole stanu, najnowsza pierwsza (pusta lista = brak monitoringu) */
         List<ProjectDocumentMonitoringData> monitoringRecords,
         /** etap 31: nazwy oznaczen drzewa w kolejnosci katalogu (pusta lista = brak) */
-        List<String> markingNames
+        List<String> markingNames,
+        /** etap 54: czy drzewo ma w dokumencie pelna karte (TreeCardScope); bez karty - zdjecia nie trafiaja do PDF */
+        boolean hasCard
 ) {
 
     public ProjectDocumentMonitoringData latestMonitoringRecord() {

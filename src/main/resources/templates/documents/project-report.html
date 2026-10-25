@@ -240,7 +240,11 @@
 <!-- 7. Karty drzew (dane, lokalizacja, waloryzacja, prace, zdjecia) -->
 <th:block th:unless="${document.trees().isEmpty()}">
   <h2>6. Karty drzew</h2>
-  <div class="tree-card" th:each="tree : ${document.trees()}">
+  <!-- Etap 54: zakres kart wybrany przy generowaniu -->
+  <p th:if="${document.treeCardScope().name() == 'WITH_OPEN_WORKS'}" class="muted"
+     th:text="'Karty tylko drzew z pracami do wykonania: ' + ${document.treesWithCards().size()} + ' z ' + ${document.treeCount()} + '. Pozostałe drzewa — w zestawieniu (sekcja 4).'">Karty tylko drzew z pracami</p>
+  <p th:if="${document.treeCardScope().name() == 'NONE'}" class="muted">Dokument wygenerowano bez kart drzew. Dane drzew — w zestawieniu (sekcja 4) i w aplikacji ArboMachine.</p>
+  <div class="tree-card" th:each="tree : ${document.treesWithCards()}">
     <div class="tree-card-header">
       <h3 th:text="'Drzewo nr ' + ${tree.inventoryNumber()} + ' — ' + ${format.species(tree)}">Drzewo nr 1</h3>
       <table class="info">

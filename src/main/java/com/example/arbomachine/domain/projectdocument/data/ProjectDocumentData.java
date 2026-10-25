@@ -29,8 +29,15 @@ public record ProjectDocumentData(
         /** etap 29: grupy drzew projektu (wg nazwy) */
         List<ProjectDocumentStandData> stands,
         /** etap 42: dane autora opracowania albo null */
-        ProjectDocumentAuthorData author
+        ProjectDocumentAuthorData author,
+        /** etap 54: zakres kart drzew wybrany przy generowaniu */
+        TreeCardScope treeCardScope
 ) {
+
+    /** Etap 54: drzewa z pelna karta w kolejnosci zestawienia. */
+    public List<ProjectDocumentTreeData> treesWithCards() {
+        return trees.stream().filter(ProjectDocumentTreeData::hasCard).toList();
+    }
 
     public int treeCount() {
         return trees.size();

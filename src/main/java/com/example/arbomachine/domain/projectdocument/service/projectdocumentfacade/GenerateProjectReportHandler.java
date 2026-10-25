@@ -3,6 +3,7 @@ package com.example.arbomachine.domain.projectdocument.service.projectdocumentfa
 import com.example.arbomachine.domain.project.entity.Project;
 import com.example.arbomachine.domain.project.service.projectfacade.FindProjectOwnedByCurrentUserHandler;
 import com.example.arbomachine.domain.projectdocument.assembler.ProjectDocumentDataAssembler;
+import com.example.arbomachine.domain.projectdocument.data.TreeCardScope;
 import com.example.arbomachine.domain.projectdocument.generator.DocumentGenerator;
 import com.example.arbomachine.domain.projectdocument.generator.GeneratedDocument;
 import org.springframework.stereotype.Component;
@@ -27,8 +28,9 @@ public class GenerateProjectReportHandler {
         this.documentGenerator = documentGenerator;
     }
 
-    public GeneratedDocument handle(String currentUserEmail, Long projectId) {
+    /** Etap 54: treeCardScope - ktore drzewa dostaja pelna karte. */
+    public GeneratedDocument handle(String currentUserEmail, Long projectId, TreeCardScope treeCardScope) {
         Project ownedProject = findProjectOwnedByCurrentUserHandler.handle(currentUserEmail, projectId);
-        return documentGenerator.generate(projectDocumentDataAssembler.assemble(ownedProject, Instant.now()));
+        return documentGenerator.generate(projectDocumentDataAssembler.assemble(ownedProject, Instant.now(), treeCardScope));
     }
 }

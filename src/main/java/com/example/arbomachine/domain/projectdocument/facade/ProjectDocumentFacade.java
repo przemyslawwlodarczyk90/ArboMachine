@@ -1,5 +1,6 @@
 package com.example.arbomachine.domain.projectdocument.facade;
 
+import com.example.arbomachine.domain.projectdocument.data.TreeCardScope;
 import com.example.arbomachine.domain.projectdocument.generator.GeneratedDocument;
 import com.example.arbomachine.domain.projectdocument.service.projectdocumentfacade.GenerateProjectReportHandler;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,8 @@ public class ProjectDocumentFacade {
         this.generateProjectReportHandler = generateProjectReportHandler;
     }
 
-    public GeneratedDocument generateProjectReportOfCurrentUser(String currentUserEmail, Long projectId) {
-        return generateProjectReportHandler.handle(currentUserEmail, projectId);
+    public GeneratedDocument generateProjectReportOfCurrentUser(String currentUserEmail, Long projectId,
+                                                                TreeCardScope treeCardScope) {
+        return generateProjectReportHandler.handle(currentUserEmail, projectId, treeCardScope);
     }
 }
