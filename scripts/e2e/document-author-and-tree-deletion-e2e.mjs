@@ -1,9 +1,9 @@
-// Scenariusz E2E etapow 42, 44-49 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-50 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
 // dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Etap 49: oznaczenia, "Dane do dokumentow"
-// i okno edycji projektu. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// i okno edycji projektu. Etap 50: okno "Nowy projekt" (bez "Zapisz" w pytaniu) i dane konta. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -341,6 +341,30 @@ async function main() {
     await waitFor('lista projektow po zapisie', 'return location.pathname === "/projects"');
     check('"Zapisz" z pytania zapisuje projekt i wykonuje "Wstecz"',
       (await api(`/api/projects/${project.id}`)).contractNumber === 'UM/49/2026');
+
+    // --- Etap 50: okno "Nowy projekt" i dane konta ---
+    await waitFor('przycisk nowego projektu', 'return document.body.innerText.includes("Nowy projekt")');
+    await clickButton('Nowy projekt');
+    await waitFor('okno nowego projektu', 'return !!document.querySelector(".modal")');
+    await typeIntoLabeled('Nazwa projektu *', 'Projekt porzucony E2E');
+    await evaluate('document.querySelector(\'a[href="/arborist/profile"]\').click(); return true;');
+    await waitFor('pytanie nad nowym projektem', 'return document.querySelectorAll(".modal").length === 2');
+    check('Niezapisany nowy projekt -> okno z "(nowy projekt)" bez przycisku "Zapisz"',
+      (await lastModalText()).includes('(nowy projekt)') && !(await lastModalText()).includes('Zapisz'), await lastModalText());
+    await clickInLastModal('Odrzuć zmiany');
+    await waitFor('profil po odrzuceniu', 'return location.pathname === "/arborist/profile"');
+    check('"Odrzuć zmiany" zamyka okno i nie tworzy projektu',
+      !(await evaluate('return !!document.querySelector(".modal")'))
+      && !(await api('/api/projects')).some((item) => item.name === 'Projekt porzucony E2E'));
+
+    await waitFor('formularz konta', 'return [...document.querySelectorAll("label")].some((label) => label.textContent.trim() === "Telefon")');
+    await typeIntoLabeled('Telefon', '600700800');
+    await evaluate('document.querySelector(\'a[href="/projects"]\').click(); return true;');
+    await waitFor('pytanie przy danych konta', 'return !!document.querySelector(".modal")');
+    check('Niezapisane dane konta -> okno z "(dane konta)"', (await lastModalText()).includes('(dane konta)'), await lastModalText());
+    await clickInLastModal('Zapisz');
+    await waitFor('lista projektow po zapisie konta', 'return location.pathname === "/projects"');
+    check('"Zapisz" z okna zapisuje dane konta', (await api('/api/users/me')).phoneNumber === '600700800');
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
