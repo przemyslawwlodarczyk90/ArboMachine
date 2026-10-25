@@ -15,5 +15,9 @@ public record TreePhotoResponse(
         /** czy zdjecie ma aktualna adnotacje (szkic) - tresc do dokumentacji: .../documentation-content */
         boolean hasAnnotation,
         Instant annotationUpdatedAt,
-        Instant createdAt
+        Instant createdAt,
+        /** etap 52: podpis w dokumencie PDF (null = nazwa pliku) */
+        String caption,
+        /** etap 52: czy zdjecie trafia do dokumentu PDF */
+        boolean includedInDocument
 ) {}

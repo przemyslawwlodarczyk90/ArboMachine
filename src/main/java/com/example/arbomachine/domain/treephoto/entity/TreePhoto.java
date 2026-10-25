@@ -12,7 +12,8 @@ import java.time.Instant;
  * Zdjecie drzewa - model V1: same metadane pliku. Binarna tresc NIE jest w bazie - lezy w PhotoStorage pod
  * kluczem storageKey (UUID nadany przez aplikacje; nazwa pliku od uzytkownika jest tylko opisem).
  * <p>
- * Celowo BEZ podpisu, kategorii, zdjecia glownego, kolejnosci, EXIF/GPS i adnotacji - te kwestie sa otwarte
+ * Etap 52: podpis do dokumentu i wybor "w dokumencie". Celowo BEZ kategorii, zdjecia glownego, kolejnosci i EXIF/GPS
+ * - te kwestie sa otwarte
  * (docs/DO_DOPRECYZOWANIA.md). Zdjecie nie ma wlasnego wlasciciela: wlasnosc wynika z
  * TreePhoto -> Tree -> Project -> owner. Relacja jednokierunkowa - Tree nie trzyma kolekcji zdjec.
  */
@@ -26,6 +27,9 @@ public class TreePhoto {
 
     /** Techniczny limit oryginalnej nazwy pliku = dlugosc kolumny original_file_name. */
     public static final int MAXIMUM_ORIGINAL_FILE_NAME_LENGTH = 255;
+
+    /** Etap 52: limit podpisu - jedno-dwa zdania pod zdjeciem w dokumencie (V1, nie regula domenowa). */
+    public static final int MAXIMUM_CAPTION_LENGTH = 500;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +64,20 @@ public class TreePhoto {
      */
     @Column(name = "client_upload_id", length = 36)
     private String clientUploadId;
+
+    /** Etap 52: podpis pod zdjeciem w dokumencie PDF; null = podpis z nazwy pliku (jak przed etapem 52). */
+    @Column(name = "caption", length = MAXIMUM_CAPTION_LENGTH)
+    private String caption;
+
+    /** Etap 52: czy zdjecie trafia do dokumentu PDF. Domyslnie tak - zdjecia sprzed etapu 52 zostaja w dokumencie. */
+    @Column(name = "included_in_document", nullable = false)
+    private boolean includedInDocument = true;
+
+    /** Etap 52: podpis (znormalizowany, null = brak) i wybor do dokumentu - komplet, jak PUT. */
+    public void changeDocumentSettings(String normalizedCaption, boolean includedInDocument) {
+        this.caption = normalizedCaption;
+        this.includedInDocument = includedInDocument;
+    }
 
     public static TreePhoto createForTree(Tree tree, String originalFileName, String storageKey, String contentType,
                                           long fileSizeBytes, Instant creationTime, String clientUploadId) {

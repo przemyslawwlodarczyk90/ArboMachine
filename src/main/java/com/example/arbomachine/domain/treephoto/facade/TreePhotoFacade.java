@@ -2,12 +2,14 @@ package com.example.arbomachine.domain.treephoto.facade;
 
 import com.example.arbomachine.domain.treephoto.dto.ProjectPhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoContent;
+import com.example.arbomachine.domain.treephoto.dto.TreePhotoDocumentSettingsRequest;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoUpload;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.DeleteTreePhotoHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetProjectPhotosHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetTreePhotoContentHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.GetTreePhotosHandler;
+import com.example.arbomachine.domain.treephoto.service.treephotofacade.UpdateTreePhotoDocumentSettingsHandler;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.UploadTreePhotoHandler;
 import org.springframework.stereotype.Component;
 
@@ -24,17 +26,20 @@ public class TreePhotoFacade {
     private final GetTreePhotoContentHandler getTreePhotoContentHandler;
     private final DeleteTreePhotoHandler deleteTreePhotoHandler;
     private final GetProjectPhotosHandler getProjectPhotosHandler;
+    private final UpdateTreePhotoDocumentSettingsHandler updateTreePhotoDocumentSettingsHandler;
 
     public TreePhotoFacade(UploadTreePhotoHandler uploadTreePhotoHandler,
                            GetTreePhotosHandler getTreePhotosHandler,
                            GetTreePhotoContentHandler getTreePhotoContentHandler,
                            DeleteTreePhotoHandler deleteTreePhotoHandler,
-                           GetProjectPhotosHandler getProjectPhotosHandler) {
+                           GetProjectPhotosHandler getProjectPhotosHandler,
+                           UpdateTreePhotoDocumentSettingsHandler updateTreePhotoDocumentSettingsHandler) {
         this.uploadTreePhotoHandler = uploadTreePhotoHandler;
         this.getTreePhotosHandler = getTreePhotosHandler;
         this.getTreePhotoContentHandler = getTreePhotoContentHandler;
         this.deleteTreePhotoHandler = deleteTreePhotoHandler;
         this.getProjectPhotosHandler = getProjectPhotosHandler;
+        this.updateTreePhotoDocumentSettingsHandler = updateTreePhotoDocumentSettingsHandler;
     }
 
     public TreePhotoResponse uploadPhotoOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
@@ -49,6 +54,13 @@ public class TreePhotoFacade {
     public TreePhotoContent getPhotoContentOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
                                                                Long treePhotoId) {
         return getTreePhotoContentHandler.handle(currentUserEmail, projectId, treeId, treePhotoId);
+    }
+
+    /** Etap 52: podpis zdjecia i wybor "w dokumencie". */
+    public TreePhotoResponse updatePhotoDocumentSettingsOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId,
+                                                                            Long treePhotoId,
+                                                                            TreePhotoDocumentSettingsRequest request) {
+        return updateTreePhotoDocumentSettingsHandler.handle(currentUserEmail, projectId, treeId, treePhotoId, request);
     }
 
     public void deletePhotoOfTreeOfCurrentUser(String currentUserEmail, Long projectId, Long treeId, Long treePhotoId) {

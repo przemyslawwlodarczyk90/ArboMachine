@@ -18,7 +18,9 @@ public class TreePhotoMapper {
                 treePhoto.getFileSizeBytes(),
                 annotationOrNull != null,
                 annotationOrNull == null ? null : annotationOrNull.getUpdatedAt(),
-                treePhoto.getCreatedAt()
+                treePhoto.getCreatedAt(),
+                treePhoto.getCaption(),
+                treePhoto.isIncludedInDocument()
         );
     }
 }

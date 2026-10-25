@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -188,6 +189,40 @@ class TreePhotoApiIntegrationTest {
     private long uploadJpegOfUserA() throws Exception {
         return readId(uploadAs(userAccountA, projectIdA1, treeIdA1First, jpegFile("IMG_0001.jpg"))
                 .andExpect(status().isCreated()));
+    }
+
+    // --- etap 52: podpis zdjecia i wybor do dokumentu ---
+
+    private ResultActions putDocumentSettingsAs(UserAccount userAccount, long photoId, String body) throws Exception {
+        return mockMvc.perform(put("/api/projects/{projectId}/trees/{treeId}/photos/{photoId}/document-settings",
+                projectIdA1, treeIdA1First, photoId).header("Authorization", bearerTokenOf(userAccount))
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    @Test
+    void newPhotoIsInDocumentWithoutCaptionAndOwnerCanChangeBoth() throws Exception {
+        long photoId = uploadJpegOfUserA();
+        mockMvc.perform(get("/api/projects/{projectId}/trees/{treeId}/photos", projectIdA1, treeIdA1First)
+                        .header("Authorization", bearerTokenOf(userAccountA)))
+                .andExpect(jsonPath("$[0].includedInDocument").value(true))
+                .andExpect(jsonPath("$[0].caption").doesNotExist());
+        putDocumentSettingsAs(userAccountA, photoId, "{\"caption\":\"  Posusz w koronie  \",\"includedInDocument\":false}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.caption").value("Posusz w koronie"))
+                .andExpect(jsonPath("$.includedInDocument").value(false));
+        putDocumentSettingsAs(userAccountA, photoId, "{\"caption\":\"   \",\"includedInDocument\":true}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.caption").doesNotExist())
+                .andExpect(jsonPath("$.includedInDocument").value(true));
+    }
+
+    @Test
+    void documentSettingsAreValidatedAndProtected() throws Exception {
+        long photoId = uploadJpegOfUserA();
+        putDocumentSettingsAs(userAccountA, photoId, "{\"caption\":\"Opis\"}").andExpect(status().isBadRequest());
+        putDocumentSettingsAs(userAccountA, photoId, "{\"caption\":\"" + "x".repeat(501) + "\",\"includedInDocument\":true}")
+                .andExpect(status().isBadRequest());
+        putDocumentSettingsAs(userAccountB, photoId, "{\"includedInDocument\":false}").andExpect(status().isNotFound());
     }
 
     // --- etap 33: idempotentny upload (zdjecia offline wysylane ponownie po zerwanym polaczeniu) ---

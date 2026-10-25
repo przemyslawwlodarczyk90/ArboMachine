@@ -1,9 +1,11 @@
 package com.example.arbomachine.infrastructure.api.treephoto;
 
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoContent;
+import com.example.arbomachine.domain.treephoto.dto.TreePhotoDocumentSettingsRequest;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoResponse;
 import com.example.arbomachine.domain.treephoto.dto.TreePhotoUpload;
 import com.example.arbomachine.domain.treephoto.facade.TreePhotoFacade;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
@@ -82,6 +84,18 @@ public class TreePhotoController {
                         .filename(treePhotoContent.originalFileName(), StandardCharsets.UTF_8).build().toString())
                 .cacheControl(CacheControl.maxAge(PHOTO_CONTENT_CACHE_DURATION).cachePrivate())
                 .body(treePhotoContent.content());
+    }
+
+    @Operation(summary = "Etap 52: podpis zdjecia i wybor do dokumentu PDF (komplet ustawien); cudze zdjecie daje 404")
+    @PutMapping("/{photoId}/document-settings")
+    public ResponseEntity<TreePhotoResponse> updateTreePhotoDocumentSettings(@AuthenticationPrincipal UserDetails authenticatedUser,
+                                                                             @PathVariable Long projectId,
+                                                                             @PathVariable Long treeId,
+                                                                             @PathVariable Long photoId,
+                                                                             @Valid @RequestBody
+                                                                             TreePhotoDocumentSettingsRequest request) {
+        return ResponseEntity.ok(treePhotoFacade.updatePhotoDocumentSettingsOfTreeOfCurrentUser(
+                authenticatedUser.getUsername(), projectId, treeId, photoId, request));
     }
 
     @Operation(summary = "Usuniecie zdjecia (rekord i plik); zdjecie innego drzewa albo cudzy projekt daje 404")
