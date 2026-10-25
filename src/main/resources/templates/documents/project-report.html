@@ -315,7 +315,7 @@
       </div>
       <div class="photo-caption"
            th:text="'Fot. ' + ${photo.documentPhotoNumber()} + '. Drzewo nr ' + ${tree.inventoryNumber()} + ' — '
-                    + ${photo.originalFileName()} + (${photo.annotated()} ? ' (z adnotacją)' : '')">Fot. 1</div>
+                    + ${photo.captionOrFileName()} + (${photo.annotated()} ? ' (z adnotacją)' : '')">Fot. 1</div>
     </div>
   </div>
 </th:block>

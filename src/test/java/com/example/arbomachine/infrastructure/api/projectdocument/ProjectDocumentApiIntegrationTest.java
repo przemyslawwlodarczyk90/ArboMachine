@@ -239,6 +239,29 @@ class ProjectDocumentApiIntegrationTest {
     }
 
     @Test
+    void photoCaptionReplacesFileNameAndExcludedPhotoIsLeftOutOfDocument() throws Exception {
+        long treeId = createTree("{\"inventoryNumber\":\"B-7\"}");
+        long captionedPhotoId = readId(performAs(userAccountA, multipart("/api/projects/{p}/trees/{t}/photos", projectIdA, treeId)
+                .file(new MockMultipartFile("file", "IMG_0101.png", "image/png", realImage("png", 400, 300))))
+                .andExpect(status().isCreated()));
+        long excludedPhotoId = readId(performAs(userAccountA, multipart("/api/projects/{p}/trees/{t}/photos", projectIdA, treeId)
+                .file(new MockMultipartFile("file", "IMG_0102.png", "image/png", realImage("png", 400, 300))))
+                .andExpect(status().isCreated()));
+        performAs(userAccountA, put("/api/projects/{p}/trees/{t}/photos/{f}/document-settings", projectIdA, treeId, captionedPhotoId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"caption\":\"  Ubytek w nasadzie pnia  \",\"includedInDocument\":true}"))
+                .andExpect(status().isOk());
+        performAs(userAccountA, put("/api/projects/{p}/trees/{t}/photos/{f}/document-settings", projectIdA, treeId, excludedPhotoId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"includedInDocument\":false}"))
+                .andExpect(status().isOk());
+
+        byte[] pdfBytes = generateDocumentOfUserA();
+        String text = textOf(pdfBytes);
+        assertThat(text).contains("Fot. 1", "Ubytek w nasadzie pnia").doesNotContain("IMG_0101.png", "IMG_0102.png", "Fot. 2");
+        assertThat(text.replaceAll("\\s+", " ")).contains("Zdjęcia 1");
+    }
+
+    @Test
     void treeMapIsDrawnOnlyFromTreesWithLocationAndCountsTheRest() throws Exception {
         long locatedTreeId = createTree("{\"inventoryNumber\":\"1\"}");
         performAs(userAccountA, put("/api/projects/{p}/trees/{t}/location", projectIdA, locatedTreeId)

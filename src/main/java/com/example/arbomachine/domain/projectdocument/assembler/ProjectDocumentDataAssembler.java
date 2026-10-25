@@ -116,7 +116,9 @@ public class ProjectDocumentDataAssembler {
         int[] nextPhotoNumber = {1};
         List<ProjectDocumentTreeData> treeData = new ArrayList<>(trees.size());
         for (Tree tree : trees) {
+            // Etap 52: zdjecia odznaczone przez arboryste nie trafiaja do dokumentu (i nie dostaja numeru "Fot. N").
             List<ProjectDocumentPhotoData> treePhotoData = photosByTreeId.getOrDefault(tree.getId(), List.of()).stream()
+                    .filter(TreePhoto::isIncludedInDocument)
                     .map(photo -> photoDataOf(photo, annotationByPhotoId.get(photo.getId()), nextPhotoNumber[0]++))
                     .toList();
             List<ProjectDocumentWorkData> treeWorkData = worksByTreeId.getOrDefault(tree.getId(), List.of()).stream()
@@ -165,11 +167,11 @@ public class ProjectDocumentDataAssembler {
         if (annotationOrNull != null) {
             String renderedStorageKey = annotationOrNull.getRenderedStorageKey();
             return new ProjectDocumentPhotoData(documentPhotoNumber, photo.getOriginalFileName(), true, true,
-                    () -> photoStorage.load(renderedStorageKey).getInputStream());
+                    () -> photoStorage.load(renderedStorageKey).getInputStream(), photo.getCaption());
         }
         String storageKey = photo.getStorageKey();
         return new ProjectDocumentPhotoData(documentPhotoNumber, photo.getOriginalFileName(), false,
                 EMBEDDABLE_CONTENT_TYPES.contains(photo.getContentType()),
-                () -> photoStorage.load(storageKey).getInputStream());
+                () -> photoStorage.load(storageKey).getInputStream(), photo.getCaption());
     }
 }
