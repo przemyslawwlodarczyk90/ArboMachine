@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useUnsavedChangesSource } from '../../../../fieldmode/useUnsavedChangesSource';
 import { ApiRequestError } from '../../../../api/httpClient';
 import { Alert } from '../../../../components/Alert';
 import { LoadingSpinner } from '../../../../components/LoadingSpinner';
@@ -102,19 +103,22 @@ export function TreePhotoAnnotationDialog({ projectId, treeId, treePhoto, onAnno
     else closeDialog();
   };
 
-  const runSubmission = async (submission: () => Promise<void>) => {
-    if (isSubmissionInProgress.current) return;
+  /** true = zapisano i zamknieto okno; false = blad zapisu albo zapis w toku. */
+  const runSubmission = async (submission: () => Promise<void>): Promise<boolean> => {
+    if (isSubmissionInProgress.current) return false;
     isSubmissionInProgress.current = true;
     setIsSaving(true);
     setErrorMessage(null);
     try {
       await submission();
       closeDialog();
+      return true;
     } catch (savingError) {
       setErrorMessage(`Nie udało się zapisać adnotacji. ${
         savingError instanceof ApiRequestError ? savingError.message : 'Nieoczekiwany błąd.'}`);
       isSubmissionInProgress.current = false;
       setIsSaving(false);
+      return false;
     }
   };
 
@@ -133,6 +137,11 @@ export function TreePhotoAnnotationDialog({ projectId, treeId, treePhoto, onAnno
   });
 
   const isEmpty = history.present.length === 0;
+
+  // Etap 50: niezapisany rysunek - "Wstecz" albo zmiana trybu pyta "Zapisz / Odrzuc / Zostan". Pusty rysunek
+  // (wszystko wymazane) nie zapisuje sie z okna - usuwa sie go przyciskiem "Usun adnotacje".
+  useUnsavedChangesSource(`photo-annotation-${treePhoto.id}`, hasUnsavedChanges, 'adnotacje na zdjęciu',
+    async () => !isEmpty && editorLoadingState.status === 'ready' && saveAnnotation(), closeDialog);
 
   return (
     <ModalDialog title={`Adnotacje: ${treePhoto.originalFileName}`} closeDialog={requestClose} isClosingBlocked={isSaving}

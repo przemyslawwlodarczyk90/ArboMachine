@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useUnsavedChangesSource } from '../fieldmode/useUnsavedChangesSource';
 import { ApiRequestError } from '../api/httpClient';
 import type { UserAccount, UserProfile } from '../api/apiDataTypes';
 import { toUserProfileRequestPayload } from '../pages/userProfileRequestPayload';
@@ -37,8 +38,13 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
 
   const hasUnsavedChanges = JSON.stringify(toProfileFormValues(editedAccount)) !== JSON.stringify(profileFormValues);
 
-  const submitProfileChanges = async (submitEvent: FormEvent) => {
+  const submitProfileChanges = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
+    void saveProfileChanges();
+  };
+
+  /** true = dane zapisane; false = blad zapisu. */
+  const saveProfileChanges = async (): Promise<boolean> => {
     setResultMessage(null);
     setErrorMessageByFieldName({});
     setIsSaving(true);
@@ -47,6 +53,7 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
         toUserProfileRequestPayload({ ...profileFormValues, email: editedAccount.email }));
       setProfileFormValues(toProfileFormValues(savedAccount));
       setResultMessage({ variant: 'success', text: 'Zmiany zostały zapisane.' });
+      return true;
     } catch (savingError) {
       if (savingError instanceof ApiRequestError) {
         setErrorMessageByFieldName(savingError.errorMessageByFieldName);
@@ -54,6 +61,7 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
       } else {
         setResultMessage({ variant: 'error', text: 'Nieoczekiwany błąd.' });
       }
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -65,6 +73,10 @@ export function UserProfileForm({ editedAccount, saveProfile, closeForm, submitB
     setResultMessage(null);
     closeForm?.();
   };
+
+  // Etap 50: niezapisane dane konta (Moj profil, okno edycji konta u administratora) - link albo "Wstecz" pyta o decyzje.
+  useUnsavedChangesSource(`user-profile-${editedAccount.id}`, hasUnsavedChanges, 'dane konta',
+    saveProfileChanges, discardChangesOrCloseForm);
 
   return (
     <form onSubmit={submitProfileChanges} className="form" noValidate>
