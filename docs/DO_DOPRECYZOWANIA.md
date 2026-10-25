@@ -1104,7 +1104,7 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Praca bez zasięgu | Założenie V1: podpis i wybór tylko online (formularz blokuje zapis bez połączenia, nie ma kolejki offline). Do potwierdzenia, czy podpisy wpisuje się w terenie, czy w biurze. |
 | Podpis w eksportach | Założenie V1: podpis tylko w PDF (nie w XLSX/GIS, nie w lokalnej kopii zdjęć). Lista „Materiały do dokumentacji” projektu podpisu nie pokazuje. |
 | Słownictwo | „Podpis”, „Poza dokumentem” — robocze. |
-| Weryfikacja | Backend 405/405 (API: domyślne wartości, zapis, czyszczenie, walidacja, cudze zdjęcie 404; PDF: podpis zamiast nazwy pliku, pominięte zdjęcie, licznik), frontend 228/228, E2E 39/39 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V9 niesprawdzona na PostgreSQL**; wygląd kafelka na tablecie niesprawdzony. |
+| Weryfikacja | Backend 405/405 (API: domyślne wartości, zapis, czyszczenie, walidacja, cudze zdjęcie 404; PDF: podpis zamiast nazwy pliku, pominięte zdjęcie, licznik), frontend 228/228, E2E 39/39 (H2), `field-mode-e2e.mjs` 3× 55/55. **Błąd znaleziony na lokalnym PostgreSQL (25.10.2026):** przy `ddl-auto=update` Hibernate dodawał `included_in_document boolean not null` bez wartości domyślnej — PostgreSQL odrzucał to na tabeli z istniejącymi zdjęciami. Poprawka: `columnDefinition = "boolean not null default true"` w encji (jak V9). Po poprawce kolumny etapów 51–53 są w lokalnej bazie (21 zdjęć z `true`). Flyway V8–V10 nadal sprawdzany tylko na H2; wygląd kafelka na tablecie niesprawdzony. |
 
 ## 56. Podstawa prawna opracowania — etap 53
 

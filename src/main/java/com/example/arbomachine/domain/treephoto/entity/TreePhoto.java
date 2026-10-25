@@ -69,8 +69,12 @@ public class TreePhoto {
     @Column(name = "caption", length = MAXIMUM_CAPTION_LENGTH)
     private String caption;
 
-    /** Etap 52: czy zdjecie trafia do dokumentu PDF. Domyslnie tak - zdjecia sprzed etapu 52 zostaja w dokumencie. */
-    @Column(name = "included_in_document", nullable = false)
+    /**
+     * Etap 52: czy zdjecie trafia do dokumentu PDF. Domyslnie tak - zdjecia sprzed etapu 52 zostaja w dokumencie.
+     * Jawny "default true": produkcja jest na ddl-auto=update, a PostgreSQL nie doda kolumny "not null" bez wartosci
+     * domyslnej do tabeli z istniejacymi zdjeciami (jak migracja V9).
+     */
+    @Column(name = "included_in_document", nullable = false, columnDefinition = "boolean not null default true")
     private boolean includedInDocument = true;
 
     /** Etap 52: podpis (znormalizowany, null = brak) i wybor do dokumentu - komplet, jak PUT. */
