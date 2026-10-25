@@ -1039,5 +1039,17 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Przycisk „Wstecz” / „Dalej” przeglądarki, gest wstecz | V1 IMPLEMENTED: router z danymi (`createBrowserRouter` + `AppRoot` w `App.tsx`), `useBlocker` w `UnsavedChangesLeaveGuard` → to samo okno „Zapisz / Odrzuć zmiany / Zostań”. Blokada tylko przy zmianie ścieżki; zmiana `?drzewo=` w trybie terenowym nadal przez `runGuarded`. |
 | Fałszywe „Niezapisane zmiany” po zapisie offline | RESOLVED: formularz drzewa brał wartości tylko przy pierwszym renderze, a panel terenowy podmienia drzewo (lista → odpowiedź API / kopia z kolejki). `formValuesAfterSavedTreeChange` przejmuje nową wersję, gdy nic nie jest edytowane; licznik `localChangeCount` (`FieldTreeSheet`, `TreePage`) chroni przed spóźnionym GET. |
 | Założenie V1 | Przy „Wstecz” z niezapisanymi zmianami adres w pasku zostaje do czasu decyzji w oknie (zachowanie `useBlocker`). „Zostań” anuluje cofnięcie. |
-| Inne formularze | OPEN (bez zmian względem §49): waloryzacja, prace, kontrole, okna projektu — bez ochrony. |
+| Inne formularze | Waloryzacja, prace, kontrole — RESOLVED w etapie 48 (§51). |
 | Weryfikacja | Testy frontu 223/223. E2E na H2: `field-mode-e2e.mjs` 3× 55/55 (świeża baza, projekt demonstracyjny z `seed-demo-project.mjs`), `document-author-and-tree-deletion-e2e.mjs` 18/18 (w tym krok „Wstecz”). **Niesprawdzone na PostgreSQL** (Docker wyłączony) i na fizycznym tablecie (gest wstecz). |
+
+## 51. Niezapisane zmiany w pracach, waloryzacji i kontroli stanu — etap 48
+
+**Źródło:** dług z §49–§50 („pilnowane tylko dane drzewa”).
+
+| Temat | Stan |
+|---|---|
+| Prace (nowa i edytowana), symbol pracy, waloryzacja, kontrola stanu | V1 IMPLEMENTED: każdy formularz zgłasza się do rejestru (`useUnsavedChangesSource`); link, „Wstecz”, inne drzewo w terenie i zmiana trybu pytają „Zapisz / Odrzuć zmiany / Zostań”. „Zapisz” = ten sam zapis co przycisk formularza, „Odrzuć” = „Anuluj”. |
+| Treść okna | V1 IMPLEMENTED: „Masz niezapisane zmiany (dane drzewa, prace). Co zrobić?” — nazwy sekcji robocze, do ewentualnej zmiany słownictwa przez klienta. |
+| Założenie V1 | Otwarty, ale niezmieniony formularz (np. „Dodaj kontrolę” z samą dzisiejszą datą) nie pyta. „Zapisz” przy kilku sekcjach zapisuje je po kolei; pierwszy błąd zatrzymuje resztę i zostawia okno. |
+| Inne formularze bez ochrony | OPEN (dług): lokalizacja drzewa, oznaczenia, opisy zdjęć, okno nowego drzewa i edycji projektu, „Mój profil” / „Dane do dokumentów”. |
+| Weryfikacja | Testy frontu 224/224 (opisy źródeł w rejestrze). E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 25/25 (praca → „Zapisz”, waloryzacja → „Odrzuć”, kontrola → „Zostań”), `field-mode-e2e.mjs` 3× 55/55. **Niesprawdzone na PostgreSQL** i na tablecie. |
