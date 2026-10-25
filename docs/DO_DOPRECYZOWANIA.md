@@ -1051,5 +1051,16 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Prace (nowa i edytowana), symbol pracy, waloryzacja, kontrola stanu | V1 IMPLEMENTED: każdy formularz zgłasza się do rejestru (`useUnsavedChangesSource`); link, „Wstecz”, inne drzewo w terenie i zmiana trybu pytają „Zapisz / Odrzuć zmiany / Zostań”. „Zapisz” = ten sam zapis co przycisk formularza, „Odrzuć” = „Anuluj”. |
 | Treść okna | V1 IMPLEMENTED: „Masz niezapisane zmiany (dane drzewa, prace). Co zrobić?” — nazwy sekcji robocze, do ewentualnej zmiany słownictwa przez klienta. |
 | Założenie V1 | Otwarty, ale niezmieniony formularz (np. „Dodaj kontrolę” z samą dzisiejszą datą) nie pyta. „Zapisz” przy kilku sekcjach zapisuje je po kolei; pierwszy błąd zatrzymuje resztę i zostawia okno. |
-| Inne formularze bez ochrony | OPEN (dług): lokalizacja drzewa, oznaczenia, opisy zdjęć, okno nowego drzewa i edycji projektu, „Mój profil” / „Dane do dokumentów”. |
+| Inne formularze bez ochrony | Lokalizacja, oznaczenia, „Dane do dokumentów”, edycja projektu — RESOLVED w etapie 49 (§52). |
 | Weryfikacja | Testy frontu 224/224 (opisy źródeł w rejestrze). E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 25/25 (praca → „Zapisz”, waloryzacja → „Odrzuć”, kontrola → „Zostań”), `field-mode-e2e.mjs` 3× 55/55. **Niesprawdzone na PostgreSQL** i na tablecie. |
+
+## 52. Niezapisane zmiany: lokalizacja, oznaczenia, dane do dokumentów, edycja projektu — etap 49
+
+**Źródło:** dług z §51.
+
+| Temat | Stan |
+|---|---|
+| Ręczne współrzędne drzewa, oznaczenia drzewa, „Dane do dokumentów” (Mój profil), okno „Edytuj projekt” | V1 IMPLEMENTED: ten sam mechanizm co w §51 (`useUnsavedChangesSource`). W oknie edycji projektu linki są zasłonięte — chroni głównie „Wstecz” przeglądarki; pytanie pojawia się nad oknem edycji. |
+| Założenie V1 | Lokalizacja: sama zmiana układu współrzędnych na liście (bez wpisania liczb) też liczy się jako zmiana. Wskazanie punktu na mapie zapisuje się od razu — nie ma czego pilnować. |
+| Nadal bez ochrony | OPEN (dług): rysowanie i opisy na zdjęciu (okno adnotacji), okno „Nowe drzewo”, okno nowego projektu, dane konta w „Mój profil” (poza „Dane do dokumentów”), panele urzędnika i administratora. |
+| Weryfikacja | Testy frontu 224/224. E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 32/32 ×2 (oznaczenia → „Zapisz”, dane do dokumentów → „Odrzuć”, edycja projektu → „Wstecz” / „Zostań” / „Zapisz”), `field-mode-e2e.mjs` 3× 55/55. **Ręczna lokalizacja bez kroku E2E.** Niesprawdzone na PostgreSQL i tablecie. |
