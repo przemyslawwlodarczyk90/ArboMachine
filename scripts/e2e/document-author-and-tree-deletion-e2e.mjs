@@ -1,4 +1,4 @@
-// Scenariusz E2E etapow 42, 44-53 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-54 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
@@ -187,6 +187,13 @@ async function main() {
     await navigate(`/projects/${project.id}/documentation`);
     await waitFor('karta dokumentu', 'return !!document.querySelector(".project-report-card")');
     check('Karta dokumentu wskazuje "Dane do dokumentow" w profilu', (await bodyText()).includes('„Dane do dokumentów”'));
+    // Etap 54: wybor zakresu kart drzew i generowanie PDF z przegladarki.
+    await evaluate(`const select = document.getElementById('project-report-tree-cards');
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, 'NONE');
+      select.dispatchEvent(new Event('change', { bubbles: true })); return true;`);
+    await clickButton('Generuj dokument PDF');
+    await waitFor('wygenerowany dokument', 'return document.body.innerText.includes("Dokument został wygenerowany")', 30_000);
+    check('Etap 54: dokument "Bez kart drzew" generuje sie z przegladarki', true);
 
     // --- Etap 45: numer umowy i cel opracowania w projekcie ---
     await navigate(`/projects/${project.id}`);
