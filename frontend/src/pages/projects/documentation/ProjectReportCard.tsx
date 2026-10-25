@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiRequestError } from '../../../api/httpClient';
 import { Alert } from '../../../components/Alert';
-import { projectDocumentsApi, projectReportFileName } from './projectDocumentsApi';
+import {
+  projectDocumentsApi, projectReportFileName, TREE_CARD_SCOPE_OPTIONS, type TreeCardScope,
+} from './projectDocumentsApi';
 
 type ProjectReportState =
   | { status: 'idle' }
@@ -17,6 +19,8 @@ type ProjectReportState =
  */
 export function ProjectReportCard({ projectId }: { projectId: number }) {
   const [reportState, setReportState] = useState<ProjectReportState>({ status: 'idle' });
+  // Etap 54: duzy projekt (setki drzew) mozna wygenerowac bez kart wszystkich drzew.
+  const [treeCardScope, setTreeCardScope] = useState<TreeCardScope>('ALL');
   const isGenerationInProgress = useRef(false);
   const currentObjectUrl = useRef<string | null>(null);
 
@@ -29,7 +33,7 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
     isGenerationInProgress.current = true;
     setReportState({ status: 'generating' });
     try {
-      const pdfBlob = await projectDocumentsApi.downloadProjectReport(projectId);
+      const pdfBlob = await projectDocumentsApi.downloadProjectReport(projectId, treeCardScope);
       if (currentObjectUrl.current) URL.revokeObjectURL(currentObjectUrl.current);
       const objectUrl = URL.createObjectURL(pdfBlob);
       currentObjectUrl.current = objectUrl;
@@ -57,6 +61,14 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
         Na podstawie danych projektu można wygenerować roboczy dokument PDF. Dokument zawiera aktualne dane projektu,
         drzew, zdjęć (w wersji z adnotacją, jeśli istnieje) oraz zapisanych prac.
       </p>
+      <div className="field">
+        <label htmlFor="project-report-tree-cards">Karty drzew w dokumencie</label>
+        <select id="project-report-tree-cards" value={treeCardScope} disabled={isGenerating}
+                onChange={(changeEvent) => setTreeCardScope(changeEvent.target.value as TreeCardScope)}>
+          {TREE_CARD_SCOPE_OPTIONS.map(({ scope, label }) => <option key={scope} value={scope}>{label}</option>)}
+        </select>
+        <span className="muted small">Zestawienie drzew i gospodarka drzewostanem zawsze obejmują wszystkie drzewa.</span>
+      </div>
       <div className="form-actions project-report-actions">
         <button type="button" className="btn btn-primary" onClick={generateReport} disabled={isGenerating}
                 aria-busy={isGenerating}>
