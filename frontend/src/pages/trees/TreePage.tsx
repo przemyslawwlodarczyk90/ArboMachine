@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiRequestError } from '../../api/httpClient';
 import { Alert } from '../../components/Alert';
@@ -45,6 +45,8 @@ export function TreePage() {
   const [treeLoadingState, setTreeLoadingState] = useState<TreeLoadingState>({ status: 'loading' });
   const [hasUnsavedTreeChanges, setHasUnsavedTreeChanges] = useState(false);
   const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
+  // Etap 47: odpowiedz GET wyslana przed lokalna zmiana drzewa nie nadpisuje nowszego drzewa (jak w panelu terenowym).
+  const localChangeCount = useRef(0);
 
   useEffect(() => {
     if (projectId === null || treeId === null) {
@@ -52,6 +54,7 @@ export function TreePage() {
       return;
     }
     let isResponseStillWanted = true;
+    const localChangeCountAtRequest = localChangeCount.current;
     setTreeLoadingState((currentState) => (currentState.status === 'loaded' && currentState.tree.id === treeId
       ? currentState : { status: 'loading' }));
     setHasUnsavedTreeChanges(false);
@@ -63,7 +66,9 @@ export function TreePage() {
     }
     treesApi.getTreeOfProject(projectId, treeId)
       .then((tree) => {
-        if (isResponseStillWanted) setTreeLoadingState({ status: 'loaded', tree });
+        if (isResponseStillWanted && localChangeCount.current === localChangeCountAtRequest) {
+          setTreeLoadingState({ status: 'loaded', tree });
+        }
       })
       .catch((loadingError) => {
         if (!isResponseStillWanted) return;
@@ -77,7 +82,10 @@ export function TreePage() {
   }, [projectId, treeId, syncGeneration, navigate]);
 
   // Stabilna funkcja - formularz zglasza przez nia zmiane stanu "niezapisane zmiany" w efekcie.
-  const replaceTree = useCallback((changedTree: Tree) => setTreeLoadingState({ status: 'loaded', tree: changedTree }), []);
+  const replaceTree = useCallback((changedTree: Tree) => {
+    localChangeCount.current += 1;
+    setTreeLoadingState({ status: 'loaded', tree: changedTree });
+  }, []);
 
   const backToTreesLink = <Link to={`/projects/${projectId ?? ''}/trees`} className="back-link">← Wróć do listy drzew</Link>;
 

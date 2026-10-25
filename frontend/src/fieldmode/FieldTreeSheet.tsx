@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiRequestError } from '../api/httpClient';
 import { Alert } from '../components/Alert';
@@ -69,9 +69,13 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
   const { syncGeneration, pendingTreeIds, isOnline } = useOfflineState();
   const [treeState, setTreeState] = useState<SheetTreeState>(listedTree ? { status: 'loaded', tree: listedTree } : { status: 'loading' });
   const { runGuarded, dialog } = useUnsavedChangesGuard();
+  // Etap 47: licznik lokalnych zmian drzewa (zapis formularza, lokalizacji) - odpowiedz GET wyslana PRZED zmiana
+  // (np. odczyt z kopii na urzadzeniu bez zasiegu) nie moze nadpisac nowszego drzewa.
+  const localChangeCount = useRef(0);
 
   useEffect(() => {
     let isResponseStillWanted = true;
+    const localChangeCountAtRequest = localChangeCount.current;
     setTreeState((currentState) => (currentState.status === 'loaded' && currentState.tree.id === treeId
       ? currentState : listedTree?.id === treeId ? { status: 'loaded', tree: listedTree } : { status: 'loading' }));
     // Drzewo utworzone offline, ktore juz trafilo na serwer -> panel pod prawdziwym id.
@@ -81,7 +85,9 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
       });
     }
     treesApi.getTreeOfProject(projectId, treeId)
-      .then((tree) => { if (isResponseStillWanted) setTreeState({ status: 'loaded', tree }); })
+      .then((tree) => {
+        if (isResponseStillWanted && localChangeCount.current === localChangeCountAtRequest) setTreeState({ status: 'loaded', tree });
+      })
       .catch((loadingError) => {
         if (!isResponseStillWanted) return;
         const isNotFound = loadingError instanceof ApiRequestError && (loadingError.httpStatus === 404 || loadingError.httpStatus === 403);
@@ -95,6 +101,7 @@ export function FieldTreeSheet({ projectId, treeId, listedTree, markingCodes, ma
 
   // Zapis formularza albo lokalizacji: panel i mapa dostaja to samo drzewo z odpowiedzi (albo z kolejki offline).
   const replaceTree = useCallback((changedTree: Tree) => {
+    localChangeCount.current += 1;
     setTreeState({ status: 'loaded', tree: changedTree });
     onTreeChanged(changedTree);
   }, [onTreeChanged]);

@@ -5,7 +5,8 @@ import { LabeledInputField } from '../../components/LabeledInputField';
 import { VoiceEnabledTextAreaField } from '../../speech/VoiceEnabledTextAreaField';
 import type { Tree } from './treeDataTypes';
 import {
-  areTreeFormValuesEquivalent, toTreeFormValues, toTreeUpdateRequest, validateTreeFormValues, type TreeFormValues,
+  areTreeFormValuesEquivalent, formValuesAfterSavedTreeChange, toTreeFormValues, toTreeUpdateRequest, validateTreeFormValues,
+  type TreeFormValues,
 } from './treeFormValues';
 import { treesApi } from './treesApi';
 import { unsavedChangesStore } from '../../fieldmode/unsavedChangesStore';
@@ -43,6 +44,13 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
   const [hasEditConflict, setHasEditConflict] = useState(false);
   // Synchroniczna blokada podwojnego wyslania - stan Reacta zmienia sie dopiero po renderze.
   const isSubmissionInProgress = useRef(false);
+
+  // Etap 47: nowa wersja drzewa z zewnatrz (API po starcie z listy, synchronizacja) - formularz bez edycji ja przejmuje.
+  const [previousSavedTree, setPreviousSavedTree] = useState(savedTree);
+  if (previousSavedTree !== savedTree) {
+    setPreviousSavedTree(savedTree);
+    setTreeFormValues((currentValues) => formValuesAfterSavedTreeChange(currentValues, previousSavedTree, savedTree));
+  }
 
   const hasUnsavedChanges = !areTreeFormValuesEquivalent(treeFormValues, toTreeFormValues(savedTree));
 

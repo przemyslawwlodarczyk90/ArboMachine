@@ -90,6 +90,16 @@ export const toTreeUpdateRequest = (formValues: TreeFormValues, savedTree: { dat
 export const areTreeFormValuesEquivalent = (firstFormValues: TreeFormValues, secondFormValues: TreeFormValues) =>
   JSON.stringify(toTreeEditableFieldsRequest(firstFormValues)) === JSON.stringify(toTreeEditableFieldsRequest(secondFormValues));
 
+/**
+ * Etap 47: nowa wersja zapisanego drzewa (odpowiedz API po starcie z listy, synchronizacja, kopia z urzadzenia).
+ * Formularz bez zmian uzytkownika (rowny poprzedniej wersji) przejmuje nowe dane; formularz z edycja zostaje -
+ * to prawdziwe niezapisane zmiany. Wczesniej formularz zostawal przy starych danych i pokazywal falszywe
+ * "Masz niezapisane zmiany" (np. po zapisie bez zasiegu w trybie terenowym).
+ */
+export const formValuesAfterSavedTreeChange = (currentFormValues: TreeFormValues, previousSavedTree: Tree, nextSavedTree: Tree) =>
+  areTreeFormValuesEquivalent(currentFormValues, toTreeFormValues(previousSavedTree))
+    ? toTreeFormValues(nextSavedTree) : currentFormValues;
+
 /** Blad opcjonalnego pomiaru w metrach albo undefined, gdy pole jest puste lub poprawne. */
 const errorOfOptionalMeters = (fieldValue: string, measurementName: string, maximumMeters: number) => {
   const metersText = fieldValue.trim();

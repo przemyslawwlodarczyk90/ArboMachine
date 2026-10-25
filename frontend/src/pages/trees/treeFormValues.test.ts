@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Tree, TreeEditableFieldsRequest } from './treeDataTypes';
 import {
-  areTreeFormValuesEquivalent, emptyTreeFormValues, toTreeEditableFieldsRequest, toTreeFormValues, toTreeUpdateRequest,
+  areTreeFormValuesEquivalent, emptyTreeFormValues, formValuesAfterSavedTreeChange, toTreeEditableFieldsRequest, toTreeFormValues, toTreeUpdateRequest,
   validateTreeFormValues,
 } from './treeFormValues.ts';
 
@@ -91,3 +91,12 @@ test('etap 37: zapis z wersja danych, ktora widzial formularz; "Zapisz mimo to" 
   assert.equal('expectedDataVersion' in toTreeUpdateRequest(formValues, {}), false);
   assert.equal(toTreeUpdateRequest(formValues, { dataVersion: 0 }).expectedDataVersion, 0);
 });
+
+test('etap 47: formularz bez edycji przejmuje nowa wersje drzewa, formularz z edycja zostaje', () => {
+  const newerTree: Tree = { ...savedTree, notes: 'Notatka z synchronizacji' };
+  const untouched = toTreeFormValues(savedTree);
+  assert.equal(formValuesAfterSavedTreeChange(untouched, savedTree, newerTree).notes, 'Notatka z synchronizacji');
+  const edited = { ...untouched, speciesPolish: 'lipa drobnolistna' };
+  assert.deepEqual(formValuesAfterSavedTreeChange(edited, savedTree, newerTree), edited);
+});
+
