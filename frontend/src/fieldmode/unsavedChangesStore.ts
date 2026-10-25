@@ -4,6 +4,8 @@
 
 /** Zrodlo niezapisanych zmian; save (opcjonalnie) zapisuje je i zwraca true, gdy zapis sie udal. */
 export interface UnsavedChangesSource {
+  /** Etap 48: czego dotycza zmiany, np. "dane drzewa", "waloryzacja" - pokazywane w oknie pytania. */
+  label?: string;
   save?: () => Promise<boolean>;
   discard?: () => void;
 }
@@ -24,6 +26,8 @@ export function createUnsavedChangesStore() {
       notify();
     },
     hasUnsavedChanges: () => sources.size > 0,
+    /** Opisy zrodel bez powtorzen, w kolejnosci zgloszenia (np. dwie prace w edycji = jedno "prace"). */
+    unsavedChangesLabels: () => [...new Set([...sources.values()].flatMap((source) => (source.label ? [source.label] : [])))],
     /** Czy wszystkie zrodla da sie zapisac jednym przyciskiem "Zapisz". */
     canSaveAll: () => sources.size > 0 && [...sources.values()].every((source) => source.save !== undefined),
     /** Zapisuje kolejno wszystkie zrodla; false = ktorys zapis sie nie udal (zrodlo pokazuje wtedy wlasny blad). */

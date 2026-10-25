@@ -9,7 +9,7 @@ import {
   type TreeFormValues,
 } from './treeFormValues';
 import { treesApi } from './treesApi';
-import { unsavedChangesStore } from '../../fieldmode/unsavedChangesStore';
+import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
 
 /** Sekcja formularza terenowego - naglowek + pola. Kolejnosc sekcji to uklad V1, nie potwierdzony workflow. */
 function TreeFieldFormSection({ title, children }: { title: string; children: ReactNode }) {
@@ -57,18 +57,6 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
   useEffect(() => {
     onUnsavedChangesChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onUnsavedChangesChange]);
-
-  // Etap 32: niezapisane zmiany w rejestrze aplikacji - przelaczenie trybu albo inne drzewo w terenie pyta
-  // "Zapisz / Odrzuc / Zostan". Zapis z rejestru to ten sam zapis co przycisk "Zapisz zmiany" (najnowsza wersja z refa).
-  const saveTreeChangesRef = useRef<() => Promise<boolean>>(async () => false);
-  const discardChangesRef = useRef<() => void>(() => {});
-  useEffect(() => {
-    const sourceId = `tree-field-form-${savedTree.id}`;
-    unsavedChangesStore.setSource(sourceId, hasUnsavedChanges
-      ? { save: () => saveTreeChangesRef.current(), discard: () => discardChangesRef.current() }
-      : null);
-    return () => unsavedChangesStore.setSource(sourceId, null);
-  }, [hasUnsavedChanges, savedTree.id]);
 
   const changeFormField = (fieldName: keyof TreeFormValues, newValue: string) => {
     setWasJustSaved(false);
@@ -141,8 +129,6 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     }
   };
 
-  saveTreeChangesRef.current = () => saveTreeChanges();
-
   // Etap 37: po konflikcie - wczytanie danych z serwera (wpisane zmiany przepadaja) zamiast nadpisania.
   const loadCurrentTreeData = async () => {
     try {
@@ -154,7 +140,10 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
       setFormErrorMessage('Nie udało się pobrać aktualnych danych drzewa.');
     }
   };
-  discardChangesRef.current = discardChanges;
+  // Etap 32: niezapisane zmiany w rejestrze aplikacji - przelaczenie trybu, link, "Wstecz" albo inne drzewo w terenie
+  // pyta "Zapisz / Odrzuc / Zostan". Zapis z rejestru to ten sam zapis co przycisk "Zapisz zmiany".
+  useUnsavedChangesSource(`tree-field-form-${savedTree.id}`, hasUnsavedChanges, 'dane drzewa',
+    () => saveTreeChanges(), discardChanges);
 
   return (
     <form onSubmit={submitTreeChanges} className="form tree-field-form" noValidate aria-labelledby="tree-data-heading">

@@ -38,3 +38,12 @@ test('zrodlo bez zapisu: nie da sie zapisac jednym przyciskiem; odrzucenie wywol
   assert.equal(discarded, 1);
   assert.equal(store.hasUnsavedChanges(), false);
 });
+
+test('opisy zrodel w kolejnosci zgloszenia, bez powtorzen i bez zrodel bez opisu', () => {
+  const store = createUnsavedChangesStore();
+  store.setSource('tree-form', { label: 'dane drzewa' });
+  store.setSource('work-1', { label: 'prace' });
+  store.setSource('work-2', { label: 'prace' });
+  store.setSource('other', {});
+  assert.deepEqual(store.unsavedChangesLabels(), ['dane drzewa', 'prace']);
+});

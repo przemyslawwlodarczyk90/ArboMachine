@@ -27,7 +27,7 @@ export function UnsavedChangesDialog({ proceed, closeDialog }: { proceed: () => 
   return (
     <ModalDialog title="Niezapisane zmiany" closeDialog={closeDialog} isClosingBlocked={isSaving}>
       <div className="stack">
-        <p>Masz niezapisane zmiany w danych drzewa. Co zrobić?</p>
+        <p>{unsavedChangesQuestion(unsavedChangesStore.unsavedChangesLabels())}</p>
         {hasSavingFailed && <p className="field-error">Nie udało się zapisać zmian - popraw dane w formularzu i spróbuj ponownie.</p>}
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={isSaving}>Zostań</button>
@@ -42,6 +42,10 @@ export function UnsavedChangesDialog({ proceed, closeDialog }: { proceed: () => 
     </ModalDialog>
   );
 }
+
+// Etap 48: zmiany moga byc w kilku sekcjach karty drzewa - okno mowi w ktorych.
+const unsavedChangesQuestion = (labels: string[]) =>
+  `Masz niezapisane zmiany${labels.length ? ` (${labels.join(', ')})` : ''}. Co zrobić?`;
 
 /**
  * Wykonanie akcji z ochrona niezapisanych zmian: bez zmian - od razu, ze zmianami - po decyzji w UnsavedChangesDialog.
