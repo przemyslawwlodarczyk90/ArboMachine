@@ -1062,5 +1062,18 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 |---|---|
 | Ręczne współrzędne drzewa, oznaczenia drzewa, „Dane do dokumentów” (Mój profil), okno „Edytuj projekt” | V1 IMPLEMENTED: ten sam mechanizm co w §51 (`useUnsavedChangesSource`). W oknie edycji projektu linki są zasłonięte — chroni głównie „Wstecz” przeglądarki; pytanie pojawia się nad oknem edycji. |
 | Założenie V1 | Lokalizacja: sama zmiana układu współrzędnych na liście (bez wpisania liczb) też liczy się jako zmiana. Wskazanie punktu na mapie zapisuje się od razu — nie ma czego pilnować. |
-| Nadal bez ochrony | OPEN (dług): rysowanie i opisy na zdjęciu (okno adnotacji), okno „Nowe drzewo”, okno nowego projektu, dane konta w „Mój profil” (poza „Dane do dokumentów”), panele urzędnika i administratora. |
+| Nadal bez ochrony | Adnotacje, „Dodaj drzewo”, „Nowy projekt”, dane konta — RESOLVED w etapie 50 (§53). Panele urzędnika i administratora — zob. §53. |
 | Weryfikacja | Testy frontu 224/224. E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 32/32 ×2 (oznaczenia → „Zapisz”, dane do dokumentów → „Odrzuć”, edycja projektu → „Wstecz” / „Zostań” / „Zapisz”), `field-mode-e2e.mjs` 3× 55/55. **Ręczna lokalizacja bez kroku E2E.** Niesprawdzone na PostgreSQL i tablecie. |
+
+## 53. Niezapisane zmiany: okna tworzenia, dane konta, adnotacje na zdjęciu — etap 50
+
+**Źródło:** dług z §52. Zamyka serię etapów 46–50 (ochrona niezapisanych zmian).
+
+| Temat | Stan |
+|---|---|
+| Okna „Dodaj drzewo” i „Nowy projekt” | V1 IMPLEMENTED: pytanie **bez** „Zapisz” — tylko „Odrzuć zmiany / Zostań” (zapis tworzy rekord i przechodzi do niego, co kłóci się z wybraną nawigacją). Gdy jednocześnie są zmiany w innej sekcji, okno też nie pokazuje „Zapisz” (rejestr zapisuje tylko wszystko naraz). |
+| Założenie V1 („Dodaj drzewo”) | Zmianą jest tylko numer inny niż proponowany. Punkt z GPS / mapy przekazany do okna sam się nie liczy — po „Wstecz” trzeba go wskazać/zmierzyć od nowa. Do potwierdzenia: czy utrata pomiaru GPS przy „Wstecz” jest akceptowalna. |
+| Dane konta (Mój profil, edycja konta przez administratora) | V1 IMPLEMENTED: „Zapisz / Odrzuć / Zostań”. |
+| Adnotacje na zdjęciu | V1 IMPLEMENTED: „Wstecz” / zmiana trybu pyta; pusty rysunek (wszystko wymazane) nie zapisuje się z okna — usuwa się go przyciskiem „Usuń adnotacje”. |
+| Nadal bez ochrony | OPEN (dług, niski priorytet): formularze panelu urzędnika i administratora poza danymi konta, okna importu/eksportu, grupy drzew (rysowanie obszaru), warstwy referencyjne, ustawienia powiadomień. |
+| Weryfikacja | Testy frontu 224/224. E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 36/36 (nowy projekt → bez „Zapisz”, „Odrzuć”; dane konta → „Zapisz”), `field-mode-e2e.mjs` 3× 55/55. **Bez kroku E2E:** „Dodaj drzewo” i adnotacje (rysowanie na płótnie). Niesprawdzone na PostgreSQL i tablecie. |
