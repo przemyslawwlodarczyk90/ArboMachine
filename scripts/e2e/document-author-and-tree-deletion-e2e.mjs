@@ -1,7 +1,8 @@
-// Scenariusz E2E etapow 42, 44-47 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-48 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
-// Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
+// dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -235,6 +236,56 @@ async function main() {
     await waitFor('lista drzew po odrzuceniu', `return location.pathname === "/projects/${project.id}/trees"`);
     check('"Odrzuć zmiany" wraca do poprzedniej strony bez zapisu',
       (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}`)).speciesLatin == null);
+
+    // --- Etap 48: niezapisane zmiany w pracach, waloryzacji i kontroli stanu ---
+    const treePath = `/projects/${project.id}/trees/${treeToKeep.id}`;
+    const modalText = () => evaluate('return document.querySelector(".modal")?.innerText ?? ""');
+    await navigate(treePath);
+    await waitFor('sekcja prac', 'return document.body.innerText.includes("Dodaj pracę")');
+    await clickButton('Dodaj pracę');
+    await waitFor('formularz pracy', 'return !!document.querySelector(".tree-work-form")');
+    await typeIntoLabeled('Nazwa *', 'Podkrzesanie korony');
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno przy pracy', 'return !!document.querySelector(".modal")');
+    check('Niezapisana praca -> okno z "(prace)"', (await modalText()).includes('Masz niezapisane zmiany (prace)'), await modalText());
+    await clickButton('Zapisz');
+    await waitFor('lista drzew po zapisie pracy', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('"Zapisz" z okna zapisuje prace',
+      (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/works`)).some((work) => work.name === 'Podkrzesanie korony'));
+
+    await navigate(treePath);
+    await waitFor('sekcja waloryzacji', 'return document.body.innerText.includes("Dodaj waloryzację")');
+    await clickButton('Dodaj waloryzację');
+    await waitFor('formularz waloryzacji', 'return !!document.querySelector(".valuation-form")');
+    await typeIntoLabeled('Wartość wiekowa', 'drzewo ok. 120-letnie');
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno przy waloryzacji', 'return !!document.querySelector(".modal")');
+    check('Niezapisana waloryzacja -> okno z "(waloryzacja)"', (await modalText()).includes('(waloryzacja)'), await modalText());
+    await clickButton('Odrzuć zmiany');
+    await waitFor('lista drzew po odrzuceniu waloryzacji', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('"Odrzuć zmiany" nie zapisuje waloryzacji',
+      !(await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/valuation`)).hasValuation);
+
+    await navigate(treePath);
+    await waitFor('sekcja kontroli', 'return document.body.innerText.includes("Dodaj kontrolę")');
+    await clickButton('Dodaj kontrolę');
+    await waitFor('formularz kontroli', 'return !!document.querySelector(".monitoring-form")');
+    // "Uwagi" ma tez formularz drzewa - pole szukane tylko w formularzu kontroli.
+    await evaluate(`const area = document.querySelector('.monitoring-form textarea');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(area, 'posusz w koronie');
+      area.dispatchEvent(new Event('input', { bubbles: true })); return true;`);
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('okno przy kontroli', 'return !!document.querySelector(".modal")');
+    check('Niezapisana kontrola -> okno z "(kontrola stanu)"', (await modalText()).includes('(kontrola stanu)'), await modalText());
+    await clickButton('Zostań');
+    await waitFor('zamkniecie okna po "Zostań"', 'return !document.querySelector(".modal")').catch(() => {});
+    check('"Zostań" zostawia formularz kontroli z wpisanym tekstem',
+      (await evaluate('return location.pathname')) === treePath
+      && await evaluate('return [...document.querySelectorAll(".monitoring-form textarea")].some((area) => area.value === "posusz w koronie")'));
+    await clickButton('Anuluj');
+    await clickButton('← Wróć do listy drzew');
+    await waitFor('lista drzew po anulowaniu kontroli', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('Po "Anuluj" w formularzu link dziala bez pytania', !(await evaluate('return !!document.querySelector(".modal")')));
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
