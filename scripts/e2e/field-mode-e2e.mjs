@@ -392,11 +392,18 @@ async function main() {
       fields[${notesFieldIndex}].setAttribute("data-e2e", "notes"); return true;`);
     await typeInto('[data-e2e=notes]', offlineNote);
     await clickButton('Zapisz zmiany');
-    await waitFor('zapis na urzadzeniu', 'return document.body.innerText.includes("zostaną wysłane po połączeniu")');
+    // Komunikat formularza - sam tekst "zostaną wysłane po połączeniu" jest offline caly czas (informacja o zdjeciach).
+    await waitFor('zapis na urzadzeniu', 'return document.body.innerText.includes("Zmiany zapisano na tym urządzeniu")');
     check('Zapis formularza offline trafia do kolejki', true);
 
     // Nowe drzewo offline wskazane na mapie.
     await clickButton('Zamknij', 'document.querySelector(".field-sheet-actions")');
+    // Etap 47: po zapisie bez zasiegu formularz przejmuje drzewo z kolejki - "Zamknij" nie pyta o niezapisane zmiany.
+    await wait(500);
+    const closingState = await evaluate(`return { dialog: document.body.innerText.includes("Niezapisane zmiany"),
+      sheet: document.querySelector(".field-sheet h2")?.textContent ?? null, url: location.pathname + location.search }`);
+    check('Po zapisie offline "Zamknij" zamyka panel bez pytania o niezapisane zmiany',
+      !closingState.dialog && closingState.sheet === null, JSON.stringify(closingState));
     await clickButton('Wskaż na mapie');
     // Losowy punkt w gornej czesci mapy - kolejne przebiegi dodaja drzewa, a klik w drzewo nie wskazuje miejsca.
     const mapBox = await evaluate('const box = document.querySelector(".field-map-area canvas").getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width };');

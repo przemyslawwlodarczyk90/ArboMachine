@@ -1,7 +1,7 @@
-// Scenariusz E2E etapow 42, 44, 45 i 46 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-47 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
-// Etap 46: okno "Niezapisane zmiany" po kliknieciu w link z karty drzewa. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -207,6 +207,8 @@ async function main() {
     await waitFor('okno niezapisanych zmian', 'return document.querySelector(".modal h2")?.textContent === "Niezapisane zmiany"');
     check('Link z niezapisanymi zmianami -> okno "Niezapisane zmiany"', true);
     await clickButton('Zostań');
+    // Router zamyka okno (blocker.reset) w kolejnym renderze - czekamy na to, zamiast sprawdzac od razu po kliknieciu.
+    await waitFor('zamkniecie okna po "Zostań"', 'return !document.querySelector(".modal")').catch(() => {});
     check('"Zostań" zostawia karte drzewa i wpisany tekst',
       !(await evaluate('return !!document.querySelector(".modal")')) && (await evaluate('return location.pathname')) === `/projects/${project.id}/trees/${treeToKeep.id}`
       && await evaluate('return [...document.querySelectorAll("input")].some((input) => input.value === "lipa drobnolistna")'));
@@ -216,6 +218,23 @@ async function main() {
     await waitFor('lista drzew po zapisie', `return location.pathname === "/projects/${project.id}/trees"`);
     check('"Zapisz" zapisuje drzewo i przechodzi do listy',
       (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}`)).speciesPolish === 'lipa drobnolistna');
+
+    // --- Etap 47: przycisk "Wstecz" przegladarki przy niezapisanych zmianach ---
+    // Wejscie na karte w aplikacji (klik z listy), zeby "Wstecz" bylo przejsciem routera, a nie przeladowaniem strony.
+    await navigate(`/projects/${project.id}/trees`);
+    await waitFor('link do drzewa', `return !!document.querySelector('a[href="/projects/${project.id}/trees/${treeToKeep.id}"]')`);
+    await evaluate(`document.querySelector('a[href="/projects/${project.id}/trees/${treeToKeep.id}"]').click(); return true;`);
+    await waitFor('formularz drzewa', 'return !!document.querySelector(".tree-field-form")');
+    await typeIntoLabeled('Nazwa łacińska', 'Tilia cordata');
+    await waitFor('znacznik niezapisanych zmian', 'return document.body.innerText.includes("Masz niezapisane zmiany.")');
+    await evaluate('history.back(); return true;');
+    await waitFor('okno po "Wstecz"', 'return document.querySelector(".modal h2")?.textContent === "Niezapisane zmiany"');
+    check('"Wstecz" przegladarki z niezapisanymi zmianami -> okno "Niezapisane zmiany"',
+      (await evaluate('return location.pathname')) === `/projects/${project.id}/trees/${treeToKeep.id}`);
+    await clickButton('Odrzuć zmiany');
+    await waitFor('lista drzew po odrzuceniu', `return location.pathname === "/projects/${project.id}/trees"`);
+    check('"Odrzuć zmiany" wraca do poprzedniej strony bez zapisu',
+      (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}`)).speciesLatin == null);
 
     // --- Etap 44: usuwanie drzewa ---
     await navigate(`/projects/${project.id}/trees/${treeToDelete.id}`);
