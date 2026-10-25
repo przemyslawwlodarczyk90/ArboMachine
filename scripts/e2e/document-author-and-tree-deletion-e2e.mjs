@@ -1,9 +1,10 @@
-// Scenariusz E2E etapow 42, 44-50 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-51 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
 // dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Etap 49: oznaczenia, "Dane do dokumentow"
-// i okno edycji projektu. Etap 50: okno "Nowy projekt" (bez "Zapisz" w pytaniu) i dane konta. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// i okno edycji projektu. Etap 50: okno "Nowy projekt" (bez "Zapisz" w pytaniu) i dane konta. Etap 51: termin
+// nastepnej kontroli. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -287,6 +288,23 @@ async function main() {
     await clickButton('← Wróć do listy drzew');
     await waitFor('lista drzew po anulowaniu kontroli', `return location.pathname === "/projects/${project.id}/trees"`);
     check('Po "Anuluj" w formularzu link dziala bez pytania', !(await evaluate('return !!document.querySelector(".modal")')));
+
+    // --- Etap 51: termin nastepnej kontroli ---
+    await navigate(treePath);
+    await waitFor('sekcja kontroli', 'return document.body.innerText.includes("Dodaj kontrolę")');
+    await clickButton('Dodaj kontrolę');
+    await waitFor('formularz kontroli', 'return !!document.querySelector(".monitoring-form")');
+    await typeIntoLabeled('Data kontroli', '2026-10-20');
+    await typeIntoLabeled('Termin następnej kontroli', '2026-10-19');
+    await clickButton('Zapisz kontrolę');
+    await waitFor('blad terminu', 'return document.body.innerText.includes("nie może być wcześniejszy niż data kontroli")');
+    check('Termin nastepnej kontroli przed data kontroli -> blad pod polem', true);
+    await typeIntoLabeled('Termin następnej kontroli', '2027-04-15');
+    await clickButton('Zapisz kontrolę');
+    await waitFor('kontrola z terminem na liscie', 'return document.body.innerText.includes("Następna kontrola: ")');
+    const monitoringRecords = await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/monitoring`);
+    check('Termin nastepnej kontroli zapisany na serwerze i widoczny na liscie',
+      monitoringRecords.some((record) => record.nextInspectionDate === '2027-04-15'), JSON.stringify(monitoringRecords));
 
     // --- Etap 49: oznaczenia, dane do dokumentow, okno edycji projektu ---
     // Okno pytania moze lezec nad innym oknem (edycja projektu) - przyciski i tekst brane z ostatniego okna.
