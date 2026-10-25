@@ -1,10 +1,10 @@
-// Scenariusz E2E etapow 42, 44-51 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
+// Scenariusz E2E etapow 42, 44-52 w headless Chrome przez DevTools Protocol - Node.js 22+, bez zaleznosci.
 // Etap 42: "Moj profil" -> "Dane do dokumentow" -> dane trafiaja do PDF projektu. Etap 44: "Usun drzewo" na karcie
 // drzewa (dwa kroki, blokada bez polaczenia). Etap 45: numer umowy i cel opracowania w oknie edycji projektu.
 // Etapy 46-47: okno "Niezapisane zmiany" po kliknieciu w link i po "Wstecz" przegladarki. Etap 48: to samo okno
 // dla pracy, waloryzacji i kontroli stanu (z nazwa sekcji w pytaniu). Etap 49: oznaczenia, "Dane do dokumentow"
 // i okno edycji projektu. Etap 50: okno "Nowy projekt" (bez "Zapisz" w pytaniu) i dane konta. Etap 51: termin
-// nastepnej kontroli. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
+// nastepnej kontroli. Etap 52: podpis zdjecia i wylaczenie zdjecia z dokumentu PDF. Wymaga uruchomionej aplikacji z wylaczonym potwierdzaniem e-maila
 // (--app.registration.email-confirmation-required=false) - konto zaklada sam. Uzycie:
 //   node scripts/e2e/document-author-and-tree-deletion-e2e.mjs --base http://localhost:8086
 //        [--chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"]
@@ -305,6 +305,26 @@ async function main() {
     const monitoringRecords = await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/monitoring`);
     check('Termin nastepnej kontroli zapisany na serwerze i widoczny na liscie',
       monitoringRecords.some((record) => record.nextInspectionDate === '2027-04-15'), JSON.stringify(monitoringRecords));
+
+    // --- Etap 52: podpis zdjecia i wybor do dokumentu ---
+    // Zdjecie 1x1 PNG wysylane przez API (wybor pliku w headless Chrome pomijamy).
+    const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    const photoForm = new FormData();
+    photoForm.append('file', new Blob([pngBytes], { type: 'image/png' }), 'IMG_E2E.png');
+    const uploadedPhoto = await (await fetch(`${BASE}/api/projects/${project.id}/trees/${treeToKeep.id}/photos`, {
+      method: 'POST', headers: { Authorization: `Bearer ${apiToken}` }, body: photoForm })).json();
+    await navigate(treePath);
+    await waitFor('kafelek zdjecia', 'return !!document.querySelector(".tree-photo-tile")');
+    await clickButton('Podpis');
+    await waitFor('formularz podpisu', 'return !!document.querySelector(".tree-photo-document-settings")');
+    await typeIntoLabeled('Podpis w dokumencie', 'Ubytek w nasadzie pnia');
+    await evaluate('document.querySelector(".tree-photo-document-settings input[type=checkbox]").click(); return true;');
+    await evaluate(`[...document.querySelectorAll(".tree-photo-document-settings button")].find((button) => button.textContent.trim() === "Zapisz").click(); return true;`);
+    await waitFor('plakietka "Poza dokumentem"', 'return document.body.innerText.includes("Poza dokumentem")');
+    const savedPhoto = (await api(`/api/projects/${project.id}/trees/${treeToKeep.id}/photos`)).find((photo) => photo.id === uploadedPhoto.id);
+    check('Podpis zdjecia i wylaczenie z dokumentu zapisane na serwerze i widoczne na kafelku',
+      savedPhoto?.caption === 'Ubytek w nasadzie pnia' && savedPhoto?.includedInDocument === false
+      && (await bodyText()).includes('Ubytek w nasadzie pnia'), JSON.stringify(savedPhoto));
 
     // --- Etap 49: oznaczenia, dane do dokumentow, okno edycji projektu ---
     // Okno pytania moze lezec nad innym oknem (edycja projektu) - przyciski i tekst brane z ostatniego okna.
