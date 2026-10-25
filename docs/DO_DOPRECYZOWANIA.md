@@ -1130,3 +1130,14 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Wybór zapamiętany | Założenie V1: nie — przy każdym generowaniu domyślnie „Wszystkie drzewa”. |
 | Inne kryteria | OPEN: karty wybranych drzew, drzew z grupy, drzew w złym stanie, drzew z waloryzacją; podział dokumentu na części; szablony per rodzaj opracowania (8.4) — do ustalenia z klientem. |
 | Weryfikacja | Backend 407/407 (trzy zakresy, zdjęcia, licznik, zły parametr → 400), frontend 228/228, E2E 41/41 (H2: „Bez kart drzew” z przeglądarki), `field-mode-e2e.mjs` 3× 55/55. Nie sprawdzono na prawdziwym projekcie 938 drzew (czas generowania). |
+
+## 58. Drobne sprawy V1 do zrobienia samodzielnie (niski priorytet) — stan 25.10.2026
+
+**Źródło:** przegląd po etapie 54 — kolejka etapów „V1 bez czekania na klienta” jest wyczerpana, zostały tylko
+drobiazgi. Kandydaci na kolejne etapy (55–56), gdy nie będzie pilniejszej pracy.
+
+| # | Sprawa | Skąd | Stan | Wielkość | Uwagi |
+|---|---|---|---|---|---|
+| D1 | Pytanie o niezapisane zmiany w panelach urzędnika i administratora (poza danymi konta), w imporcie/eksporcie, przy rysowaniu obszaru grupy drzew i w warstwach referencyjnych | §53 | OPEN (dług) | mały — ten sam mechanizm `useUnsavedChangesSource` co w etapach 48–50 | panel urzędnika i powiadomienia to moduły „tylko utrzymanie” — tylko jeśli właściciel zleci |
+| D2 | Kolejność zdjęć drzewa i „zdjęcie główne” (w karcie i w dokumencie PDF) | §55, 02 poz. 4.3 | OPEN | średni — nowe pole kolejności, przesuwanie na kafelkach, PDF wg kolejności | dziś kolejność dodania; do potwierdzenia z klientem, czy potrzebne |
+| D3 | Okno „Dodaj drzewo” w terenie: „Wstecz” gubi przekazany pomiar GPS (punkt nie liczy się jako niezapisana zmiana) | §53 | DO POTWIERDZENIA Z KLIENTEM | mały — zgłosić punkt jako zmianę albo zapamiętać pomiar | najpierw zapytać, czy to w praktyce problem |
