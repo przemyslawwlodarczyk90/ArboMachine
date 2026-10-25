@@ -329,6 +329,28 @@ class ProjectApiIntegrationTest {
                 .andExpect(jsonPath("$.documentPurpose").doesNotExist());
     }
 
+    // --- etap 53: podstawa prawna ---
+
+    @Test
+    void legalBasisIsTrimmedChangedClearedAndLimited() throws Exception {
+        String responseJson = postProjectAs(userAccountA, "{\"name\":\"Park\",\"legalBasis\":\"  Ustawa o ochronie przyrody \"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.legalBasis").value("Ustawa o ochronie przyrody"))
+                .andReturn().getResponse().getContentAsString();
+        long projectId = objectMapper.readTree(responseJson).get("id").asLong();
+
+        mockMvc.perform(patch("/api/projects/{id}", projectId).header("Authorization", bearerTokenOf(userAccountA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Park 2\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.legalBasis").value("Ustawa o ochronie przyrody"));
+        mockMvc.perform(patch("/api/projects/{id}", projectId).header("Authorization", bearerTokenOf(userAccountA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"legalBasis\":\" \"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.legalBasis").doesNotExist());
+        postProjectAs(userAccountA, "{\"name\":\"Park\",\"legalBasis\":\"" + "x".repeat(2001) + "\"}")
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void tooLongContractNumberIsRejected() throws Exception {
         postProjectAs(userAccountA, "{\"name\":\"Park\",\"contractNumber\":\"" + "1".repeat(101) + "\"}")

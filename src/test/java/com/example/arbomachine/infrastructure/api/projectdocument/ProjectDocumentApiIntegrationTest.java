@@ -198,6 +198,11 @@ class ProjectDocumentApiIntegrationTest {
                 .andExpect(status().isOk());
         String text = textOf(generateDocumentOfUserA());
         assertThat(text).contains("Numer umowy", "UM/12/2026", "Cel opracowania", "Inwentaryzacja przed przebudową alei");
+        assertThat(text).as("etap 53: bez podstawy prawnej wiersz pominiety").doesNotContain("Podstawa prawna");
+
+        performAs(userAccountA, patch("/api/projects/{p}", projectIdA).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"legalBasis\":\"Art. 83 ustawy o ochronie przyrody\"}")).andExpect(status().isOk());
+        assertThat(textOf(generateDocumentOfUserA())).contains("Podstawa prawna", "Art. 83 ustawy o ochronie przyrody");
     }
 
     @Test

@@ -20,6 +20,8 @@ public record ProjectDocumentData(
         /** etap 45: numer umowy i cel opracowania (null = nie podano) */
         String contractNumber,
         String documentPurpose,
+        /** etap 53: podstawa prawna (null = nie podano - wiersz pominiety) */
+        String legalBasis,
         Instant projectCreatedAt,
         Instant projectUpdatedAt,
         Instant generatedAt,

@@ -18,6 +18,7 @@ public class ProjectMapper {
                 project.getOrderDate(),
                 project.getContractNumber(),
                 project.getDocumentPurpose(),
+                project.getLegalBasis(),
                 project.getCreatedAt(),
                 project.getUpdatedAt()
         );

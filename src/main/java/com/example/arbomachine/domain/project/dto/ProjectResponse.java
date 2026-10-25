@@ -14,6 +14,8 @@ public record ProjectResponse(
         /** etap 45: numer umowy i cel opracowania (null = nie podano) */
         String contractNumber,
         String documentPurpose,
+        /** etap 53: podstawa prawna (null = nie podano) */
+        String legalBasis,
         Instant createdAt,
         Instant updatedAt
 ) {}

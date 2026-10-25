@@ -138,7 +138,7 @@ public class ProjectDocumentDataAssembler {
         }
         return new ProjectDocumentData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
-                ownedProject.getContractNumber(), ownedProject.getDocumentPurpose(),
+                ownedProject.getContractNumber(), ownedProject.getDocumentPurpose(), ownedProject.getLegalBasis(),
                 ownedProject.getCreatedAt(), ownedProject.getUpdatedAt(), generatedAt, treeData,
                 treeStandRepository.findAllByProjectIdOrderByNameAscIdAsc(ownedProject.getId()).stream()
                         .map(stand -> new ProjectDocumentStandData(stand.getName(), stand.getAreaSquareMeters(),

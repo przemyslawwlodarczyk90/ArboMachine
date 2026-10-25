@@ -17,7 +17,9 @@ public record ProjectExportData(
         List<TreeStandExportData> stands,
         /** etap 45: numer umowy i cel opracowania (null = nie podano) */
         String contractNumber,
-        String documentPurpose
+        String documentPurpose,
+        /** etap 53: podstawa prawna (null = nie podano) */
+        String legalBasis
 ) {
 
     public long treesWithoutLocationCount() {

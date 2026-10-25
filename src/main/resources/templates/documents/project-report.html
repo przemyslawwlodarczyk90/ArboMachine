@@ -105,6 +105,8 @@
   <tr><th>Cel opracowania</th>
     <td th:if="${format.hasText(document.documentPurpose())}" class="multiline" th:text="${document.documentPurpose()}">Cel</td>
     <td th:unless="${format.hasText(document.documentPurpose())}" class="placeholder">Dane do uzupełnienia</td></tr>
+  <tr th:if="${format.hasText(document.legalBasis())}"><th>Podstawa prawna</th>
+    <td class="multiline" th:text="${document.legalBasis()}">Podstawa prawna</td></tr>
   <tr><th>Obiekt / lokalizacja</th>
     <td th:if="${format.hasText(document.siteAddress())}" class="multiline" th:text="${document.siteAddress()}">Adres</td>
     <td th:unless="${format.hasText(document.siteAddress())}" class="placeholder">Dane do uzupełnienia</td></tr>

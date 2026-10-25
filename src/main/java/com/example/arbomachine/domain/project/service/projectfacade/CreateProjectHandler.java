@@ -40,6 +40,7 @@ public class CreateProjectHandler {
         newProject.setOrderDate(createProjectRequest.orderDate());
         newProject.setContractNumber(ProjectOrderFields.trimmedOrNull(createProjectRequest.contractNumber()));
         newProject.setDocumentPurpose(ProjectOrderFields.trimmedOrNull(createProjectRequest.documentPurpose()));
+        newProject.setLegalBasis(ProjectOrderFields.trimmedOrNull(createProjectRequest.legalBasis()));
         return projectMapper.toProjectResponse(projectRepository.save(newProject));
     }
 }

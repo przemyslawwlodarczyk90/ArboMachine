@@ -84,7 +84,8 @@ public class ProjectExportDataAssembler {
                 .toList();
         return new ProjectExportData(ownedProject.getId(), ownedProject.getName(), ownedProject.getDescription(),
                 exportedAt, trees, ownedProject.getClientName(), ownedProject.getSiteAddress(), ownedProject.getOrderDate(),
-                stands.stream().map(this::standDataOf).toList(), ownedProject.getContractNumber(), ownedProject.getDocumentPurpose());
+                stands.stream().map(this::standDataOf).toList(), ownedProject.getContractNumber(), ownedProject.getDocumentPurpose(),
+                ownedProject.getLegalBasis());
     }
 
     private static TreeWorkExportData workDataOf(TreeWork work) {

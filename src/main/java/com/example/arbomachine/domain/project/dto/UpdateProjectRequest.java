@@ -34,11 +34,15 @@ public record UpdateProjectRequest(
 
         /** Cel opracowania: null = bez zmian, pusty tekst = usuniecie (etap 45). */
         @Size(max = Project.MAXIMUM_DOCUMENT_PURPOSE_LENGTH, message = "Document purpose must have at most 2000 characters")
-        String documentPurpose
+        String documentPurpose,
+
+        /** Podstawa prawna: null = bez zmian, pusty tekst = usuniecie (etap 53). */
+        @Size(max = Project.MAXIMUM_LEGAL_BASIS_LENGTH, message = "Legal basis must have at most 2000 characters")
+        String legalBasis
 ) {
 
     /** Dotychczasowe wywolania (nazwa i opis). */
     public UpdateProjectRequest(String name, String description) {
-        this(name, description, null, null, null, null, null);
+        this(name, description, null, null, null, null, null, null);
     }
 }

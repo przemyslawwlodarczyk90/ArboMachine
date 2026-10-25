@@ -29,6 +29,7 @@ public class Project {
     public static final int MAXIMUM_SITE_ADDRESS_LENGTH = 500;
     public static final int MAXIMUM_CONTRACT_NUMBER_LENGTH = 100;
     public static final int MAXIMUM_DOCUMENT_PURPOSE_LENGTH = 2000;
+    public static final int MAXIMUM_LEGAL_BASIS_LENGTH = 2000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,6 +68,10 @@ public class Project {
 
     @Column(name = "document_purpose", columnDefinition = "text")
     private String documentPurpose;
+
+    /** Etap 53 (02 poz. 8.3): podstawa prawna opracowania - opcjonalna, wolny tekst V1 (np. przepisy, decyzja). */
+    @Column(name = "legal_basis", columnDefinition = "text")
+    private String legalBasis;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

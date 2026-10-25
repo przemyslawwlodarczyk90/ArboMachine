@@ -53,6 +53,9 @@ public class UpdateProjectHandler {
         if (updateProjectRequest.documentPurpose() != null) {
             ownedProject.setDocumentPurpose(ProjectOrderFields.trimmedOrNull(updateProjectRequest.documentPurpose()));
         }
+        if (updateProjectRequest.legalBasis() != null) {
+            ownedProject.setLegalBasis(ProjectOrderFields.trimmedOrNull(updateProjectRequest.legalBasis()));
+        }
         ownedProject.setUpdatedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return projectMapper.toProjectResponse(projectRepository.save(ownedProject));
     }

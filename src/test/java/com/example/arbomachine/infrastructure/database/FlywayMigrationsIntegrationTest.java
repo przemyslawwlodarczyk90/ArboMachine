@@ -31,7 +31,7 @@ class FlywayMigrationsIntegrationTest {
     @Test
     void shouldApplyAllMigrationsAndMatchEntities() {
         // applied() zawiera tez wpis Flyway o zalozeniu schematu - liczy sie numer ostatniej wersji.
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("9");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("10");
         assertThat(flyway.info().pending()).isEmpty();
     }
 }
