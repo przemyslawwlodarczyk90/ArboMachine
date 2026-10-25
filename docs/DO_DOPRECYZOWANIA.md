@@ -1077,3 +1077,16 @@ zmian z etapu 32 pytał tylko przy przełączaniu trybu i wyborze innego drzewa 
 | Adnotacje na zdjęciu | V1 IMPLEMENTED: „Wstecz” / zmiana trybu pyta; pusty rysunek (wszystko wymazane) nie zapisuje się z okna — usuwa się go przyciskiem „Usuń adnotacje”. |
 | Nadal bez ochrony | OPEN (dług, niski priorytet): formularze panelu urzędnika i administratora poza danymi konta, okna importu/eksportu, grupy drzew (rysowanie obszaru), warstwy referencyjne, ustawienia powiadomień. |
 | Weryfikacja | Testy frontu 224/224. E2E na H2: `document-author-and-tree-deletion-e2e.mjs` 36/36 (nowy projekt → bez „Zapisz”, „Odrzuć”; dane konta → „Zapisz”), `field-mode-e2e.mjs` 3× 55/55. **Bez kroku E2E:** „Dodaj drzewo” i adnotacje (rysowanie na płótnie). Niesprawdzone na PostgreSQL i tablecie. |
+
+## 54. Termin następnej kontroli — etap 51
+
+**Źródło:** 02 poz. 7.2 („kontrole cykliczne z terminem”) — V1 bez czekania na odpowiedź klienta.
+
+| Temat | Stan |
+|---|---|
+| Pole „Termin następnej kontroli” przy kontroli stanu | V1 IMPLEMENTED: opcjonalna data wpisywana przez arborystę (`tree_monitoring_record.next_inspection_date`, migracja V8). Walidacja: nie wcześniej niż data kontroli (formularz i API). Lista kontroli, kolejka offline, XLSX (arkusz „Monitoring”, ostatnia kolumna), PDF (przy kontroli). |
+| Wyliczanie terminu | OPEN: aplikacja niczego nie wylicza (np. „co rok”, „zależnie od oceny”) — do ustalenia z klientem, czy termin wynika z oceny/przepisów. |
+| Przypomnienia | OPEN: brak powiadomień o zbliżającym się terminie kontroli i brak listy „kontrole do wykonania” w projekcie (prace mają powiadomienia o terminach — czy kontrole też?). |
+| Termin dla drzewa | Założenie V1: termin należy do wpisu kontroli; „aktualny” termin drzewa = termin z ostatniej kontroli (nie jest nigdzie osobno pokazywany). |
+| CSV / GeoJSON / GPKG | Założenie V1: termin tylko w arkuszu „Monitoring” XLSX; kolumny „ostatnia kontrola” w CSV/GIS bez zmian. |
+| Weryfikacja | Backend 402/402 (test API: zapis, czyszczenie, walidacja, XLSX), frontend 225/225, E2E 38/38 (H2), `field-mode-e2e.mjs` 3× 55/55. **Migracja V8 niesprawdzona na PostgreSQL** (Docker wyłączony; test Flyway na H2). |
