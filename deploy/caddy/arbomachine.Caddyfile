@@ -1,0 +1,19 @@
+# Fragment wspolnego Caddyfile: HTTPS (automatyczny certyfikat), proxy do kontenera w sieci Docker.
+# Caddy sam ustawia X-Forwarded-For / X-Forwarded-Proto / X-Forwarded-Host (aplikacja: forward-headers-strategy=framework).
+<domena-arbomachine> {
+	encode gzip
+	# Upload zdjec do 15 MB + narzut multipart; warstwy GIS do 15 MB.
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy arbomachine:8083 {
+		# Dokument PDF ze zdjeciami: do ~20 s generowania + do 120 s czekania w kolejce (1 PDF naraz).
+		transport http {
+			read_timeout 180s
+			write_timeout 180s
+		}
+	}
+	# Swagger/actuator nie sa publikowane na zewnatrz (health tylko dla healthchecku w sieci Docker).
+	@internal path /actuator/* /swagger-ui* /v3/api-docs*
+	respond @internal 404
+}

@@ -1,0 +1,16 @@
+# Kontekst = korzen repo; do obrazu trafia tylko to, co potrzebne do builda. Sekrety i .env NIGDY.
+**
+!pom.xml
+!src/
+!frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+src/main/resources/arbomachine-secrets.properties
+src/main/resources/static/index.html
+src/main/resources/static/assets/
+src/main/resources/static/favicon.svg
+src/main/resources/static/sw.js
+src/main/resources/static/manifest.webmanifest
+src/main/resources/static/*.mp4
+src/test/

@@ -54,3 +54,10 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 **/CLAUDE.md
+
+### Wdrozenie: sekrety i archiwa obrazow - nigdy w repo ###
+deploy/out/
+deploy/*.env
+!deploy/.env.example
+**/arbomachine.env
+.env

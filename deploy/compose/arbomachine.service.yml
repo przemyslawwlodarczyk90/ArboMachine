@@ -1,0 +1,49 @@
+# Fragment WSPOLNEGO docker-compose (serwer AWS: ArboMachine + ArnoCRM, jeden PostgreSQL 18.6, Redis 7, Caddy).
+# Do wklejenia w sekcje services/volumes wspolnego pliku - NIE zawiera wlasnego PostgreSQL ani publicznych portow.
+# Zalozenia wspolnego pliku: serwis "postgres" (postgres:18.6-alpine) i "caddy" w sieci "backend";
+# baza "arbomachine" zalozona skryptem deploy/postgres/initdb/10-arbomachine.sh.
+services:
+  arbomachine:
+    image: arbomachine:${ARBOMACHINE_IMAGE_TAG:?ustaw ARBOMACHINE_IMAGE_TAG, np. 0.0.1-SNAPSHOT-<commit>}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: ./arbomachine.env          # sekrety i adresy (wzor: deploy/.env.example), poza Gitem, chmod 600
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      ARBOMACHINE_PORT: 8083
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: arbomachine
+      DB_SCHEMA: arbomachine
+      DB_USERNAME: arbomachine
+      ARBOMACHINE_TREE_PHOTOS_DIRECTORY: /app/storage/tree-photos
+      TZ: Europe/Warsaw
+    # Brak "ports" - ruch tylko przez Caddy (reverse_proxy arbomachine:8083) w sieci Docker.
+    expose:
+      - "8083"
+    volumes:
+      - arbomachine-tree-photos:/app/storage/tree-photos
+    tmpfs:
+      - /tmp:size=256m,mode=1777   # multipart (zdjecia do 15 MB) i pliki tymczasowe GeoPackage
+    mem_limit: 768m        # szczyt zmierzony przy PDF ze zdjeciami ~680 MB RSS (Xmx 384m) - nie zmniejszac bez pomiaru
+    memswap_limit: 768m    # bez swapu dla kontenera: OOM aplikacji zamiast spowolnienia calego serwera
+    cpus: 1.0
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8083 && printf 'GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '\"status\":\"UP\"' <&3"]
+      interval: 30s
+      timeout: 5s
+      start_period: 180s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - backend
+
+volumes:
+  arbomachine-tree-photos:      # TRWALE zdjecia drzew - nigdy "docker compose down -v"
