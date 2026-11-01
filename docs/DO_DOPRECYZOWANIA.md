@@ -1141,3 +1141,20 @@ drobiazgi. Kandydaci na kolejne etapy (55–56), gdy nie będzie pilniejszej pra
 | D1 | Pytanie o niezapisane zmiany w panelach urzędnika i administratora (poza danymi konta), w imporcie/eksporcie, przy rysowaniu obszaru grupy drzew i w warstwach referencyjnych | §53 | OPEN (dług) | mały — ten sam mechanizm `useUnsavedChangesSource` co w etapach 48–50 | panel urzędnika i powiadomienia to moduły „tylko utrzymanie” — tylko jeśli właściciel zleci |
 | D2 | Kolejność zdjęć drzewa i „zdjęcie główne” (w karcie i w dokumencie PDF) | §55, 02 poz. 4.3 | OPEN | średni — nowe pole kolejności, przesuwanie na kafelkach, PDF wg kolejności | dziś kolejność dodania; do potwierdzenia z klientem, czy potrzebne |
 | D3 | Okno „Dodaj drzewo” w terenie: „Wstecz” gubi przekazany pomiar GPS (punkt nie liczy się jako niezapisana zmiana) | §53 | DO POTWIERDZENIA Z KLIENTEM | mały — zgłosić punkt jako zmianę albo zapamiętać pomiar | najpierw zapytać, czy to w praktyce problem |
+
+## 59. Wspólny hosting AWS (ArboMachine + ArnoCRM) — przygotowanie 01.11.2026
+
+**Źródło:** instrukcja przygotowania repozytorium do wspólnego serwera (t3.small, PostgreSQL 18.6, Caddy). Zrobione:
+Spring Boot 4.0.9, Flyway w produkcji, konfiguracja z env, obraz i Compose (`deploy/`, `docs/MIGRACJA_SPRING_BOOT_4_I_AWS.md`).
+
+| # | Sprawa | Stan | Uwagi |
+|---|---|---|---|
+| A1 | Wdrożenie na AWS | OPEN — wymaga zgody właściciela | checklista w `deploy/README.md` |
+| A2 | Pamięć PDF: zdjęcia dekodowane w pełnej rozdzielczości (`ReportImageScaler`), cały PDF w pamięci | OPEN (dług) | jest limit 1 PDF naraz; pełne rozwiązanie: subsampling przy dekodowaniu + PDF do pliku tymczasowego; szacunek: szczyt z ~680 do ~450 MiB |
+| A3 | 2 GiB na dwie aplikacje + PostgreSQL + Redis | RYZYKO | suma szczytów ~1,8–1,9 GiB; swap na hoście zalecany; pomiar po uruchomieniu obu aplikacji razem |
+| A4 | Rollback po nowych migracjach | ZASADA | stara wersja może nie przejść `validate` — przed wdrożeniem z migracjami `pg_dump` |
+| A5 | Kopie zapasowe bazy i zdjęć na AWS | OPEN | `pg_dump` + wolumen zdjęć, harmonogram do ustalenia |
+| A6 | Domena i adres `APP_PUBLIC_BASE_URL` | DO USTALENIA | potrzebne do HTTPS (Caddy) i linków w mailach |
+| A7 | Stałe klucze VAPID (Web Push) | ZALECANE | bez nich klucz prywatny ląduje w bazie |
+| A8 | Lokalna baza deweloperska: pierwszy start po zmianie = baseline Flyway V1 + V2–V10 | INFORMACJA | dane zostają; zalecany `pg_dump -n arbomachine` przed startem |
+

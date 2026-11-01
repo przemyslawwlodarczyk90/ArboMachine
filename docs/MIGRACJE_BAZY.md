@@ -1,9 +1,12 @@
-# Migracje bazy danych (Flyway) — stan od etapu 38
+# Migracje bazy danych (Flyway)
 
-**Stan dziś:** aplikacja (produkcja i środowisko deweloperskie) nadal tworzy i uzupełnia schemat przez
-`spring.jpa.hibernate.ddl-auto=update`. Migracje Flyway są **przygotowane i sprawdzane w testach**, ale nie są
-uruchamiane przez aplikację — `flyway-core` ma w `pom.xml` zakres `test`. Przełączenie produkcji to decyzja właściciela
-(patrz niżej).
+**Stan od 01.11.2026 (Spring Boot 4, przygotowanie AWS):** schemat tworzy i aktualizuje **wyłącznie Flyway**
+(`spring-boot-starter-flyway` w runtime), Hibernate ma `ddl-auto=validate`. Migracje V1–V10 budują pełny schemat od zera
+(sprawdzone na PostgreSQL 18.6 — `PostgreSqlDeploymentIntegrationTest`; encje vs migracje: 18/18 tabel, 34/34 indeksów
+i ograniczeń). Lokalna baza zbudowana kiedyś przez `ddl-auto=update` dostaje przy pierwszym starcie baseline V1
+(`FLYWAY_BASELINE_ON_MIGRATE`, poza profilem prod domyślnie `true`), potem V2–V10. Szczegóły:
+`docs/MIGRACJA_SPRING_BOOT_4_I_AWS.md`. Poniżej — historia z etapu 38 (przełączenie opisane w ostatniej sekcji zostało
+wykonane 01.11.2026, z tą różnicą, że produkcja startuje z czystą bazą).
 
 ## Pliki
 

@@ -2,7 +2,7 @@
 
 ## Wymagania
 
-- JDK 25 (build i uruchomienie), Node.js 20+ (tylko build frontendu), PostgreSQL 14+.
+- JDK 25 (build i uruchomienie), Node.js 20+ (tylko build frontendu), PostgreSQL 18.6 na serwerze (testowane; lokalnie działa 14+). Spring Boot 4.0.9.
 - Produkcja: **HTTPS** (reverse proxy, np. nginx / Caddy) — wymagany przez aparat, GPS, service worker i Web Push.
 
 ## Build
@@ -18,18 +18,20 @@ inaczej stare paczki frontendu z `target/classes/static` trafiają do JAR.
 
 ## Uruchomienie
 
+Produkcja (wspólny serwer AWS z ArnoCRM): obraz Docker i fragment Compose — **`deploy/README.md`**.
+
+Konfiguracja wyłącznie ze zmiennych środowiskowych (wzór `deploy/.env.example`):
+`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SCHEMA` (=`arbomachine`), `DB_USERNAME`, `DB_PASSWORD`,
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_APP_PASSWORD`, `JWT_SECRET`, `APP_PUBLIC_BASE_URL`,
+profil `SPRING_PROFILES_ACTIVE=prod` (Swagger wyłączony, nagłówki X-Forwarded-*). Schemat bazy tworzy Flyway
+przy starcie (`ddl-auto=validate`); samą bazę i rolę zakłada `deploy/postgres/initdb/10-arbomachine.sh`.
+
 ```bash
-ARBOMACHINE_PORT=8080 \
-ARBOMACHINE_DB_URL=jdbc:postgresql://db:5432/arbomachine \
-ARBOMACHINE_DB_USER=arbomachine ARBOMACHINE_DB_PASSWORD=... \
-ARBOMACHINE_FRONTEND_BASE_URL=https://arbomachine.example.pl \
-java -jar target/arbomachine-<wersja>.jar
+SPRING_PROFILES_ACTIVE=prod DB_HOST=db DB_NAME=arbomachine DB_USERNAME=arbomachine DB_PASSWORD=... JWT_SECRET=... SMTP_USERNAME=... SMTP_APP_PASSWORD=... APP_PUBLIC_BASE_URL=https://arbomachine.example.pl java -jar target/arbomachine-<wersja>.jar
 ```
 
-Sekrety (`auth.jwt.secret`, `spring.mail.username`, `spring.mail.password`) — zmienne środowiskowe
-`AUTH_JWT_SECRET`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` (plik `arbomachine-secrets.properties` jest czytany
-tylko z classpath, więc w produkcji wygodniejsze są zmienne). Bez SMTP: `APP_REGISTRATION_EMAILCONFIRMATIONREQUIRED=false`.
-Schemat bazy tworzy i aktualizuje Hibernate przy starcie.
+Lokalnie (IntelliJ) wystarczą wartości domyślne (baza `pgDB` na `localhost:5432`) i plik
+`arbomachine-secrets.properties` (SMTP, JWT) — ma pierwszeństwo przed zmiennymi.
 
 ### Web Push
 
