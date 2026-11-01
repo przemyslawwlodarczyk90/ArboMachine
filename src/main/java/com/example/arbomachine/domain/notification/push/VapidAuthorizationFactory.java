@@ -1,7 +1,7 @@
 package com.example.arbomachine.domain.notification.push;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -43,7 +43,7 @@ public class VapidAuthorizationFactory {
             signature.update(signingInput.getBytes(StandardCharsets.US_ASCII));
             String token = signingInput + "." + P256KeyCodec.base64Url(signature.sign());
             return "vapid t=" + token + ", k=" + serverKeys.publicKeyBase64Url();
-        } catch (GeneralSecurityException | JsonProcessingException signingError) {
+        } catch (GeneralSecurityException | JacksonException signingError) {
             throw new IllegalStateException("VAPID signing failed", signingError);
         }
     }

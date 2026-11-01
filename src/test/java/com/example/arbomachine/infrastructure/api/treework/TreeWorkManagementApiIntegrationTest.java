@@ -7,8 +7,8 @@ import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import com.example.arbomachine.infrastructure.repository.UserAccountRepository;
 import com.example.arbomachine.infrastructure.security.JwtTokenService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -21,12 +21,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.io.ByteArrayInputStream;
@@ -106,7 +107,7 @@ class TreeWorkManagementApiIntegrationTest {
                 .build());
     }
 
-    private ResultActions performAs(UserAccount userAccount, MockHttpServletRequestBuilder request) throws Exception {
+    private ResultActions performAs(UserAccount userAccount, AbstractMockHttpServletRequestBuilder<?> request) throws Exception {
         return mockMvc.perform(request.header("Authorization",
                 "Bearer " + jwtTokenService.createAccessTokenForEmail(userAccount.getEmail())));
     }

@@ -1,11 +1,11 @@
 package com.example.arbomachine.domain.dataexchange.imports;
 
 import com.example.arbomachine.domain.dataexchange.schema.TreeExchangeField;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -43,7 +43,7 @@ public class GeoJsonTreeImportParser implements TreeImportParser {
         JsonNode root;
         try {
             root = objectMapper.readTree(content);
-        } catch (IOException invalidJson) {
+        } catch (JacksonException invalidJson) {
             throw new TreeImportFileException(TreeImportIssueCode.INVALID_GEOJSON);
         }
         if (root == null || root.isMissingNode() || root.isNull()) throw new TreeImportFileException(TreeImportIssueCode.EMPTY_FILE);
@@ -89,7 +89,7 @@ public class GeoJsonTreeImportParser implements TreeImportParser {
         List<TreeImportIssue> readingIssues = new ArrayList<>();
         JsonNode properties = feature.path("properties");
         if (properties.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> propertyIterator = properties.fields();
+            Iterator<Map.Entry<String, JsonNode>> propertyIterator = properties.properties().iterator();
             while (propertyIterator.hasNext()) {
                 Map.Entry<String, JsonNode> property = propertyIterator.next();
                 var field = TreeExchangeField.fromHeader(property.getKey());

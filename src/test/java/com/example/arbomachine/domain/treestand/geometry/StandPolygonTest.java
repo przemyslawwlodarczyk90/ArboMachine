@@ -1,6 +1,6 @@
 package com.example.arbomachine.domain.treestand.geometry;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

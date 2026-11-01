@@ -3,7 +3,7 @@ package com.example.arbomachine.domain.treestand.service.treestandfacade;
 import com.example.arbomachine.domain.treestand.dto.TreeStandResponse;
 import com.example.arbomachine.domain.treestand.entity.TreeStand;
 import com.example.arbomachine.domain.treestand.geometry.StandPolygon;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

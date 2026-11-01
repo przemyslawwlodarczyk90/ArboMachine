@@ -3,10 +3,10 @@ package com.example.arbomachine.domain.dataexchange.export;
 import com.example.arbomachine.domain.dataexchange.crs.CoordinateTransformer;
 import com.example.arbomachine.domain.dataexchange.crs.CoordinateTransformer.ExportCoordinates;
 import com.example.arbomachine.domain.dataexchange.schema.TreeExchangeField;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -73,7 +73,7 @@ public class TreeGeoJsonExporter {
         try {
             return new ExportedFile(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(featureCollection)
                     .getBytes(StandardCharsets.UTF_8), CONTENT_TYPE, ExportedFile.fileNameOf(data, "geojson"));
-        } catch (JsonProcessingException serializationError) {
+        } catch (JacksonException serializationError) {
             throw new IllegalStateException("Could not serialize GeoJSON", serializationError);
         }
     }

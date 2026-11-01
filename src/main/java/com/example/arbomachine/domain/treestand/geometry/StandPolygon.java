@@ -1,9 +1,9 @@
 package com.example.arbomachine.domain.treestand.geometry;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -83,7 +83,7 @@ public final class StandPolygon {
     public static StandPolygon fromGeoJsonText(String geoJson, ObjectMapper objectMapper) {
         try {
             return fromGeoJson(objectMapper.readTree(geoJson));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException invalidJson) {
+        } catch (tools.jackson.core.JacksonException invalidJson) {
             throw new InvalidStandGeometryException("Geometry is not valid JSON");
         }
     }

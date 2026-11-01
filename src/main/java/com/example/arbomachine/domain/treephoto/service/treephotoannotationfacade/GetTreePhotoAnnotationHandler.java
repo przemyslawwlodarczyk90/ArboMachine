@@ -5,7 +5,7 @@ import com.example.arbomachine.domain.treephoto.entity.TreePhoto;
 import com.example.arbomachine.domain.treephoto.exception.TreePhotoAnnotationNotFoundException;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.FindTreePhotoOfTreeInProjectOwnedByCurrentUserHandler;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 /** Aktualna adnotacja zdjecia (cala hierarchia wlasnosci); brak adnotacji -> 404 jak kazdy nieistniejacy zasob. */

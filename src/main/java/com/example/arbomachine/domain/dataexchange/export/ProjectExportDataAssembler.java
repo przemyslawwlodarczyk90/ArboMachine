@@ -9,7 +9,7 @@ import com.example.arbomachine.domain.treestand.entity.TreeStand;
 import com.example.arbomachine.domain.treestand.geometry.StandPolygon;
 import com.example.arbomachine.infrastructure.repository.TreeMonitoringRecordRepository;
 import com.example.arbomachine.infrastructure.repository.TreeStandRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.example.arbomachine.infrastructure.repository.TreeValuationRepository;
 import com.example.arbomachine.infrastructure.repository.TreeMarkingRepository;
 import com.example.arbomachine.domain.treemarking.catalog.TreeMarkingCatalog;

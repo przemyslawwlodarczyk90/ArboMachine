@@ -8,13 +8,13 @@ import com.example.arbomachine.infrastructure.repository.TreeRepository;
 import com.example.arbomachine.infrastructure.repository.TreeWorkRepository;
 import com.example.arbomachine.infrastructure.repository.UserAccountRepository;
 import com.example.arbomachine.infrastructure.security.JwtTokenService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -137,7 +137,7 @@ class MilestoneOwnershipRegressionIntegrationTest {
     }
 
     private ResultActions performAs(UserAccount userAccount,
-                                    org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
+                                    org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder<?> request)
             throws Exception {
         return mockMvc.perform(request.header("Authorization",
                 "Bearer " + jwtTokenService.createAccessTokenForEmail(userAccount.getEmail())));
@@ -149,7 +149,7 @@ class MilestoneOwnershipRegressionIntegrationTest {
     }
 
     /** Wszystkie operacje na danych A - zarowno przez URL projektu A, jak i przez wlasny projekt B z id A. */
-    private List<org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder> requestsOfUserBForDataOfUserA() {
+    private List<org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder<?>> requestsOfUserBForDataOfUserA() {
         return List.of(
                 get("/api/projects/{p}", projectIdA),
                 patch("/api/projects/{p}", projectIdA).contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Przejęty\"}"),

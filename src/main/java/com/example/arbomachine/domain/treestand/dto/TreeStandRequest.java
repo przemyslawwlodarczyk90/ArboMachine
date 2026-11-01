@@ -1,7 +1,7 @@
 package com.example.arbomachine.domain.treestand.dto;
 
 import com.example.arbomachine.domain.treestand.entity.TreeStand;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

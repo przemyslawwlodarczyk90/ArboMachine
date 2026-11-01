@@ -11,7 +11,7 @@ import com.example.arbomachine.domain.treephoto.entity.TreePhotoAnnotation;
 import com.example.arbomachine.domain.treephoto.service.treephotofacade.FindTreePhotoOfTreeInProjectOwnedByCurrentUserHandler;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorage;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;

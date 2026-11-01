@@ -1,9 +1,9 @@
 package com.example.arbomachine.domain.dataexchange.export;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -47,7 +47,7 @@ public class TreeStandsGeoJsonExporter {
         try {
             return new ExportedFile(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(collection),
                     "application/geo+json", "arbomachine-projekt-" + data.projectId() + "-grupy-drzew.geojson");
-        } catch (JsonProcessingException serializationError) {
+        } catch (JacksonException serializationError) {
             throw new IllegalStateException(serializationError);
         }
     }

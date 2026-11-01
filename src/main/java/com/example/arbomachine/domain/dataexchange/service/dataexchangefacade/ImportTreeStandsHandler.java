@@ -11,7 +11,7 @@ import com.example.arbomachine.domain.project.service.projectfacade.FindProjectO
 import com.example.arbomachine.domain.treestand.entity.TreeStand;
 import com.example.arbomachine.domain.treestand.entity.TreeStandSource;
 import com.example.arbomachine.infrastructure.repository.TreeStandRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

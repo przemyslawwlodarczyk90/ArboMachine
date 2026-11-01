@@ -1,10 +1,10 @@
 package com.example.arbomachine.domain.dataexchange.gis;
 
 import com.example.arbomachine.domain.dataexchange.crs.PolishGridCrs;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,7 +28,7 @@ public final class GeoJsonGisReader {
         JsonNode root;
         try {
             root = objectMapper.readTree(content);
-        } catch (IOException invalidJson) {
+        } catch (JacksonException invalidJson) {
             throw new GisFileException(GisFileException.Reason.UNREADABLE_FILE, "geojson");
         }
         if (root == null || !root.isObject()) throw new GisFileException(GisFileException.Reason.UNREADABLE_FILE, "geojson");
@@ -40,7 +40,7 @@ public final class GeoJsonGisReader {
         List<GisFeature> features = new ArrayList<>();
         for (JsonNode featureNode : featureNodes) {
             Map<String, String> attributes = new LinkedHashMap<>();
-            featureNode.path("properties").fields().forEachRemaining(property -> attributes.put(property.getKey(),
+            featureNode.path("properties").properties().forEach(property -> attributes.put(property.getKey(),
                     property.getValue().isNull() ? null : property.getValue().isValueNode() ? property.getValue().asText() : property.getValue().toString()));
             features.add(new GisFeature(features.size() + 1, geometryOf(featureNode.get("geometry")), attributes));
         }

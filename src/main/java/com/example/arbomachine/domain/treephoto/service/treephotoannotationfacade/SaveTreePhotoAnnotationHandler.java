@@ -13,7 +13,7 @@ import com.example.arbomachine.domain.treephoto.service.treephotofacade.FindTree
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorage;
 import com.example.arbomachine.domain.treephoto.storage.PhotoStorageException;
 import com.example.arbomachine.infrastructure.repository.TreePhotoAnnotationRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

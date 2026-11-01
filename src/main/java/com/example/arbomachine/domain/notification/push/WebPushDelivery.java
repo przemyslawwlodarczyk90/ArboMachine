@@ -2,8 +2,8 @@ package com.example.arbomachine.domain.notification.push;
 
 import com.example.arbomachine.domain.notification.entity.WebPushSubscription;
 import com.example.arbomachine.infrastructure.repository.WebPushSubscriptionRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -61,7 +61,7 @@ public class WebPushDelivery {
         byte[] payload;
         try {
             payload = objectMapper.writeValueAsBytes(message);
-        } catch (JsonProcessingException serializationError) {
+        } catch (JacksonException serializationError) {
             throw new IllegalStateException(serializationError);
         }
         int deliveredCount = 0;

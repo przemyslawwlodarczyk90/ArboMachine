@@ -11,9 +11,9 @@ import com.example.arbomachine.domain.dataexchange.gis.GisLayer;
 import com.example.arbomachine.domain.dataexchange.gis.ShapefileZipReader;
 import com.example.arbomachine.domain.dataexchange.imports.TreeImportFormat;
 import com.example.arbomachine.domain.referencelayer.exception.ReferenceLayerFileRejectedException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
