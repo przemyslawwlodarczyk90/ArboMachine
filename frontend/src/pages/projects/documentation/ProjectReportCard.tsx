@@ -45,7 +45,10 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
     } catch (generationError) {
       setReportState({
         status: 'failed',
-        errorMessage: generationError instanceof ApiRequestError ? generationError.message : 'Nieoczekiwany błąd.',
+        errorMessage: !(generationError instanceof ApiRequestError) ? 'Nieoczekiwany błąd.'
+          // 503: serwer generuje teraz inny dokument (jeden naraz) - wystarczy ponowić za chwilę.
+          : generationError.httpStatus === 503 ? 'Serwer generuje teraz inny dokument - spróbuj ponownie za chwilę.'
+          : generationError.message,
       });
     } finally {
       isGenerationInProgress.current = false;

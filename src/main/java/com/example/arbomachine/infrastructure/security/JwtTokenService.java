@@ -23,6 +23,14 @@ public class JwtTokenService {
     @Value("${auth.jwt.issuer}")
     private String tokenIssuer;
 
+    /** Brak sekretu (np. nieustawione JWT_SECRET na serwerze) = aplikacja nie startuje, zamiast padac przy logowaniu. */
+    @jakarta.annotation.PostConstruct
+    void requireSigningSecret() {
+        if (signingSecret == null || signingSecret.isBlank()) {
+            throw new IllegalStateException("JWT signing secret is missing - set JWT_SECRET (or auth.jwt.secret)");
+        }
+    }
+
     public String createAccessTokenForEmail(String email) {
         // Instant.now() jest zawsze w UTC - wczesniej LocalDateTime traktowany jako UTC dawal w Polsce
         // czas wystawienia 2h w przyszlosci i weryfikacja odrzucala swiezo wydane tokeny.

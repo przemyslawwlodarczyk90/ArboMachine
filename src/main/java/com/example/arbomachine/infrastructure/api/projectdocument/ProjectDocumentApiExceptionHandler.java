@@ -1,9 +1,11 @@
 package com.example.arbomachine.infrastructure.api.projectdocument;
 
 import com.example.arbomachine.domain.project.exception.ProjectNotFoundException;
+import com.example.arbomachine.domain.projectdocument.generator.DocumentGenerationBusyException;
 import com.example.arbomachine.domain.projectdocument.generator.DocumentGenerationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,14 @@ public class ProjectDocumentApiExceptionHandler {
     @ExceptionHandler(ProjectNotFoundException.class)
     public ResponseEntity<String> handleProjectNotFound(ProjectNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.TEXT_PLAIN).body(exception.getMessage());
+    }
+
+    /** Inny dokument jest wlasnie generowany dluzej niz dozwolone czekanie - 503 z prosba o ponowienie. */
+    @ExceptionHandler(DocumentGenerationBusyException.class)
+    public ResponseEntity<String> handleDocumentGenerationBusy(DocumentGenerationBusyException exception) {
+        LOGGER.warn("Project document generation rejected: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, "30")
+                .contentType(MediaType.TEXT_PLAIN).body("Document generation is busy, try again in a moment");
     }
 
     @ExceptionHandler(DocumentGenerationException.class)
