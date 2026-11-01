@@ -25,8 +25,8 @@ services:
       - "8083"
     volumes:
       - arbomachine-tree-photos:/app/storage/tree-photos
-    tmpfs:
-      - /tmp:size=256m,mode=1777   # multipart (zdjecia do 15 MB) i pliki tymczasowe GeoPackage
+    # /tmp celowo NIE jako tmpfs: tmpfs ma noexec (sqlite-jdbc nie zaladuje biblioteki natywnej -> eksport GeoPackage/QGIS 500)
+    # i liczy sie do limitu RAM kontenera (upload 15 MB = 15 MB RAM). Pliki tymczasowe ida na dysk kontenera.
     mem_limit: 768m        # szczyt zmierzony przy PDF ze zdjeciami ~680 MB RSS (Xmx 384m) - nie zmniejszac bez pomiaru
     memswap_limit: 768m    # bez swapu dla kontenera: OOM aplikacji zamiast spowolnienia calego serwera
     cpus: 1.0
