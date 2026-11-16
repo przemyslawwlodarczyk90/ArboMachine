@@ -65,4 +65,27 @@ class SecurityRulesTest {
         mockMvc.perform(get("/api/admin/stats")).andExpect(status().isOk());
         mockMvc.perform(get("/api/arborist/panel")).andExpect(status().isForbidden());
     }
+
+    @Test
+    void demoModeIsUnavailableUnlessEnabledInConfiguration() throws Exception {
+        mockMvc.perform(get("/api/demo")).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.enabled").value(false));
+        mockMvc.perform(post("/api/demo/session")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "demo@arbomachine.invalid", roles = "ARBORIST")
+    void demoAccountIsReadOnlyEvenWhenDemoModeIsDisabled() throws Exception {
+        mockMvc.perform(post("/api/projects").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"X\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/users/me")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void registrationAsOfficialIsClosed() throws Exception {
+        mockMvc.perform(post("/api/users/register").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"profile":{"firstName":"Jan","lastName":"Nowak","email":"urzednik@example.com"},
+                         "password":"haslo1234","accountType":"OFFICIAL"}"""))
+                .andExpect(status().isForbidden());
+    }
 }

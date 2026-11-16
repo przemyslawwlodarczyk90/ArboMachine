@@ -15,6 +15,7 @@ import {
   hasUnsavedValuationChanges, isValuationEmpty, toValuationFormValues, toValuationRequest, validateValuationFormValues,
   type TreeValuationFormValues,
 } from './valuationFormValues';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ValuationLoadingState =
   | { status: 'loading' }
@@ -129,7 +130,7 @@ export function TreeValuationSection({ projectId, treeId, syncGeneration = 0 }: 
   return (
     <section className="tree-card-section tree-valuation-section" aria-labelledby="tree-valuation-heading">
       <div className="section-header-row">
-        <h3 id="tree-valuation-heading">Waloryzacja</h3>
+        <h3 id="tree-valuation-heading">Waloryzacja <DemoHint id="tree.valuation" /></h3>
         {loadingState.status === 'loaded' && !isEditing && (
           <div className="form-actions">
             <button type="button" className={`btn ${savedValuation?.hasValuation ? 'btn-secondary' : 'btn-primary'}`} onClick={startEditing}>

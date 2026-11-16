@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.api;
 
+import com.example.arbomachine.domain.demo.exception.DemoModeUnavailableException;
 import com.example.arbomachine.domain.mapsymbol.exception.UnsupportedMapSymbolException;
 import com.example.arbomachine.domain.user.exception.*;
 import com.example.arbomachine.infrastructure.service.EmailSendingFailedException;
@@ -106,5 +107,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(EmailSendingFailedException.class)
     public ResponseEntity<String> handleEmailSendingFailed(EmailSendingFailedException exception) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(exception.getMessage());
+    }
+
+    /** Tryb demo wylaczony albo konto demo jeszcze nieprzygotowane. */
+    @ExceptionHandler(DemoModeUnavailableException.class)
+    public ResponseEntity<String> handleDemoModeUnavailable(DemoModeUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    }
+
+    /** Rejestracja danego typu konta jest chwilowo zamknieta (np. konta urzednika). */
+    @ExceptionHandler(AccountTypeRegistrationClosedException.class)
+    public ResponseEntity<String> handleAccountTypeRegistrationClosed(AccountTypeRegistrationClosedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exception.getMessage());
     }
 }

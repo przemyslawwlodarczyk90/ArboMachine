@@ -14,17 +14,15 @@ export const PANEL_HOME_PATH_BY_ROLE: Record<UserRole, string> = {
   ADMIN: '/admin',
 };
 
-/** Typy kont do wyboru w formularzu rejestracji (bez admina). */
+/**
+ * Typy kont do wyboru w formularzu rejestracji (bez admina). Rejestracja urzednika jest chwilowo zamknieta
+ * (backend: app.registration.official-enabled=false) - istniejace konta urzednikow dzialaja dalej.
+ */
 export const REGISTRATION_ACCOUNT_TYPE_OPTIONS: { role: AssignableUserRole; displayName: string; description: string }[] = [
   {
     role: 'ARBORIST',
     displayName: 'Arborysta',
     description: 'Specjalista od drzew - inwentaryzacje, oceny i dokumentacja prac.',
-  },
-  {
-    role: 'OFFICIAL',
-    displayName: 'Urzędnik',
-    description: 'Pracownik urzędu - rozpatrywanie wniosków i wydawanie decyzji.',
   },
 ];
 

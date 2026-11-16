@@ -26,6 +26,15 @@ export class ApiRequestError extends Error {
 }
 
 let handleUnauthorizedResponse: (() => void) | null = null;
+let handleDemoReadOnlyResponse: (() => void) | null = null;
+
+/** Kod odpowiedzi 403 backendu, gdy konto trybu demo probuje cos zapisac (DemoReadOnlyFilter). */
+export const DEMO_READ_ONLY_ERROR_CODE = 'DEMO_READ_ONLY';
+
+/** Tryb demo rejestruje tu pokazanie wyjasnienia - wywolywane przy kazdej odpowiedzi 403 DEMO_READ_ONLY. */
+export function registerDemoReadOnlyResponseHandler(handler: (() => void) | null) {
+  handleDemoReadOnlyResponse = handler;
+}
 
 /**
  * Kopie odczytow do pracy offline (etap 26, rejestruje je warstwa offline): odpowiedzi GET z tokenem sa zapisywane,
@@ -67,6 +76,10 @@ async function convertErrorResponseToApiRequestError(errorResponse: Response): P
   if (responseBody && typeof responseBody === 'object' && !Array.isArray(responseBody)) {
     const responseFields = responseBody as Record<string, unknown>;
     // Wlasny format bledow Springa (np. 401/403 z warstwy security): { status, error, message, path }.
+    if (responseFields.code === DEMO_READ_ONLY_ERROR_CODE) {
+      handleDemoReadOnlyResponse?.();
+      return new ApiRequestError(errorResponse.status, toUserFacingErrorMessage(String(responseFields.message)));
+    }
     if ('status' in responseFields && 'error' in responseFields) {
       const springErrorMessage = String(responseFields.message || responseFields.error);
       return new ApiRequestError(errorResponse.status, toUserFacingErrorMessage(springErrorMessage));

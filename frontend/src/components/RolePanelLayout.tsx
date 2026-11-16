@@ -5,6 +5,8 @@ import { useAuthentication } from '../auth/AuthenticationContext';
 import { PANEL_HOME_PATH_BY_ROLE, USER_ROLE_DISPLAY_NAMES } from '../auth/userRoles';
 import { ArboMachineLogo } from './ArboMachineLogo';
 import { WorkModeSwitchButton } from '../fieldmode/WorkModeSwitchButton';
+import { DemoBar } from '../demo/DemoBar';
+import { DemoHint } from '../demo/DemoHint';
 
 interface PanelNavigationLink {
   path: string;
@@ -35,7 +37,7 @@ const NAVIGATION_LINKS_BY_ROLE: Record<UserRole, PanelNavigationLink[]> = {
 
 /** Wspolny szkielet paneli: gorny pasek z logo, znacznikiem roli, menu danej roli i wylogowaniem. */
 export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
-  const { currentUserAccount, signOut } = useAuthentication();
+  const { currentUserAccount, signOut, isDemoSession } = useAuthentication();
   const navigate = useNavigate();
 
   const signOutAndGoToSignInPage = () => {
@@ -61,11 +63,18 @@ export function RolePanelLayout({ panelRole }: { panelRole: UserRole }) {
         </nav>
         <div className="topbar-user">
           {/* Etap 32: przejscie do trybu terenowego (ten sam projekt i drzewo) - tylko arborysta. */}
-          {panelRole === 'ARBORIST' && <WorkModeSwitchButton targetMode="FIELD" className="btn btn-secondary btn-small" />}
+          {panelRole === 'ARBORIST' && (
+            <span className="demo-hint-anchor" data-tour="work-mode-switch">
+              <WorkModeSwitchButton targetMode="FIELD" className="btn btn-secondary btn-small" />
+              <DemoHint id="workMode.switch" />
+            </span>
+          )}
           <span className="muted">{currentUserAccount?.firstName} {currentUserAccount?.lastName}</span>
-          <button className="btn btn-ghost" onClick={signOutAndGoToSignInPage}>Wyloguj</button>
+          {/* W demo wyjscie jest w pasku demo ("Zakończ demo"). */}
+          {!isDemoSession && <button className="btn btn-ghost" onClick={signOutAndGoToSignInPage}>Wyloguj</button>}
         </div>
       </header>
+      <DemoBar />
       <main className="content">
         <OfflineStatusBar />
         <Outlet />

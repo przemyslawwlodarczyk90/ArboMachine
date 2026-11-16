@@ -7,6 +7,8 @@ import { parsePositiveIdRouteParam } from '../../routing/parsePositiveIdRoutePar
 import { EditProjectDialog } from './EditProjectDialog';
 import type { Project } from './projectDataTypes';
 import { projectsApi } from './projectsApi';
+import { DemoHint } from '../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../demo/useDemoReadOnlyGuard';
 
 type ProjectLoadingState =
   | { status: 'loading' }
@@ -42,6 +44,7 @@ export function ProjectPage() {
   const isTreeDetailRoute = useMatch('/projects/:projectId/trees/:treeId') !== null;
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
   const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
 
   useEffect(() => {
     if (projectId === null) {
@@ -111,7 +114,10 @@ export function ProjectPage() {
         </nav>
         <div className="page-header-row">
           <h1>{project.name}</h1>
-          <button className="btn btn-secondary" onClick={() => setIsEditProjectDialogOpen(true)}>Edytuj projekt</button>
+          <span className="demo-hint-anchor">
+            <button className="btn btn-secondary" onClick={guardDemo('EDIT_PROJECT', () => setIsEditProjectDialogOpen(true))}>Edytuj projekt</button>
+            <DemoHint id="project.order" />
+          </span>
         </div>
         {project.description && <p className="muted project-description">{project.description}</p>}
         {(project.clientName || project.siteAddress || project.orderDate || project.contractNumber) && (

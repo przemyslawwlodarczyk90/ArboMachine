@@ -9,6 +9,7 @@ import { treePhotosApi } from '../../trees/photos/treePhotosApi';
 import { DocumentationPhotoCard } from './DocumentationPhotoCard';
 import { groupProjectPhotosByTree } from './documentationPhotoGroups';
 import { ProjectReportCard } from './ProjectReportCard';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ProjectPhotosState =
   | { status: 'loading' }
@@ -76,7 +77,7 @@ export function ProjectDocumentationPage() {
     <div className="stack">
       <h2>Dokumentacja</h2>
       <ProjectReportCard projectId={projectId} />
-      <h3 className="documentation-materials-heading">Materiały do dokumentacji</h3>
+      <h3 className="documentation-materials-heading">Materiały do dokumentacji <DemoHint id="documentation.materials" /></h3>
       <p className="muted">
         Zdjęcia drzew w wersji do dokumentacji - jeżeli zdjęcie ma adnotację, widać wersję z naniesionym szkicem.
         Te same wersje trafiają do dokumentu PDF.

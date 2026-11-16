@@ -23,6 +23,8 @@ import { treeValuationsApi } from './valuation/treeValuationsApi';
 import { ValuationBadge } from './valuation/ValuationBadge';
 import { VALUATION_CATEGORY_OPTIONS, type TreeValuation } from './valuation/valuationDataTypes';
 import { filterTreesByValuation, valuationCategoryByTreeId, type ValuationFilter } from './valuation/valuationFilter';
+import { DemoHint } from '../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../demo/useDemoReadOnlyGuard';
 
 /** "loading" i "empty" sa rozdzielone, zeby przed koncem zapytania nie mignal pusty stan. */
 type TreeListState =
@@ -38,6 +40,7 @@ export function ProjectTreesSection() {
   const projectId = parsePositiveIdRouteParam(useParams().projectId);
   const [treeListState, setTreeListState] = useState<TreeListState>({ status: 'loading' });
   const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   const { syncGeneration, pendingTreeIds } = useOfflineState();
   // Waloryzacje projektu jednym zapytaniem (etap 27); blad nie blokuje listy - drzewa bez odznak i bez filtra.
   const [valuations, setValuations] = useState<TreeValuation[] | null>(null);
@@ -107,12 +110,12 @@ export function ProjectTreesSection() {
       })
     : [];
 
-  const openNewTreeDialog = () => setIsNewTreeDialogOpen(true);
+  const openNewTreeDialog = guardDemo('ADD_TREE', () => setIsNewTreeDialogOpen(true));
 
   return (
     <div className="stack">
       <div className="section-header-row">
-        <h2>Drzewa</h2>
+        <h2>Drzewa <DemoHint id="trees.list" /></h2>
         <button className="btn btn-primary" onClick={openNewTreeDialog}>Dodaj drzewo</button>
       </div>
 

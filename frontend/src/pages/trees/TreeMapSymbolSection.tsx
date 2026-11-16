@@ -7,6 +7,7 @@ import { MapSymbolSwatch } from '../../map/MapSymbolSwatch';
 import { useMapSymbolCatalog } from '../../map/useMapSymbolCatalog';
 import type { Tree } from './treeDataTypes';
 import { treesApi } from './treesApi';
+import { DemoHint } from '../../demo/DemoHint';
 
 /**
  * Sekcja "Symbol drzewa na mapie" karty drzewa: wybor symbolu bazowego z katalogu, zapis i usuniecie.
@@ -49,7 +50,7 @@ export function TreeMapSymbolSection({ projectId, tree, onTreeChanged }: {
   return (
     <section className="tree-card-section" aria-labelledby="tree-map-symbol-heading">
       <div className="section-header-row">
-        <h3 id="tree-map-symbol-heading">Symbol drzewa na mapie</h3>
+        <h3 id="tree-map-symbol-heading">Symbol drzewa na mapie <DemoHint id="tree.mapSymbol" /></h3>
       </div>
       <p className="muted small">
         Aktualnie: {savedSymbol

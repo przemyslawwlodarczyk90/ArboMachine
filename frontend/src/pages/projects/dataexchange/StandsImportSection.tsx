@@ -6,6 +6,7 @@ import { formatStandArea } from '../stands/standGeometry';
 import type { TreeStandImportResult, TreeStandImportValidation } from './dataExchangeDataTypes';
 import { dataExchangeApi } from './dataExchangeApi';
 import { describeImportIssue } from './importIssueMessages';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ImportState =
   | { status: 'idle' }
@@ -66,7 +67,7 @@ export function StandsImportSection({ projectId }: { projectId: number }) {
 
   return (
     <section className="data-exchange-card stack" aria-labelledby="stands-import-heading">
-      <h3 id="stands-import-heading">Import grup drzew (obszarów)</h3>
+      <h3 id="stands-import-heading">Import grup drzew (obszarów) <DemoHint id="import.stands" /></h3>
       <p className="muted">
         Obszary (wielokąty) z rysunku DXF, Shapefile (ZIP), GeoJSON albo GeoPackage - każdy obszar staje się grupą drzew.
         Nazwa z atrybutu „name” / „nazwa” (inaczej „Grupa drzew N”). Drzewa projektu leżące w obszarze zostaną przypisane

@@ -15,6 +15,7 @@ import {
   countWorks, DEFAULT_WORK_FILTER, filterWorks, formatWorkDate, isOpenWorkStatus, isWorkPastPlannedDate, sortWorksForManagement,
   todayIsoDate, TREE_WORK_PRIORITIES, TREE_WORK_STATUSES, UPCOMING_DAYS, workPriorityLabel, workStatusLabel, type WorkFilter,
 } from '../../trees/works/workManagement';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ManagementDataState =
   | { status: 'loading' }
@@ -112,7 +113,7 @@ export function ProjectManagementPage() {
   return (
     <div className="stack">
       <div className="section-header-row">
-        <h2>Gospodarka drzewostanem</h2>
+        <h2>Gospodarka drzewostanem <DemoHint id="management" /></h2>
         <div className="form-actions">
           <Link to="../map" relative="path" className="btn btn-secondary btn-small">Pokaż na mapie</Link>
           <Link to="../integrations" relative="path" className="btn btn-secondary btn-small">Kalendarz (ICS)</Link>

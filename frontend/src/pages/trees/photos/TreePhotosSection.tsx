@@ -15,6 +15,8 @@ import { PendingTreePhotoTile } from './PendingTreePhotoTile';
 import { offlineService } from '../../../offline/offlineService';
 import { useOfflineState } from '../../../offline/useOfflineState';
 import type { PendingPhotoUpload } from '../../../offline/offlineTypes';
+import { DemoHint } from '../../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../../demo/useDemoReadOnlyGuard';
 
 type TreePhotoListState =
   | { status: 'loading' }
@@ -36,6 +38,7 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
 }) {
   const [treePhotoListState, setTreePhotoListState] = useState<TreePhotoListState>({ status: 'loading' });
   const [isAddPhotoDialogOpen, setIsAddPhotoDialogOpen] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   // Etap 33: zdjecia zapisane na urzadzeniu (czekaja na wyslanie) - lista z magazynu offline, odswiezana przy kazdej
@@ -113,18 +116,18 @@ export function TreePhotosSection({ projectId, treeId, offersCameraCapture = fal
   };
 
   return (
-    <section className="tree-card-section" aria-labelledby="tree-photos-heading">
+    <section className="tree-card-section" aria-labelledby="tree-photos-heading" data-tour="tree-photos">
       <div className="section-header-row">
-        <h3 id="tree-photos-heading">Zdjęcia</h3>
+        <h3 id="tree-photos-heading">Zdjęcia <DemoHint id="tree.photos" /></h3>
         {offersCameraCapture ? (
           <div className="form-actions">
-            <button className="btn btn-primary" onClick={() => cameraInputRef.current?.click()}>Zrób zdjęcie</button>
-            <button className="btn btn-secondary" onClick={() => galleryInputRef.current?.click()}>Z galerii</button>
+            <button className="btn btn-primary" onClick={guardDemo('ADD_PHOTO', () => cameraInputRef.current?.click())}>Zrób zdjęcie</button>
+            <button className="btn btn-secondary" onClick={guardDemo('ADD_PHOTO', () => galleryInputRef.current?.click())}>Z galerii</button>
             <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={openPickedFile} />
             <input ref={galleryInputRef} type="file" accept="image/*" hidden onChange={openPickedFile} />
           </div>
         ) : (
-          <button className="btn btn-secondary" onClick={() => setIsAddPhotoDialogOpen(true)}>Dodaj zdjęcie</button>
+          <button className="btn btn-secondary" onClick={guardDemo('ADD_PHOTO', () => setIsAddPhotoDialogOpen(true))}>Dodaj zdjęcie</button>
         )}
       </div>
 

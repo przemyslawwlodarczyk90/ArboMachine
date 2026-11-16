@@ -19,6 +19,8 @@ import { MAP_VIEW_MODES, type MapViewMode } from './mapViewMode';
 import { TreeMarkingBadge } from '../markings/TreeMarkingBadge';
 import { TreeWorkMeta } from '../works/TreeWorkMeta';
 import { isOpenWorkStatus, sortWorksForManagement } from '../works/workManagement';
+import { DemoHint } from '../../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../../demo/useDemoReadOnlyGuard';
 
 /** Stala pusta lista - ukrycie warstwy nie tworzy nowej tablicy przy kazdym renderze. */
 const NO_STANDS: TreeStand[] = [];
@@ -42,6 +44,7 @@ export function ProjectTreeMapSection() {
   const focusedTreeId = Number(searchParams.get('drzewo')) || null;
   // Etap 31: "punkt -> karta" - klik w mapie wskazuje miejsce nowego drzewa.
   const [isAddingTreeOnMap, setIsAddingTreeOnMap] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   const [newTreeLocation, setNewTreeLocation] = useState<TreeLocation | null>(null);
   const [viewMode, setViewMode] = useState<MapViewMode>('SYMBOLS');
   // Grupy drzew (etap 29): warstwa obszarow, domyslnie widoczna, gdy projekt je ma.
@@ -96,7 +99,7 @@ export function ProjectTreeMapSection() {
   return (
     <div className="stack">
       <div className="section-header-row">
-        <h2>Mapa</h2>
+        <h2>Mapa <DemoHint id="map.overview" /></h2>
         {treeCount > 0 && (
           <span className="muted small">Drzewa na mapie: {treeMapPoints.length} z {treeCount}</span>
         )}
@@ -123,7 +126,7 @@ export function ProjectTreeMapSection() {
       )}
 
       {allTreeMapPoints.length > 0 && (
-        <div className="map-view-mode" role="radiogroup" aria-label="Widok mapy">
+        <div className="map-view-mode" role="radiogroup" aria-label="Widok mapy" data-tour="map-modes">
           <span className="muted small">Widok:</span>
           {MAP_VIEW_MODES.map(({ mode, label }) => (
             <button key={mode} type="button" role="radio" aria-checked={viewMode === mode}
@@ -131,6 +134,7 @@ export function ProjectTreeMapSection() {
               {label}
             </button>
           ))}
+          <DemoHint id="map.modes" />
         </div>
       )}
       {viewMode === 'MARKINGS' && (
@@ -162,6 +166,7 @@ export function ProjectTreeMapSection() {
             {' · '}<span className="map-legend-star" aria-hidden="true" /> iglaste
             {stands.length > 0 && <>{' · '}<span className="map-legend-stand" aria-hidden="true" /> grupa drzew</>}
           </span>
+          <DemoHint id="map.layers" />
         </div>
       )}
       {viewMode === 'VALUATION' && valuations === null && (
@@ -170,9 +175,10 @@ export function ProjectTreeMapSection() {
 
       <div className="map-add-tree-row">
         <button type="button" className={`btn btn-small ${isAddingTreeOnMap ? 'btn-primary' : 'btn-secondary'}`}
-                aria-pressed={isAddingTreeOnMap} onClick={() => setIsAddingTreeOnMap((isAdding) => !isAdding)}>
+                aria-pressed={isAddingTreeOnMap} onClick={guardDemo('ADD_TREE_ON_MAP', () => setIsAddingTreeOnMap((isAdding) => !isAdding))}>
           {isAddingTreeOnMap ? 'Zakończ dodawanie' : 'Dodaj drzewo na mapie'}
         </button>
+        <DemoHint id="map.addTree" />
         <button type="button" className="btn btn-small btn-secondary" disabled aria-describedby="other-nature-objects-note">
           Dodaj inny obiekt (ptak, grzyb, znalezisko)
         </button>
@@ -188,7 +194,7 @@ export function ProjectTreeMapSection() {
         </ToBeClarifiedNote>
       </div>
 
-      <div className="map-frame">
+      <div className="map-frame" data-tour="project-map">
         <ProjectTreeMap treeMapPoints={treeMapPoints} symbolByCode={symbolByCode} onTreeMarkerClicked={setSelectedTreeId}
                         focusedTreeId={focusedTreeId} onEmptyMapClicked={isAddingTreeOnMap ? setNewTreeLocation : undefined}
                         referenceLayers={referenceLayers.layersOnMap}

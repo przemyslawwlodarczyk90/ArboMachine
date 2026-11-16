@@ -7,6 +7,8 @@ import { formatTimestampForDisplay } from '../../formatting/formatTimestampForDi
 import { NewProjectDialog } from './NewProjectDialog';
 import type { Project } from './projectDataTypes';
 import { projectsApi } from './projectsApi';
+import { DemoHint } from '../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../demo/useDemoReadOnlyGuard';
 
 /** Stan listy - "loading" i "empty" sa rozdzielone, zeby przed koncem zapytania nie mignal pusty stan. */
 type ProjectListState =
@@ -18,6 +20,7 @@ type ProjectListState =
 export function ProjectsPage() {
   const [projectListState, setProjectListState] = useState<ProjectListState>({ status: 'loading' });
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
 
   useEffect(() => {
     let isResponseStillWanted = true;
@@ -35,13 +38,16 @@ export function ProjectsPage() {
     return () => { isResponseStillWanted = false; };
   }, []);
 
-  const openNewProjectDialog = () => setIsNewProjectDialogOpen(true);
+  const openNewProjectDialog = guardDemo('NEW_PROJECT', () => setIsNewProjectDialogOpen(true));
 
   return (
     <div className="stack-lg">
       <header className="page-header page-header-row">
-        <h1>Projekty</h1>
-        <button className="btn btn-primary" onClick={openNewProjectDialog}>Nowy projekt</button>
+        <h1>Projekty <DemoHint id="projects.list" /></h1>
+        <span className="demo-hint-anchor">
+          <button className="btn btn-primary" onClick={openNewProjectDialog}>Nowy projekt</button>
+          <DemoHint id="projects.new" />
+        </span>
       </header>
 
       {projectListState.status === 'loading' && (
@@ -60,7 +66,7 @@ export function ProjectsPage() {
       )}
 
       {projectListState.status === 'loaded' && projectListState.projects.length > 0 && (
-        <ul className="project-list">
+        <ul className="project-list" data-tour="projects-list">
           {projectListState.projects.map((project) => (
             <li key={project.id}>
               <Link to={`/projects/${project.id}`} className="card project-list-item">

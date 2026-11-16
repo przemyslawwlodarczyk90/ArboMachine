@@ -8,6 +8,7 @@ import { currentWorkMode } from '../fieldmode/fieldModePreference';
 import { Alert } from '../components/Alert';
 import { AuthCardPageLayout } from '../components/AuthCardPageLayout';
 import { LabeledInputField } from '../components/LabeledInputField';
+import { DemoEntrySection } from '../demo/DemoEntrySection';
 
 /** Stan przekazywany przy przekierowaniu na strone logowania. */
 interface SignInPageNavigationState {
@@ -79,6 +80,7 @@ export function SignInPage() {
           {isSigningIn ? 'Logowanie…' : 'Zaloguj się'}
         </button>
       </form>
+      <DemoEntrySection />
     </AuthCardPageLayout>
   );
 }

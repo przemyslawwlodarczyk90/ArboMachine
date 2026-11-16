@@ -14,6 +14,8 @@ import { StandEditorMap } from './StandEditorMap';
 import { BasemapControls } from '../../../map/BasemapControls';
 import { formatStandArea } from './standGeometry';
 import { treeStandsApi } from './treeStandsApi';
+import { useDemoReadOnlyGuard } from '../../../demo/useDemoReadOnlyGuard';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type PageState =
   | { status: 'loading' }
@@ -47,6 +49,7 @@ export function ProjectStandsPage() {
   const [isWorking, setIsWorking] = useState(false);
   const [message, setMessage] = useState<{ variant: 'success' | 'error'; text: string } | null>(null);
   const [standAwaitingDeletion, setStandAwaitingDeletion] = useState<TreeStand | null>(null);
+  const guardDemo = useDemoReadOnlyGuard();
 
   useEffect(() => {
     if (projectId === null) return;
@@ -155,8 +158,8 @@ export function ProjectStandsPage() {
   return (
     <div className="stack">
       <div className="section-header-row">
-        <h2>Grupy drzew</h2>
-        {!editor && <button type="button" className="btn btn-primary" onClick={() => startEditing(null)}>Dodaj grupę drzew</button>}
+        <h2>Grupy drzew <DemoHint id="stands" /></h2>
+        {!editor && <button type="button" className="btn btn-primary" onClick={guardDemo('EDIT_STAND', () => startEditing(null))}>Dodaj grupę drzew</button>}
       </div>
       <p className="muted small">
         Obszar na mapie z przypisanymi drzewami - np. szpaler, zadrzewienie, skupisko krzewów. Pole powierzchni jest przybliżone.
@@ -241,11 +244,11 @@ export function ProjectStandsPage() {
                 </div>
               ) : !editor && (
                 <div className="form-actions">
-                  <button type="button" className="btn btn-secondary btn-small" onClick={() => startEditing(stand)}>Edytuj</button>
-                  <button type="button" className="btn btn-secondary btn-small" disabled={isWorking} onClick={() => void assignInside(stand)}>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={guardDemo('EDIT_STAND', () => startEditing(stand))}>Edytuj</button>
+                  <button type="button" className="btn btn-secondary btn-small" disabled={isWorking} onClick={guardDemo('EDIT_STAND', () => void assignInside(stand))}>
                     Przypisz drzewa w obszarze
                   </button>
-                  <button type="button" className="btn btn-danger-outline btn-small" onClick={() => setStandAwaitingDeletion(stand)}>Usuń</button>
+                  <button type="button" className="btn btn-danger-outline btn-small" onClick={guardDemo('EDIT_STAND', () => setStandAwaitingDeletion(stand))}>Usuń</button>
                 </div>
               )}
             </li>

@@ -13,6 +13,7 @@ import {
   validateMonitoringFormValues, type MonitoringFormValues,
 } from './monitoringFormValues';
 import { treeMonitoringApi } from './treeMonitoringApi';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type MonitoringListState =
   | { status: 'loading' }
@@ -185,9 +186,9 @@ export function TreeMonitoringSection({ projectId, treeId, syncGeneration = 0 }:
   );
 
   return (
-    <section className="tree-card-section" aria-labelledby="tree-monitoring-heading">
+    <section className="tree-card-section" aria-labelledby="tree-monitoring-heading" data-tour="tree-monitoring">
       <div className="section-header-row">
-        <h3 id="tree-monitoring-heading">Monitoring stanu</h3>
+        <h3 id="tree-monitoring-heading">Monitoring stanu <DemoHint id="tree.monitoring" /></h3>
         {listState.status === 'loaded' && !editedRecord && (
           <button type="button" className="btn btn-secondary" onClick={() => startEditing(null)}>Dodaj kontrolę</button>
         )}

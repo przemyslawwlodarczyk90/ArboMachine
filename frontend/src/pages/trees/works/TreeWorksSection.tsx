@@ -12,6 +12,7 @@ import { TreeWorkMeta } from './TreeWorkMeta';
 import { isOpenWorkStatus, todayIsoDate } from './workManagement';
 import { TreeWorkMapSymbolEditor } from './TreeWorkMapSymbolEditor';
 import { treeWorksApi } from './treeWorksApi';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type TreeWorkListState =
   | { status: 'loading' }
@@ -113,7 +114,7 @@ export function TreeWorksSection({ projectId, treeId, syncGeneration = 0, onWork
   return (
     <section className="tree-card-section" aria-labelledby="tree-works-heading">
       <div className="section-header-row">
-        <h3 id="tree-works-heading">Zalecenia i prace</h3>
+        <h3 id="tree-works-heading">Zalecenia i prace <DemoHint id="tree.works" /></h3>
         {treeWorkListState.status === 'loaded' && !isAnyFormOpen && (
           <button className="btn btn-secondary" onClick={startAddingWork}>Dodaj pracę</button>
         )}

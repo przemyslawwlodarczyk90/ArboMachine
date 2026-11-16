@@ -20,6 +20,7 @@ import {
   saveLastPreparationTime, savePreparePhotosPreference, TREE_DETAIL_KINDS, type OfflinePreparationTask, type PhotoPreparationSummary,
   type PreparablePhoto,
 } from './offlinePreparation';
+import { DemoHint } from '../demo/DemoHint';
 
 type PreparationState =
   | { status: 'idle' }
@@ -139,7 +140,7 @@ export function FieldOfflinePreparation({ projectId, trees }: { projectId: numbe
 
   return (
     <section aria-label="Praca bez zasięgu">
-      <h3>Praca bez zasięgu</h3>
+      <h3>Praca bez zasięgu <DemoHint id="field.offline" /></h3>
       <p className="muted small">
         Pobiera na to urządzenie dane projektu, karty, oznaczenia, prace i listy zdjęć wszystkich drzew oraz warstwy
         projektu - żeby były dostępne bez internetu. Podkład mapy nie jest pobierany; nowe zdjęcia zrobione bez zasięgu

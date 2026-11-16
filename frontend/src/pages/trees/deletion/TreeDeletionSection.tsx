@@ -6,6 +6,8 @@ import { ToBeClarifiedNote } from '../../../components/ToBeClarifiedNote';
 import { useOfflineState } from '../../../offline/useOfflineState';
 import { treesApi } from '../treesApi';
 import { treeDeletionBlockReason } from './treeDeletionBlockReason';
+import { DemoHint } from '../../../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../../../demo/useDemoReadOnlyGuard';
 
 /**
  * "Usuń drzewo" na dole karty drzewa (etap 44, 02 poz. 2.10 - omylkowo dodane drzewo). Usuwa drzewo razem ze
@@ -22,6 +24,7 @@ export function TreeDeletionSection({ projectId, treeId, inventoryNumber, isCrea
   const navigate = useNavigate();
   const { isOnline } = useOfflineState();
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isDeletionInProgress = useRef(false);
@@ -44,7 +47,7 @@ export function TreeDeletionSection({ projectId, treeId, inventoryNumber, isCrea
 
   return (
     <section className="card card-danger tree-deletion-section" aria-labelledby="tree-deletion-heading">
-      <h3 id="tree-deletion-heading">Usuń drzewo</h3>
+      <h3 id="tree-deletion-heading">Usuń drzewo <DemoHint id="tree.deletion" /></h3>
       <p className="muted small">
         Dla drzewa dodanego omyłkowo. Razem z drzewem zostaną trwale usunięte jego zdjęcia, zalecenia i prace,
         waloryzacja, kontrole stanu i oznaczenia; drzewo zniknie też z grup drzew. Tej operacji nie można cofnąć.
@@ -67,7 +70,7 @@ export function TreeDeletionSection({ projectId, treeId, inventoryNumber, isCrea
           </div>
         </div>
       ) : (
-        <button type="button" className="btn btn-danger-outline" onClick={() => setIsConfirmationVisible(true)}
+        <button type="button" className="btn btn-danger-outline" onClick={guardDemo('DELETE_TREE', () => setIsConfirmationVisible(true))}
                 disabled={blockReason !== null}>
           Usuń drzewo
         </button>

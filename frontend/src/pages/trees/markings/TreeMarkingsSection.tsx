@@ -8,6 +8,7 @@ import { TreeMarkingBadge } from './TreeMarkingBadge';
 import type { TreeMarkingDefinition } from './treeMarkingDataTypes';
 import { treeMarkingsApi } from './treeMarkingsApi';
 import { useTreeMarkingCatalog } from './useTreeMarkingCatalog';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type SavedMarkingsState =
   | { status: 'loading' }
@@ -94,7 +95,7 @@ export function TreeMarkingsSection({ projectId, treeId, syncGeneration = 0, onM
   return (
     <section className="tree-card-section" aria-labelledby="tree-markings-heading">
       <div className="section-header-row">
-        <h3 id="tree-markings-heading">Oznaczenia drzewa</h3>
+        <h3 id="tree-markings-heading">Oznaczenia drzewa <DemoHint id="tree.markings" /></h3>
         {savedState.status === 'loaded' && savedState.offlinePending && <span className="badge">czeka na synchronizację</span>}
       </div>
       <p className="muted small">

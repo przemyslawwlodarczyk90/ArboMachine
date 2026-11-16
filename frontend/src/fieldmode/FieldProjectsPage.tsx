@@ -8,6 +8,7 @@ import { projectsApi } from '../pages/projects/projectsApi';
 import { useFieldTopBar } from './FieldLayout';
 import { fieldProjectPath } from './fieldModePaths';
 import { rememberWorkMode } from './fieldModePreference';
+import { DemoHint } from '../demo/DemoHint';
 
 type ProjectListState =
   | { status: 'loading' }
@@ -40,6 +41,7 @@ export function FieldProjectsPage() {
 
   return (
     <div className="field-projects stack">
+      <p className="field-projects-title">Projekty <DemoHint id="field.projects" /></p>
       {projectListState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
       {projectListState.status === 'failed' && (
         <Alert variant="error">Nie udało się wczytać projektów. {projectListState.errorMessage}</Alert>

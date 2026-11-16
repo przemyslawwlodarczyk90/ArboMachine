@@ -26,6 +26,9 @@ const USER_FACING_MESSAGE_BY_BACKEND_MESSAGE: Record<string, string> = {
   'Token is mandatory': 'W linku brakuje tokenu.',
   'User data is mandatory': 'Uzupełnij swoje dane.',
   'Account type is mandatory': 'Wybierz typ konta.',
+  'Registration of this account type is currently closed': 'Rejestracja tego typu konta jest chwilowo niedostępna.',
+  'Demo mode is read-only': 'Tryb demo jest tylko do odczytu – zmiany nie są zapisywane.',
+  'Demo mode is not available': 'Tryb demo jest chwilowo niedostępny.',
   // Komunikaty modulow projektow i drzew - po polsku (panel arborysty ma polski UI).
   'Project name is mandatory': 'Nazwa projektu jest wymagana.',
   'Project name must not be blank': 'Nazwa projektu jest wymagana.',

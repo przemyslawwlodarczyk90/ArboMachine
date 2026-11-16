@@ -1,5 +1,6 @@
 package com.example.arbomachine.infrastructure.security;
 
+import com.example.arbomachine.domain.demo.DemoAccountPolicy;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +24,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>/api/arborist/** - tylko ARBORIST, /api/official/** - tylko OFFICIAL,</li>
  *   <li>/api/users/** (wlasne konto) - kazdy zalogowany,</li>
  *   <li>/api/projects/** - kazdy zalogowany; wlasnosc projektu pilnuje FindProjectOwnedByCurrentUserHandler,</li>
- *   <li>/api/notifications/** (wlasne powiadomienia i Web Push) - kazdy zalogowany.</li>
+ *   <li>/api/notifications/** (wlasne powiadomienia i Web Push) - kazdy zalogowany,</li>
+ *   <li>/api/demo, /api/demo/session (wejscie do trybu demo) - publiczne; konto demo moze tylko czytac
+ *       (DemoReadOnlyFilter: zapis = 403 DEMO_READ_ONLY).</li>
  * </ul>
  * Brak tokenu = 401, zla rola = 403.
  */
@@ -32,9 +35,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final DemoAccountPolicy demoAccountPolicy;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, DemoAccountPolicy demoAccountPolicy) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.demoAccountPolicy = demoAccountPolicy;
     }
 
     /** W profilu "test" zastepuje go PermitAllTestSecurityConfig. */
@@ -47,7 +52,9 @@ public class SecurityConfig {
                                 "/api/users/register",
                                 "/api/users/login",
                                 "/api/users/confirm",
-                                "/api/users/password-reset/**"
+                                "/api/users/password-reset/**",
+                                "/api/demo",
+                                "/api/demo/session"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/arborist/**").hasRole("ARBORIST")
@@ -66,7 +73,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authenticationException) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new DemoReadOnlyFilter(demoAccountPolicy), JwtAuthenticationFilter.class);
 
         return http.build();
     }

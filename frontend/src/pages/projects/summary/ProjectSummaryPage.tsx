@@ -7,6 +7,7 @@ import { parsePositiveIdRouteParam } from '../../../routing/parsePositiveIdRoute
 import type { ProjectSummary } from './projectSummaryDataTypes';
 import { projectSummaryApi } from './projectSummaryApi';
 import { toProjectSummaryStatistics } from './projectSummaryStatistics';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ProjectSummaryState =
   | { status: 'loading' }
@@ -50,8 +51,8 @@ export function ProjectSummaryPage() {
   const mapPath = `/projects/${projectId}/map`;
 
   return (
-    <div className="stack-lg">
-      <h2>Podsumowanie projektu</h2>
+    <div className="stack-lg" data-tour="project-summary">
+      <h2>Podsumowanie projektu <DemoHint id="project.summary" /></h2>
 
       {projectSummaryState.status === 'loading' && <div className="center"><LoadingSpinner /></div>}
 

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, Outlet, useOutletContext } from 'react-router-dom';
+import { DemoBar } from '../demo/DemoBar';
 import { OfflineStatusBar } from '../offline/OfflineStatusBar';
 import { useOfflineState } from '../offline/useOfflineState';
 import { WorkModeSwitchButton } from './WorkModeSwitchButton';
@@ -52,6 +53,7 @@ export function FieldLayout() {
         </span>
         <WorkModeSwitchButton targetMode="OFFICE" className="btn btn-secondary field-topbar-office" />
       </header>
+      <DemoBar compact />
       <OfflineStatusBar isCompact />
       <main className="field-main">
         <Outlet context={context} />

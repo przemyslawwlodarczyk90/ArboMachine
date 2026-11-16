@@ -5,6 +5,7 @@ import { Alert } from '../../../components/Alert';
 import type { TreeImportResult, TreeImportValidation } from './dataExchangeDataTypes';
 import { dataExchangeApi } from './dataExchangeApi';
 import { describeImportIssue } from './importIssueMessages';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ImportState =
   | { status: 'idle' }
@@ -75,7 +76,7 @@ export function TreesImportSection({ projectId }: { projectId: number }) {
 
   return (
     <section className="data-exchange-card stack" aria-labelledby="trees-import-heading">
-      <h3 id="trees-import-heading">Import drzew</h3>
+      <h3 id="trees-import-heading">Import drzew <DemoHint id="import.trees" /></h3>
       <p className="muted">
         Plik CSV, XLSX, GeoJSON, Shapefile (spakowany do ZIP), GeoPackage albo rysunek DXF. Arkusz potrzebuje kolumny
         z numerem drzewa („Numer inwentaryzacyjny” albo „Etykieta” - typowy eksport aplikacji terenowej). Współrzędne

@@ -8,6 +8,7 @@ import { dataExchangeApi, projectExportFileName } from './dataExchangeApi';
 import { saveBlobAsFile } from './saveBlobAsFile';
 import type { ProjectExportFile } from './dataExchangeDataTypes';
 import { DEFAULT_GIS_EXPORT_CRS, GIS_EXPORT_CRS_OPTIONS, type GisExportCrs } from './gisExportCrs';
+import { DemoHint } from '../../../demo/DemoHint';
 
 const TABULAR_EXPORTS: { format: ProjectExportFile; label: string }[] = [
   { format: 'csv', label: 'Pobierz CSV' },
@@ -67,7 +68,7 @@ export function TreesExportSection({ projectId }: { projectId: number }) {
 
   return (
     <section className="data-exchange-card stack" aria-labelledby="trees-export-heading">
-      <h3 id="trees-export-heading">Eksport danych</h3>
+      <h3 id="trees-export-heading">Eksport danych <DemoHint id="export" /></h3>
       <p className="muted">
         Tabela wszystkich drzew projektu do otwarcia w Excelu albo LibreOffice. CSV: separator „;”, kodowanie UTF-8,
         przecinek dziesiętny. XLSX: arkusze „Drzewa”, „Prace”, „Monitoring” i „Projekt”. „Pobierz prace (CSV)” - jeden wiersz na

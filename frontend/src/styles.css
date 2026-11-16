@@ -937,3 +937,96 @@ th.right, td.right { text-align: right; }
   .field-topbar-brand, .field-connection-text { display: none; }
   .field-topbar-office { padding: 0 0.6rem; font-size: 0.85rem; }
 }
+
+/* ---------- Tryb demo: pasek, wskazowki (i), komunikaty, powitanie i samouczek ---------- */
+:root {
+  --demo: #1f5f8b;
+  --demo-soft: #e6f0f8;
+  --demo-border: #b9d2e6;
+  --demo-highlight: #f0a020;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --demo: #8cc2ea;
+    --demo-soft: #182634;
+    --demo-border: #2f4a63;
+    --demo-highlight: #f5b94a;
+  }
+}
+
+.demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap;
+  padding: 0.5rem 1.5rem; background: var(--demo-soft); border-bottom: 1px solid var(--demo-border); color: var(--text); }
+.demo-bar-compact { padding: 0.35rem 12px; }
+.demo-bar-info { display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex-wrap: wrap; }
+.demo-bar-badge, .demo-notice-badge { padding: 0.1rem 0.55rem; border-radius: 999px; background: var(--demo); color: var(--surface);
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
+.demo-bar-text { font-size: 0.9rem; color: var(--text-muted); }
+.demo-bar-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .demo-bar { padding: 0.5rem 16px; }
+  .demo-bar-compact .demo-bar-text { display: none; }
+}
+
+/* Ikona (i) - min. 28 px wizualnie, 44 px pola dotyku (pseudo-element), zeby trafic palcem na tablecie. */
+.demo-hint-button { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 26px; height: 26px; margin: 0 0.15rem; padding: 0; border-radius: 50%; border: 2px solid var(--demo);
+  background: var(--surface); color: var(--demo); font: italic 700 14px/1 Georgia, 'Times New Roman', serif;
+  vertical-align: middle; cursor: pointer; }
+.demo-hint-button::after { content: ''; position: absolute; inset: -9px; }
+.demo-hint-button:hover, .demo-hint-button.is-open { background: var(--demo); color: var(--surface); }
+.demo-hint-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.demo-hint-anchor { display: inline-flex; align-items: center; gap: 0.3rem; }
+.demo-hint-inline-icon { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; border-radius: 50%;
+  border: 2px solid var(--demo); color: var(--demo); font: italic 700 11px/1 Georgia, serif; vertical-align: middle; }
+
+.demo-hint-popover { position: fixed; z-index: 1000; width: min(340px, calc(100vw - 32px)); max-height: min(60vh, 420px); overflow: auto;
+  padding: 0.85rem 1rem; border-radius: var(--radius); border: 1px solid var(--demo-border); background: var(--surface);
+  color: var(--text); box-shadow: 0 8px 28px rgb(0 0 0 / 18%); font-size: 0.92rem; line-height: 1.45; font-style: normal;
+  font-weight: 400; text-align: left; letter-spacing: normal; text-transform: none; }
+@media (max-width: 600px) {
+  .demo-hint-popover { width: auto; max-height: 50vh; }
+}
+.demo-hint-popover p { margin: 0.45rem 0 0; }
+.demo-hint-popover-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.demo-hint-popover-header strong { color: var(--demo); font-size: 1rem; }
+.demo-hint-close { flex: none; width: 32px; height: 32px; margin: -6px -8px 0 0; border: 0; border-radius: 50%; background: transparent;
+  color: var(--text-muted); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.demo-hint-close:hover { background: var(--surface-muted); color: var(--text); }
+.demo-hint-in-demo span { font-weight: 700; color: var(--demo); }
+.demo-hint-locked { padding: 0.35rem 0.55rem; border-radius: 8px; background: var(--warning-soft); color: var(--warning); font-size: 0.85rem; }
+.demo-hint-more summary { margin-top: 0.5rem; cursor: pointer; color: var(--demo); font-weight: 600; }
+
+.demo-notice-region { position: fixed; left: 50%; bottom: 20px; z-index: 1100; transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px)); pointer-events: none; }
+.demo-notice { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.75rem 0.9rem; border-radius: var(--radius);
+  border: 1px solid var(--demo-border); background: var(--surface); color: var(--text); box-shadow: 0 8px 28px rgb(0 0 0 / 20%);
+  pointer-events: auto; animation: demo-notice-in 160ms ease-out; }
+.demo-notice-text { flex: 1; font-size: 0.92rem; }
+@keyframes demo-notice-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .demo-notice { animation: none; } }
+
+/* Powitanie i karta samouczka: male, w rogu, bez tla - nie zaslaniaja mapy i nie blokuja klikania. */
+.demo-floating-card { position: fixed; right: 20px; bottom: 20px; z-index: 1050; width: min(380px, calc(100vw - 32px));
+  padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid var(--demo-border); background: var(--surface); color: var(--text);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 22%); }
+.demo-floating-card h2 { margin: 0.2rem 0 0.4rem; font-size: 1.1rem; color: var(--demo); }
+.demo-floating-card p { margin: 0 0 0.5rem; font-size: 0.92rem; }
+.demo-floating-card-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+@media (max-width: 600px) {
+  .demo-floating-card { right: 16px; left: 16px; bottom: 16px; width: auto; max-height: 45vh; overflow: auto; }
+}
+.demo-tour-highlight { outline: 3px solid var(--demo-highlight) !important; outline-offset: 4px; border-radius: 6px;
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--demo-highlight) 22%, transparent) !important; }
+
+.demo-entry { margin-top: 1.25rem; }
+.demo-entry h2 { margin: 0 0 0.3rem; font-size: 1.05rem; }
+.demo-entry p { margin: 0 0 0.75rem; }
+.demo-entry-divider { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-muted); font-size: 0.85rem; }
+.demo-entry-divider::before, .demo-entry-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.field-projects-title { margin: 0; font-weight: 700; display: flex; align-items: center; gap: 0.3rem; }
+.field-fab-hint { display: flex; justify-content: flex-end; }
+.field-fab-hint .demo-hint-button { width: 34px; height: 34px; font-size: 17px; box-shadow: var(--shadow); }
+/* Komunikat demo nie moze zaslaniac przyciskow mapy terenowej ani karty samouczka / powitania - wtedy jest u gory. */
+body:has(.field-shell) .demo-notice-region,
+body:has(.demo-floating-card) .demo-notice-region { top: 72px; bottom: auto; }

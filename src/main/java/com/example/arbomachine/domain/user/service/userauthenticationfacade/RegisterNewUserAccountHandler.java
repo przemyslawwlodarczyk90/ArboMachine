@@ -4,6 +4,8 @@ import com.example.arbomachine.domain.user.dto.UserProfileDto;
 import com.example.arbomachine.domain.user.entity.EmailConfirmationToken;
 import com.example.arbomachine.domain.user.entity.UserAccount;
 import com.example.arbomachine.domain.user.enums.AssignableUserRole;
+import com.example.arbomachine.domain.demo.DemoAccountPolicy;
+import com.example.arbomachine.domain.user.exception.AccountTypeRegistrationClosedException;
 import com.example.arbomachine.domain.user.exception.EmailAlreadyInUseException;
 import com.example.arbomachine.domain.user.mapper.UserAccountMapper;
 import com.example.arbomachine.infrastructure.repository.EmailConfirmationTokenRepository;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 /** Zakladanie nowego konta (arborysta / urzednik) i wysylka maila z linkiem aktywacyjnym. */
@@ -35,6 +38,14 @@ public class RegisterNewUserAccountHandler {
     @Value("${app.registration.email-confirmation-required:true}")
     private boolean emailConfirmationRequired = true;
 
+    /** Rejestracja kont urzednika - chwilowo zamknieta (istniejace konta urzednikow dzialaja dalej). */
+    @Value("${app.registration.official-enabled:false}")
+    private boolean officialRegistrationEnabled = false;
+
+    /** Adres konta trybu demo - nie da sie go zajac rejestracja (konto zaklada seeder demo). */
+    @Value("${app.demo.account-email:" + DemoAccountPolicy.DEFAULT_DEMO_ACCOUNT_EMAIL + "}")
+    private String demoAccountEmail = DemoAccountPolicy.DEFAULT_DEMO_ACCOUNT_EMAIL;
+
     public RegisterNewUserAccountHandler(UserAccountRepository userAccountRepository,
                                          EmailConfirmationTokenRepository emailConfirmationTokenRepository,
                                          UserAccountMapper userAccountMapper,
@@ -55,6 +66,13 @@ public class RegisterNewUserAccountHandler {
      * i zablokowanych przez admina nie da sie w ten sposob przejac.
      */
     public void handle(UserProfileDto userProfile, String plainTextPassword, AssignableUserRole requestedRole) {
+        if (requestedRole == AssignableUserRole.OFFICIAL && !officialRegistrationEnabled) {
+            throw new AccountTypeRegistrationClosedException("Registration of this account type is currently closed");
+        }
+        if (userProfile.email() != null
+                && userProfile.email().trim().toLowerCase(Locale.ROOT).equals(demoAccountEmail.trim().toLowerCase(Locale.ROOT))) {
+            throw new EmailAlreadyInUseException("Email is already in use by an active user");
+        }
         UserAccount existingAccountWithSameEmail = userAccountRepository.findByEmail(userProfile.email()).orElse(null);
         if (existingAccountWithSameEmail != null
                 && (existingAccountWithSameEmail.isEmailConfirmed() || existingAccountWithSameEmail.isLockedByAdmin())) {

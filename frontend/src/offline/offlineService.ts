@@ -109,6 +109,8 @@ function sendPhotoUpload<T>(projectId: number, treeId: number, file: Blob, fileN
   });
 }
 
+let isReadOnlyDemoMode = false;
+
 export const offlineService = {
   subscribe(listener: () => void) {
     listeners.add(listener);
@@ -138,6 +140,14 @@ export const offlineService = {
    * dla obiektu z tymczasowym id -> zapis na urzadzeniu i synchronizacja pozniej. Bledy walidacji online sa
    * zwracane jak dotad (formularz pokazuje je przy polach).
    */
+  /**
+   * Tryb demo (konto tylko do odczytu): bez kolejki zmian i bez synchronizacji - zapis idzie od razu do serwera,
+   * ktory odpowiada 403, a bez sieci po prostu sie nie udaje. Odczyty i ich kopie dzialaja jak zwykle.
+   */
+  setReadOnlyDemoMode(enabled: boolean) {
+    isReadOnlyDemoMode = enabled;
+  },
+
   async mutate<T>(requestedDraft: Omit<QueuedChangeDraft, 'ownerEmail'>): Promise<T> {
     // Etap 36: tworzenie zawsze z identyfikatorem urzadzenia - ten sam przy wysylce online i z kolejki, wiec zerwana
     // odpowiedz i ponowienie nie tworza duplikatu na serwerze.
@@ -148,7 +158,7 @@ export const offlineService = {
       const request = toPendingChangeRequest(change, change.treeId, change.workId, change.monitoringRecordId);
       return sendApiRequest<T>(request.path, { httpMethod: request.httpMethod, requestBody: request.body, sendAccessToken: true });
     };
-    if (!currentUserEmail) return sendOnline();
+    if (!currentUserEmail || isReadOnlyDemoMode) return sendOnline();
     const usesLocalId = (draft.treeId ?? 0) < 0 || (draft.workId ?? 0) < 0 || (draft.monitoringRecordId ?? 0) < 0;
     if (state.isOnline && browserOnline() && !usesLocalId && state.pendingChangeCount === 0) {
       try {
@@ -165,7 +175,7 @@ export const offlineService = {
 
   /** "Synchronizuj teraz" i automatyczne proby. Jedna synchronizacja naraz. */
   syncNow(): Promise<void> {
-    if (!currentUserEmail) return Promise.resolve();
+    if (!currentUserEmail || isReadOnlyDemoMode) return Promise.resolve();
     syncInProgress ??= (async () => {
       setState({ syncStatus: 'syncing' });
       const outcome = await syncPendingChanges(await store(), currentUserEmail!, async (request) => {
@@ -229,11 +239,11 @@ export const offlineService = {
   async uploadTreePhoto<T>(projectId: number, treeId: number, file: Blob & PhotoFileLike): Promise<TreePhotoUploadResult<T>> {
     const clientUploadId = createClientUploadId();
     const canSendNow = state.isOnline && browserOnline() && treeId > 0 && state.pendingChangeCount === 0;
-    if (canSendNow || !currentUserEmail) {
+    if (canSendNow || !currentUserEmail || isReadOnlyDemoMode) {
       try {
         return { kind: 'uploaded', photo: await sendPhotoUpload<T>(projectId, treeId, file, file.name, clientUploadId) };
       } catch (requestError) {
-        if (!currentUserEmail || !(requestError instanceof ApiRequestError) || requestError.httpStatus !== 0) throw requestError;
+        if (!currentUserEmail || isReadOnlyDemoMode || !(requestError instanceof ApiRequestError) || requestError.httpStatus !== 0) throw requestError;
       }
     }
     const pendingPhoto = await queuePhotoUpload(await store(), { ownerEmail: currentUserEmail, projectId, treeId, file, clientUploadId });

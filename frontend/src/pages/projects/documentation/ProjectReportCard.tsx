@@ -5,6 +5,7 @@ import { Alert } from '../../../components/Alert';
 import {
   projectDocumentsApi, projectReportFileName, TREE_CARD_SCOPE_OPTIONS, type TreeCardScope,
 } from './projectDocumentsApi';
+import { DemoHint } from '../../../demo/DemoHint';
 
 type ProjectReportState =
   | { status: 'idle' }
@@ -58,8 +59,8 @@ export function ProjectReportCard({ projectId }: { projectId: number }) {
   const isGenerating = reportState.status === 'generating';
 
   return (
-    <section className="project-report-card stack" aria-labelledby="project-report-heading">
-      <h3 id="project-report-heading">Dokument projektu</h3>
+    <section className="project-report-card stack" aria-labelledby="project-report-heading" data-tour="project-report">
+      <h3 id="project-report-heading">Dokument projektu <DemoHint id="documentation.report" /></h3>
       <p>
         Na podstawie danych projektu można wygenerować roboczy dokument PDF. Dokument zawiera aktualne dane projektu,
         drzew, zdjęć (w wersji z adnotacją, jeśli istnieje) oraz zapisanych prac.

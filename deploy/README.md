@@ -37,6 +37,8 @@ Wzór: `deploy/.env.example`. Na serwerze plik `arbomachine.env` obok wspólnego
 | `JWT_SECRET` | min. 32 losowe znaki; brak = aplikacja nie startuje |
 | `APP_PUBLIC_BASE_URL` | `https://<domena>` — linki w mailach (potwierdzenie konta, reset hasła) |
 | `APP_REGISTRATION_EMAIL_CONFIRMATION_REQUIRED` | `true` (domyślnie w prod) |
+| `DEMO_ENABLED` | `true` = tryb demo na stronie logowania (konto demo + 4 projekty pokazowe, tylko do odczytu – zapis z konta demo zawsze 403). Domyślnie `false`. Opcjonalnie `DEMO_SESSION_HOURS` (4), `DEMO_ACCOUNT_EMAIL`. |
+| `REGISTRATION_OFFICIAL_ENABLED` | `false` (domyślnie) – rejestracja konta urzędnika zamknięta |
 | `APP_PUSH_VAPID_PUBLIC_KEY`, `APP_PUSH_VAPID_PRIVATE_KEY`, `APP_PUSH_VAPID_SUBJECT` | stałe klucze Web Push (bez nich klucze generują się i lądują w bazie) |
 | `PDF_MAX_CONCURRENT_GENERATIONS`, `PDF_MAX_WAIT_SECONDS` | 1 / 120 — ochrona przed OOM |
 | `FLYWAY_BASELINE_ON_MIGRATE` | `false` w prod (czysta baza) |

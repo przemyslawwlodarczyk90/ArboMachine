@@ -29,6 +29,7 @@ import { RegistrationPage } from './pages/RegistrationPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SignInPage } from './pages/SignInPage';
 import { UnsavedChangesLeaveGuard } from './fieldmode/UnsavedChangesLeaveGuard';
+import { DemoNoticeToast } from './demo/DemoNoticeToast';
 
 /**
  * Korzen wszystkich tras: kontekst logowania i - od etapu 47 - straznik niezapisanych zmian, ktory potrzebuje routera
@@ -39,6 +40,7 @@ function AppRoot() {
     <AuthenticationProvider>
       <Outlet />
       <UnsavedChangesLeaveGuard />
+      <DemoNoticeToast />
     </AuthenticationProvider>
   );
 }

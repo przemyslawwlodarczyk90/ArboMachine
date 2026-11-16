@@ -29,6 +29,8 @@ import { browserStorageOrNull } from './fieldModePreference';
 import { FieldOfflinePreparation } from './FieldOfflinePreparation';
 import { FieldTreeSheet, type FieldSheetSize } from './FieldTreeSheet';
 import { useUnsavedChangesGuard } from './UnsavedChangesDialog';
+import { DemoHint } from '../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../demo/useDemoReadOnlyGuard';
 
 type ProjectLoadingState =
   | { status: 'loading' }
@@ -56,6 +58,7 @@ export function FieldProjectPage() {
   const selectedTreeId = selectedTreeIdOf(searchParams.toString());
   const [projectLoadingState, setProjectLoadingState] = useState<ProjectLoadingState>({ status: 'loading' });
   const setTopBarContent = useFieldTopBar();
+  const guardDemo = useDemoReadOnlyGuard();
   const mapData = useProjectMapData(projectId);
   // Pomiar drzewa wstrzymuje sledzenie na zywo: przy aktywnym watchPosition Chrome potrafi nie oddac nowego
   // odczytu do getCurrentPosition(maximumAge: 0), gdy pozycja sie nie zmienia (sprawdzone na emulowanej pozycji).
@@ -250,9 +253,10 @@ export function FieldProjectPage() {
                     aria-pressed={isLayersSheetOpen}>Warstwy</button>
             <button type="button" className="field-fab" onClick={centerOnMyPosition} disabled={!lastReading}
                     title={lastReading ? undefined : 'Brak bieżącej pozycji urządzenia'}>Moja pozycja</button>
-            <button type="button" className="field-fab" onClick={startPickingNewTree}
+            <button type="button" className="field-fab" onClick={guardDemo('FIELD_ADD_TREE', startPickingNewTree)}
                     aria-pressed={mapInteraction === 'PICKING_NEW_TREE'}>Wskaż na mapie</button>
-            <button type="button" className="field-fab field-fab-primary" onClick={startTreeHere}>+ Drzewo tutaj</button>
+            <button type="button" className="field-fab field-fab-primary" onClick={guardDemo('FIELD_ADD_TREE', startTreeHere)}>+ Drzewo tutaj</button>
+            <span className="field-fab-hint"><DemoHint id="field.map" /></span>
           </div>
         )}
 

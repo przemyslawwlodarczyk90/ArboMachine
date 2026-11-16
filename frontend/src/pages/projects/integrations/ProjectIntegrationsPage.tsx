@@ -7,6 +7,7 @@ import { PushNotificationsPanel } from '../../../notifications/PushNotifications
 import { parsePositiveIdRouteParam } from '../../../routing/parsePositiveIdRouteParam';
 import { dataExchangeApi, projectExportFileName } from '../dataexchange/dataExchangeApi';
 import { saveBlobAsFile } from '../dataexchange/saveBlobAsFile';
+import { DemoHint } from '../../../demo/DemoHint';
 
 /**
  * Sekcja "Integracje i powiadomienia" projektu (/projects/:projectId/integrations, etap 30): kalendarz prac (.ics)
@@ -39,7 +40,7 @@ export function ProjectIntegrationsPage() {
       <h2>Integracje i powiadomienia</h2>
 
       <section className="stack-tight integrations-block">
-        <h3>Kalendarz prac</h3>
+        <h3>Kalendarz prac <DemoHint id="integrations.calendar" /></h3>
         <p className="muted small">
           Plik .ics z pracami do wykonania (zalecenia i prace zaplanowane), które mają termin - każda jako wydarzenie
           całodniowe. Prace bez terminu, wykonane i anulowane są pomijane. Ponowny import aktualizuje wydarzenia
@@ -54,7 +55,7 @@ export function ProjectIntegrationsPage() {
       </section>
 
       <section className="stack-tight integrations-block">
-        <h3>Powiadomienia</h3>
+        <h3>Powiadomienia <DemoHint id="integrations.notifications" /></h3>
         <PushNotificationsPanel />
       </section>
 

@@ -1,11 +1,12 @@
 import { MapSymbolSwatch } from '../../../map/MapSymbolSwatch';
 import type { ProjectMapLegendEntry } from '../../../map/mapSymbolLegend';
+import { DemoHint } from '../../../demo/DemoHint';
 
 /** Legenda mapy projektu - wyliczana z danych (buildProjectMapLegend), bez recznej edycji i bez zapisu w bazie. */
 export function ProjectMapLegend({ entries }: { entries: ProjectMapLegendEntry[] }) {
   return (
     <section className="map-legend" aria-labelledby="map-legend-heading">
-      <h3 id="map-legend-heading">Legenda</h3>
+      <h3 id="map-legend-heading">Legenda <DemoHint id="map.layers" /></h3>
       <ul>
         <li><span className="map-legend-neutral" aria-hidden="true" /> Drzewo bez symbolu</li>
         {entries.map((entry) => (

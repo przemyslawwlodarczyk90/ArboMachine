@@ -15,7 +15,9 @@ const EMPTY_PROFILE_FORM_VALUES: UserProfile = {
 };
 
 export function RegistrationPage() {
-  const [selectedAccountType, setSelectedAccountType] = useState<AssignableUserRole | null>(null);
+  // Przy jednym dostepnym typie konta (chwilowo tylko arborysta) jest on od razu wybrany.
+  const [selectedAccountType, setSelectedAccountType] = useState<AssignableUserRole | null>(
+    REGISTRATION_ACCOUNT_TYPE_OPTIONS.length === 1 ? REGISTRATION_ACCOUNT_TYPE_OPTIONS[0].role : null);
   const [profileFormValues, setProfileFormValues] = useState<UserProfile>(EMPTY_PROFILE_FORM_VALUES);
   const [password, setPassword] = useState('');
   const [repeatedPassword, setRepeatedPassword] = useState('');

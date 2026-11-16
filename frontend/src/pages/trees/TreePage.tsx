@@ -20,6 +20,7 @@ import { treesApi } from './treesApi';
 import { TreeMonitoringSection } from './monitoring/TreeMonitoringSection';
 import { TreeValuationSection } from './valuation/TreeValuationSection';
 import { TreeWorksSection } from './works/TreeWorksSection';
+import { useDemoReadOnlyGuard } from '../../demo/useDemoReadOnlyGuard';
 
 type TreeLoadingState =
   | { status: 'loading' }
@@ -45,6 +46,7 @@ export function TreePage() {
   const [treeLoadingState, setTreeLoadingState] = useState<TreeLoadingState>({ status: 'loading' });
   const [hasUnsavedTreeChanges, setHasUnsavedTreeChanges] = useState(false);
   const [isNewTreeDialogOpen, setIsNewTreeDialogOpen] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   // Etap 47: odpowiedz GET wyslana przed lokalna zmiana drzewa nie nadpisuje nowszego drzewa (jak w panelu terenowym).
   const localChangeCount = useRef(0);
 
@@ -130,7 +132,7 @@ export function TreePage() {
         </div>
         {/* V1 "nastepnego drzewa": szybkie dodanie kolejnego drzewa bez wracania do listy. Z niezapisanymi zmianami
             przycisk jest zablokowany, zeby nie zgubic wpisanych danych. */}
-        <button className="btn btn-secondary" onClick={() => setIsNewTreeDialogOpen(true)} disabled={hasUnsavedTreeChanges}
+        <button className="btn btn-secondary" onClick={guardDemo('ADD_TREE', () => setIsNewTreeDialogOpen(true))} disabled={hasUnsavedTreeChanges}
                 title={hasUnsavedTreeChanges ? 'Najpierw zapisz albo anuluj zmiany w danych drzewa.' : undefined}>
           Dodaj następne drzewo
         </button>

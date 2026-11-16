@@ -10,6 +10,8 @@ import { UserProfileForm } from '../components/UserProfileForm';
 import { NotificationList } from '../notifications/NotificationList';
 import { PushNotificationsPanel } from '../notifications/PushNotificationsPanel';
 import { DocumentAuthorProfileSection } from './documentauthor/DocumentAuthorProfileSection';
+import { DemoHint } from '../demo/DemoHint';
+import { useDemoReadOnlyGuard } from '../demo/useDemoReadOnlyGuard';
 
 /** "My profile" - ta sama strona w kazdym panelu; dziala wylacznie na WLASNYM koncie zalogowanego uzytkownika. */
 export function MyProfilePage() {
@@ -17,6 +19,7 @@ export function MyProfilePage() {
   const navigate = useNavigate();
 
   const [isAccountDeletionConfirmationVisible, setIsAccountDeletionConfirmationVisible] = useState(false);
+  const guardDemo = useDemoReadOnlyGuard();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [accountDeletionErrorMessage, setAccountDeletionErrorMessage] = useState<string | null>(null);
 
@@ -44,7 +47,7 @@ export function MyProfilePage() {
   return (
     <div className="stack-lg">
       <header className="page-header">
-        <h1>Mój profil</h1>
+        <h1>Mój profil <DemoHint id="profile" /></h1>
         <p className="muted">
           Zalogowano jako <strong>{currentUserAccount.email}</strong> · konto: {USER_ROLE_DISPLAY_NAMES[currentUserAccount.role]}
         </p>
@@ -87,7 +90,7 @@ export function MyProfilePage() {
             </button>
           </div>
         ) : (
-          <button className="btn btn-danger-outline" onClick={() => setIsAccountDeletionConfirmationVisible(true)}>
+          <button className="btn btn-danger-outline" onClick={guardDemo('EDIT_PROFILE', () => setIsAccountDeletionConfirmationVisible(true))}>
             Delete account
           </button>
         )}

@@ -5,6 +5,7 @@ import com.example.arbomachine.domain.user.entity.EmailConfirmationToken;
 import com.example.arbomachine.domain.user.entity.UserAccount;
 import com.example.arbomachine.domain.user.enums.AssignableUserRole;
 import com.example.arbomachine.domain.user.enums.UserRole;
+import com.example.arbomachine.domain.user.exception.AccountTypeRegistrationClosedException;
 import com.example.arbomachine.domain.user.exception.EmailAlreadyInUseException;
 import com.example.arbomachine.domain.user.mapper.UserAccountMapper;
 import com.example.arbomachine.infrastructure.repository.EmailConfirmationTokenRepository;
@@ -63,7 +64,7 @@ class RegisterNewUserAccountHandlerTest {
 
     @Test
     void sendsConfirmationEmailWithLinkContainingSavedToken() {
-        registerNewUserAccountHandler.handle(newUserProfile, PLAIN_TEXT_PASSWORD, AssignableUserRole.OFFICIAL);
+        registerNewUserAccountHandler.handle(newUserProfile, PLAIN_TEXT_PASSWORD, AssignableUserRole.ARBORIST);
 
         ArgumentCaptor<EmailConfirmationToken> savedTokenCaptor = ArgumentCaptor.forClass(EmailConfirmationToken.class);
         verify(emailConfirmationTokenRepository).save(savedTokenCaptor.capture());
@@ -87,6 +88,24 @@ class RegisterNewUserAccountHandlerTest {
         assertEquals(7L, unconfirmedAccount.getId());
         assertEquals("Jan", unconfirmedAccount.getFirstName());
         assertEquals(UserRole.ARBORIST, unconfirmedAccount.getRole());
+    }
+
+    @Test
+    void registeringAsOfficialIsClosedByDefault() {
+        assertThrows(AccountTypeRegistrationClosedException.class, () ->
+                registerNewUserAccountHandler.handle(newUserProfile, PLAIN_TEXT_PASSWORD, AssignableUserRole.OFFICIAL));
+        verify(userAccountRepository, never()).save(any());
+        verifyNoInteractions(emailSenderService);
+    }
+
+    @Test
+    void demoAccountEmailCannotBeRegistered() {
+        UserProfileDto demoEmailProfile = UserProfileDto.builder()
+                .firstName("Jan").lastName("Kowalski").email("Demo@ArboMachine.invalid").build();
+
+        assertThrows(EmailAlreadyInUseException.class, () ->
+                registerNewUserAccountHandler.handle(demoEmailProfile, PLAIN_TEXT_PASSWORD, AssignableUserRole.ARBORIST));
+        verify(userAccountRepository, never()).save(any());
     }
 
     @Test

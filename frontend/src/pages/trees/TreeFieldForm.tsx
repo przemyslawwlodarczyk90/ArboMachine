@@ -10,6 +10,7 @@ import {
 } from './treeFormValues';
 import { treesApi } from './treesApi';
 import { useUnsavedChangesSource } from '../../fieldmode/useUnsavedChangesSource';
+import { DemoHint } from '../../demo/DemoHint';
 
 /** Sekcja formularza terenowego - naglowek + pola. Kolejnosc sekcji to uklad V1, nie potwierdzony workflow. */
 function TreeFieldFormSection({ title, children }: { title: string; children: ReactNode }) {
@@ -146,8 +147,8 @@ export function TreeFieldForm({ projectId, savedTree, onTreeSaved, onUnsavedChan
     () => saveTreeChanges(), discardChanges);
 
   return (
-    <form onSubmit={submitTreeChanges} className="form tree-field-form" noValidate aria-labelledby="tree-data-heading">
-      <h3 id="tree-data-heading">Dane drzewa</h3>
+    <form onSubmit={submitTreeChanges} className="form tree-field-form" noValidate aria-labelledby="tree-data-heading" data-tour="tree-data">
+      <h3 id="tree-data-heading">Dane drzewa <DemoHint id="tree.data" /></h3>
       {formErrorMessage && <Alert variant="error">{formErrorMessage}</Alert>}
       {hasEditConflict && (
         <div className="stack" role="alert">

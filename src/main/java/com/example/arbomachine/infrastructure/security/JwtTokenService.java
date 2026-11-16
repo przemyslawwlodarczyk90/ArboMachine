@@ -32,10 +32,15 @@ public class JwtTokenService {
     }
 
     public String createAccessTokenForEmail(String email) {
+        return createAccessTokenForEmail(email, Duration.ofDays(tokenValidityDays));
+    }
+
+    /** Token o wlasnej waznosci - krotka sesja trybu demo. */
+    public String createAccessTokenForEmail(String email, Duration validity) {
         // Instant.now() jest zawsze w UTC - wczesniej LocalDateTime traktowany jako UTC dawal w Polsce
         // czas wystawienia 2h w przyszlosci i weryfikacja odrzucala swiezo wydane tokeny.
         Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plus(Duration.ofDays(tokenValidityDays));
+        Instant expiresAt = issuedAt.plus(validity);
 
         return JWT.create()
                 .withSubject(email)

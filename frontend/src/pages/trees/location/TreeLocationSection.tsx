@@ -14,6 +14,7 @@ import { TreeGnssLocationPanel } from './TreeGnssLocationPanel';
 import { TreeLocationForm } from './TreeLocationForm';
 import { TreeLocationMap } from './TreeLocationMap';
 import { isTreeLocationWithinValidRange } from './treeLocationValidRange';
+import { DemoHint } from '../../../demo/DemoHint';
 
 /** Co robi sekcja: tylko pokazuje punkt, edytuje go recznym formularzem, wskazaniem na mapie albo pomiarem GPS. */
 type LocationEditingMode = 'viewing' | 'manualForm' | 'mapPicking' | 'gnss';
@@ -85,7 +86,7 @@ export function TreeLocationSection({ projectId, tree, onTreeChanged }: {
   return (
     <section className="tree-location-section" aria-labelledby="tree-location-heading">
       <div className="section-header-row">
-        <h3 id="tree-location-heading">Lokalizacja</h3>
+        <h3 id="tree-location-heading">Lokalizacja <DemoHint id="tree.location" /></h3>
         {editingMode === 'viewing' && (
           <div className="form-actions">
             <button className={`btn ${savedLocation ? 'btn-secondary' : 'btn-primary'}`} onClick={startMapPicking}>
